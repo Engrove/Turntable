@@ -1,9 +1,8 @@
 <script setup>
-import { useTonearmStore } from '@/stores/tonearmStore'
+import { useTonearmStore } from '@/stores/tonearmStore.js' // <-- Notera .js
 
 const store = useTonearmStore()
 
-// Definitioner för varje parameter för att dynamiskt skapa sliders
 const parameterDefinitions = {
     m_headshell: { label: 'Headshell Mass (g)', min: 2, max: 25, step: 0.1 },
     m_pickup: { label: 'Cartridge Mass (g)', min: 4, max: 12, step: 0.1 },
