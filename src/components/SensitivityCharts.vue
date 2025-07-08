@@ -1,20 +1,3 @@
-const resonanceChartOptions = (title, xLabel) => ({
-  type: 'line',
-  data: { datasets: commonDatasetConfig() },
-  options: { // <-- Options-objektet startar här
-    responsive: true,
-    // ... många rader för plugins och skalor ...
-    scales: { y: { ... }, x: { ... } } // <-- Här stänger 'scales'-objektet
-  // OCH HÄR SKULLE 'options'-OBJEKTET HA STÄNGTS MED EN }
-}); // <-- Här trodde kompilatorn att den fortfarande var inuti 'options'-objektet och förväntade sig mer data eller en komma.```
-
-### Den slutgiltiga lösningen
-
-Jag har lagt till den saknade stängande måsvingen (`}`) för `options`-objektet. Dessutom behåller jag den dynamiska Y-axeln som du bad om, vilket är en viktig förbättring.
-
-**Ersätt hela innehållet i `Turntable-main/src/components/SensitivityCharts.vue` med koden nedan.**
-
-```vue
 <script setup>
 import { onMounted, ref, watch } from 'vue';
 import { useTonearmStore } from '@/store/tonearmStore.js';
@@ -97,6 +80,7 @@ const generateCwDistanceCurveData = (range) => {
     return { data: dataPoints, maxY: currentMaxY };
 };
 
+// Generisk funktion för att skapa Chart.js-instanser (utan att fylla data direkt)
 const createChart = (canvasRef, options) => {
     if (!canvasRef.value) {
         store.addDebugMessage('SensitivityCharts:createChart', 'Canvas reference is null for chart creation.', { canvasRef });
@@ -112,17 +96,17 @@ const createChart = (canvasRef, options) => {
 };
 
 // Denna funktion uppdaterar grafdata och ritar om graferna
-const updateCharts = () => {
+const updateChartsData = () => { // Bytte namn från updateCharts till updateChartsData för tydlighet
     if (Object.keys(charts.value).length === 0) {
-        store.addDebugMessage('SensitivityCharts:updateCharts', 'Charts object is empty. Skipping update.');
+        store.addDebugMessage('SensitivityCharts:updateChartsData', 'Charts object is empty. Skipping update. (This is expected before onMounted finishes)');
         return;
     }
     if (!store.calculatedResults || store.calculatedResults.isUnbalanced) {
-        store.addDebugMessage('SensitivityCharts:updateCharts', 'CalculatedResults is unbalanced or null. Skipping update.', { calculatedResults: store.calculatedResults });
+        store.addDebugMessage('SensitivityCharts:updateChartsData', 'CalculatedResults is unbalanced or null. Skipping update.', { calculatedResults: store.calculatedResults });
         return;
     }
 
-    store.addDebugMessage('SensitivityCharts:updateCharts', 'Attempting to update chart data.', {
+    store.addDebugMessage('SensitivityCharts:updateChartsData', 'Attempting to update chart data.', {
       currentFreq: store.calculatedResults.F,
       currentCwDistance: store.calculatedResults.L4_adj_cw,
       params: store.params
@@ -146,7 +130,6 @@ const updateCharts = () => {
         armwandData.maxY,
         12 // Behåll en baslinje för varningszonen (om alla värden är låga)
     );
-    // Lägg till en liten marginal
     overallMaxResonanceY = Math.ceil(overallMaxResonanceY * 1.05); // 5% marginal, avrundat uppåt till närmaste heltal
 
     // Beräkna övergripande max Y för Counterweight Distance-grafen
@@ -162,7 +145,6 @@ const updateCharts = () => {
 
     // Motviktsgrafen
     if (charts.value.cwDistance) charts.value.cwDistance.options.scales.y.max = overallMaxCwDistanceY;
-
 
     // Uppdatera punkter (röda pricken)
     charts.value.headshell.data.datasets[1].data = [{ x: store.params.m_headshell, y: currentFreq }];
@@ -182,7 +164,7 @@ const updateCharts = () => {
     Object.values(charts.value).forEach(chart => {
         if (chart) chart.update('none');
     });
-    store.addDebugMessage('SensitivityCharts:updateCharts', 'Charts update completed.');
+    store.addDebugMessage('SensitivityCharts:updateChartsData', 'Charts data update completed.');
 };
 
 // onMounted körs när DOM-elementen är tillgängliga och canvas-elementen finns
@@ -197,7 +179,7 @@ onMounted(() => {
     // Använder en funktion för att skapa options-objektet för att säkerställa att varje graf får en unik instans
     const resonanceChartOptions = (title, xLabel) => ({
       type: 'line',
-      data: { datasets: commonDatasetConfig() },
+      data: { datasets: commonDatasetConfig() }, // Ny data-objekt
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { title: { display: true, text: title, font: { size: 16 } }, legend: { position: 'top' }, annotation: { annotations: {
@@ -206,7 +188,7 @@ onMounted(() => {
             warningZoneUpper: { type: 'box', yMin: 11, yMax: 12, backgroundColor: 'rgba(255, 193, 7, 0.15)', borderColor: 'rgba(255, 193, 7, 0.05)'}
         }}},
         scales: { y: { min: 5, max: 15, ticks: { stepSize: 1 }, title: { display: true, text: 'Resonance Frequency (Hz)' } }, x: { title: { display: true, text: xLabel }, grid: { color: '#e9ecef' } } }
-      } // <-- HÄR ÄR DEN SAKNADE MÅSVINGEN! Jag lägger till den nu.
+      }
     });
 
     const cwDistanceChartOptions = {
@@ -227,14 +209,17 @@ onMounted(() => {
         cwDistance: createChart(cwDistanceChartCanvas, cwDistanceChartOptions)
     };
     store.addDebugMessage('SensitivityCharts', 'All chart instances initialized and stored.');
+
+    // Nu när graferna är skapade, uppdatera deras data för första gången
+    updateChartsData(); // <-- KALLAS HÄR FÖRSTA GÅNGEN!
 });
 
-// Watcher som reagerar på ändringar i store.params och anropar updateCharts
-// 'immediate: true' säkerställer att den körs vid komponentladdning ELLER när store.params är redo
+// Watcher som reagerar på ändringar i store.params och anropar updateChartsData
+// OBS! immediate: true är BORTTAGEN här, eftersom onMounted nu kallar den första gången
 watch(() => store.params, () => {
-    store.addDebugMessage('SensitivityCharts:watch', 'store.params changed or immediate watch triggered. Calling updateCharts().');
-    updateCharts();
-}, { deep: true, immediate: true });
+    store.addDebugMessage('SensitivityCharts:watch', 'store.params changed. Calling updateChartsData().');
+    updateChartsData();
+}, { deep: true }); // Ta bort immediate: true
 
 </script>
 
