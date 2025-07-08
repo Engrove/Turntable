@@ -1,8 +1,8 @@
 <script setup>
 import InputPanel from './components/InputPanel.vue'
 import ResultsPanel from './components/ResultsPanel.vue'
-import Visualizations from './components/Visualizations.vue'
-import TonearmVisualizer from './components/TonearmVisualizer.vue' // <-- Importera den nya komponenten
+import TonearmVisualizer from './components/TonearmVisualizer.vue'
+import SensitivityCharts from './components/SensitivityCharts.vue' // <-- Importera den nya graf-komponenten
 </script>
 
 <template>
@@ -12,21 +12,21 @@ import TonearmVisualizer from './components/TonearmVisualizer.vue' // <-- Import
   </header>
 
   <main>
-    <!-- Lägg till en yttre container för bättre layout -->
     <div class="main-content">
       <div class="calculator-grid">
         <InputPanel />
         <ResultsPanel />
       </div>
       
-      <!-- Lägg till den nya visualiseringskomponenten här -->
-      <TonearmVisualizer class="visualizer-section" />
+      <TonearmVisualizer />
+      
+      <!-- Lägg till den nya graf-komponenten här -->
+      <SensitivityCharts />
     </div>
   </main>
 </template>
 
 <style scoped>
-/* Lägg till lite styling för att separera sektionerna */
 .main-content {
   display: flex;
   flex-direction: column;
