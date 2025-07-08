@@ -1,9 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
-// definierar vår "store"
 export const useTonearmStore = defineStore('tonearm', () => {
-    // --- STATE (Alla justerbara parametrar) ---
+    // --- STATE ---
     const params = ref({
         m_headshell: 11.4,
         m_pickup: 6.3,
@@ -13,32 +12,24 @@ export const useTonearmStore = defineStore('tonearm', () => {
         L1: 237.0,
         vtf: 1.75,
         compliance: 10.0,
-        // Fasta antaganden (kan göras justerbara senare)
         m_tube_percentage: 35.0,
         L2: 15.0,
         L3_fixed_cw: 12.5,
     });
 
-    // --- COMPUTED PROPERTIES (Beräknade värden som reaktivt uppdateras) ---
-    
-    // Total frontmassa
+    // --- COMPUTED PROPERTIES ---
     const m1 = computed(() => params.value.m_headshell + params.value.m_pickup + params.value.m_screws);
-    
-    // Armrörsmassa
     const m2_tube = computed(() => params.value.m_rear_assembly * (params.value.m_tube_percentage / 100.0));
-    
-    // Fast motviktsmassa
     const m3_fixed_cw = computed(() => params.value.m_rear_assembly - m2_tube.value);
 
-    // Huvudberäkningarna
     const calculatedResults = computed(() => {
         const p = params.value;
-        if (p.m4_adj_cw <= 0) return null;
+        if (p.m4_adj_cw <= 0) return { isUnbalanced: true, M_eff: 0, F: 0, L4_adj_cw: 0 };
 
         const numerator = (m1.value * p.L1) + (m2_tube.value * p.L2) - (m3_fixed_cw.value * p.L3_fixed_cw) - (p.vtf * p.L1);
         const L4_adj_cw = (numerator >= 0) ? numerator / p.m4_adj_cw : -1;
 
-        if (L4_adj_cw < 0) return { isUnbalanced: true };
+        if (L4_adj_cw < 0) return { isUnbalanced: true, M_eff: 0, F: 0, L4_adj_cw: 0 };
 
         const I1 = m1.value * (p.L1 ** 2);
         const I2 = m2_tube.value * (p.L2 ** 2);
@@ -52,7 +43,6 @@ export const useTonearmStore = defineStore('tonearm', () => {
         return { L4_adj_cw, M_eff, F, isUnbalanced: false };
     });
     
-    // Diagnosis-texten
     const diagnosis = computed(() => {
         if (!calculatedResults.value || calculatedResults.value.isUnbalanced) {
             return {
@@ -64,14 +54,27 @@ export const useTonearmStore = defineStore('tonearm', () => {
         if (freq >= 8.0 && freq <= 11.0) {
             return { text: 'CONGRATULATIONS! The system is very well matched.', className: 'ideal' };
         }
-        if (freq >= 7.0 && freq < 8.0 || freq > 11.0 && freq <= 12.0) {
-            return { text: 'ACCEPTABLE. The system is slightly outside the ideal range.', className: 'warning' };
+    
+        let recommendations = [];
+        if (freq < 8.0) { // Too low, need to increase frequency (decrease M_eff)
+            recommendations = [
+                '1. Reduce Headshell Mass: This has the highest impact.',
+                '2. Increase Adjustable Counterweight Mass: This moves the CW closer to the pivot, reducing inertia.'
+            ];
+        } else { // Too high, need to decrease frequency (increase M_eff)
+            recommendations = [
+                '1. Increase Headshell Mass: Add a headshell weight or use a heavier shell.',
+                '2. Decrease Adjustable Counterweight Mass: This moves the CW further away, increasing inertia.'
+            ];
         }
+
+        if (freq >= 7.0 && freq < 8.0 || freq > 11.0 && freq <= 12.0) {
+            return { text: `ACCEPTABLE, but consider these adjustments: ${recommendations.join(' ')}`, className: 'warning' };
+        }
+        
         const status = freq < 7.0 ? 'TOO LOW' : 'TOO HIGH';
-        return { text: `DANGER! Resonance frequency is ${status}.`, className: 'danger' };
+        return { text: `DANGER! Resonance is ${status}. Recommended actions: ${recommendations.join(' ')}`, className: 'danger' };
     });
 
-
-    // Exponerar all data så att komponenter kan använda den
     return { params, m1, calculatedResults, diagnosis };
 });
