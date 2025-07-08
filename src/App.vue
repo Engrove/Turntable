@@ -1,6 +1,7 @@
 <script setup>
 import InputPanel from './components/InputPanel.vue'
 import ResultsPanel from './components/ResultsPanel.vue'
+import Visualizations from './components/Visualizations.vue'
 </script>
 
 <template>
@@ -14,5 +15,12 @@ import ResultsPanel from './components/ResultsPanel.vue'
       <InputPanel />
       <ResultsPanel />
     </div>
+    <Visualizations />
   </main>
 </template>
+
+<style scoped>
+main > .calculator-grid {
+  margin-bottom: 2rem;
+}
+</style>
