@@ -19,7 +19,6 @@ let charts = {};
 
 // Hjälpfunktion för att generera data för resonansfrekvens
 const generateResonanceCurveData = (paramToVary, range) => {
-    // ... (denna funktion är densamma som tidigare) ...
     const dataPoints = [];
     const originalParams = JSON.parse(JSON.stringify(store.params));
 
@@ -128,10 +127,9 @@ onMounted(() => {
     
     charts.cwDistance = createChart(cwDistanceChartCanvas, { datasets: commonDatasetConfig, config: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: '5. Counterweight Distance vs. Mass', font: { size: 16 } }, legend: { position: 'top' }}, scales: { y: { min: 0, title: { display: true, text: 'Required Distance from Pivot (mm)'} }, x: { title: { display: true, text: 'Adjustable Counterweight Mass (g)'} } }}});
     
-    updateCharts();
 });
 
-watch(() => store.params, updateCharts, { deep: true });
+watch(() => store.params, updateCharts, { deep: true, immediate: true });
 </script>
 
 <template>
