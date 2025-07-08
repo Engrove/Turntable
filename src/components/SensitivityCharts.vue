@@ -18,17 +18,17 @@ const cwDistanceChartCanvas = ref(null);
 // En enda reaktiv variabel för att hålla alla grafer
 const charts = ref({});
 
-// Hjälpfunktion för att generera data för resonansfrekvens
+// Hjälpfunktion för att generera data för resonansfrekvens OCH hitta maxvärde
 const generateResonanceCurveData = (paramToVary, range) => {
     store.addDebugMessage('SensitivityCharts:generateResonanceCurveData', `Generating data for ${paramToVary}`);
     const dataPoints = [];
-    const originalParams = JSON.parse(JSON.stringify(store.params)); // Använd JSON.parse/stringify för djup kopia
+    const originalParams = JSON.parse(JSON.stringify(store.params));
+    let currentMaxY = 5; // Starta med minsta Y-värdet på axeln
 
     for (const val of range) {
-        let simParams = { ...originalParams }; // Skapa en kopia för varje simuleringssteg
+        let simParams = { ...originalParams };
         simParams[paramToVary] = val;
 
-        // Kopierad beräkningslogik från storen
         const m1 = simParams.m_headshell + simParams.m_pickup + simParams.m_screws;
         const m2_tube = simParams.m_rear_assembly * (simParams.m_tube_percentage / 100.0);
         const m3_fixed_cw = simParams.m_rear_assembly - m2_tube;
@@ -43,24 +43,25 @@ const generateResonanceCurveData = (paramToVary, range) => {
                 const F = 1000 / (2 * Math.PI * Math.sqrt(Math.max(1, M_eff * simParams.compliance)));
                 if (!isNaN(F) && isFinite(F)) {
                     dataPoints.push({ x: val, y: F });
+                    currentMaxY = Math.max(currentMaxY, F); // Uppdatera maxvärdet
                 }
             }
         }
     }
-    store.addDebugMessage('SensitivityCharts:generateResonanceCurveData', `Generated ${paramToVary} data points (${dataPoints.length}):`, dataPoints.slice(0, 5));
-    return dataPoints;
+    store.addDebugMessage('SensitivityCharts:generateResonanceCurveData', `Generated ${paramToVary} data points (${dataPoints.length}), Max Y: ${currentMaxY.toFixed(2)}:`, dataPoints.slice(0, 5));
+    return { data: dataPoints, maxY: currentMaxY };
 };
 
-// Hjälpfunktion för motviktsdistans-kurvan
+// Hjälpfunktion för motviktsdistans-kurvan OCH hitta maxvärde
 const generateCwDistanceCurveData = (range) => {
     store.addDebugMessage('SensitivityCharts:generateCwDistanceCurveData', `Generating data for Counterweight Distance`);
     const dataPoints = [];
     const originalParams = JSON.parse(JSON.stringify(store.params));
-    
+    let currentMaxY = 0; // Starta med 0
+
     for (const val of range) {
         let simParams = { ...originalParams, m4_adj_cw: val };
 
-        // Kopierad beräkningslogik från storen
         const m1 = simParams.m_headshell + simParams.m_pickup + simParams.m_screws;
         const m2_tube = simParams.m_rear_assembly * (simParams.m_tube_percentage / 100.0);
         const m3_fixed_cw = simParams.m_rear_assembly - m2_tube;
@@ -71,11 +72,12 @@ const generateCwDistanceCurveData = (range) => {
             const L4_adj_cw = (numerator >= 0) ? numerator / simParams.m4_adj_cw : -1;
             if (L4_adj_cw >= 0 && !isNaN(L4_adj_cw) && isFinite(L4_adj_cw)) {
                 dataPoints.push({ x: val, y: L4_adj_cw });
+                currentMaxY = Math.max(currentMaxY, L4_adj_cw); // Uppdatera maxvärdet
             }
         }
     }
-    store.addDebugMessage('SensitivityCharts:generateCwDistanceCurveData', `Generated Counterweight Distance data points (${dataPoints.length}):`, dataPoints.slice(0, 5));
-    return dataPoints;
+    store.addDebugMessage('SensitivityCharts:generateCwDistanceCurveData', `Generated Counterweight Distance data points (${dataPoints.length}), Max Y: ${currentMaxY.toFixed(2)}:`, dataPoints.slice(0, 5));
+    return { data: dataPoints, maxY: currentMaxY };
 };
 
 const createChart = (canvasRef, options) => {
@@ -94,12 +96,10 @@ const createChart = (canvasRef, options) => {
 
 // Denna funktion uppdaterar grafdata och ritar om graferna
 const updateCharts = () => {
-    // Vänta tills alla grafer har initierats i onMounted
     if (Object.keys(charts.value).length === 0) {
         store.addDebugMessage('SensitivityCharts:updateCharts', 'Charts object is empty. Skipping update.');
         return;
     }
-    // Hoppa över uppdatering om resultaten är obalanserade eller ännu inte beräknade
     if (!store.calculatedResults || store.calculatedResults.isUnbalanced) {
         store.addDebugMessage('SensitivityCharts:updateCharts', 'CalculatedResults is unbalanced or null. Skipping update.', { calculatedResults: store.calculatedResults });
         return;
@@ -114,6 +114,38 @@ const updateCharts = () => {
     const currentFreq = store.calculatedResults.F;
     const currentCwDistance = store.calculatedResults.L4_adj_cw;
     
+    // Generera data och fånga upp maxvärden
+    const headshellData = generateResonanceCurveData('m_headshell', Array.from({length: 231}, (_, i) => 2 + i * 0.1));
+    const cwData = generateResonanceCurveData('m4_adj_cw', Array.from({length: 161}, (_, i) => 40 + i * 1));
+    const complianceData = generateResonanceCurveData('compliance', Array.from({length: 351}, (_, i) => 5 + i * 0.1));
+    const armwandData = generateResonanceCurveData('m_tube_percentage', Array.from({length: 101}, (_, i) => i));
+    const cwDistanceData = generateCwDistanceCurveData(Array.from({length: 161}, (_, i) => 40 + i * 1));
+    
+    // Beräkna övergripande max Y för resonansfrekvensgraferna
+    let overallMaxResonanceY = Math.max(
+        headshellData.maxY,
+        cwData.maxY,
+        complianceData.maxY,
+        armwandData.maxY,
+        12 // Behåll en baslinje för varningszonen
+    );
+    // Lägg till en liten marginal
+    overallMaxResonanceY = Math.ceil(overallMaxResonanceY * 1.05); // 5% marginal, avrundat uppåt
+
+    // Beräkna övergripande max Y för Counterweight Distance-grafen (samma logik)
+    let overallMaxCwDistanceY = Math.max(cwDistanceData.maxY, 120); // Behåll en baslinje för att undvika för liten skala
+    overallMaxCwDistanceY = Math.ceil(overallMaxCwDistanceY * 1.10); // 10% marginal
+
+    // UPPDATERA AXELSKALORNA DYNAMISKT FÖR VARJE GRAF
+    // Resonansgraferna
+    if (charts.value.headshell) charts.value.headshell.options.scales.y.max = overallMaxResonanceY;
+    if (charts.value.cw) charts.value.cw.options.scales.y.max = overallMaxResonanceY;
+    if (charts.value.compliance) charts.value.compliance.options.scales.y.max = overallMaxResonanceY;
+    if (charts.value.armwand) charts.value.armwand.options.scales.y.max = overallMaxResonanceY;
+
+    // Motviktsgrafen
+    if (charts.value.cwDistance) charts.value.cwDistance.options.scales.y.max = overallMaxCwDistanceY;
+
     // Uppdatera punkter (röda pricken)
     charts.value.headshell.data.datasets[1].data = [{ x: store.params.m_headshell, y: currentFreq }];
     charts.value.cw.data.datasets[1].data = [{ x: store.params.m4_adj_cw, y: currentFreq }];
@@ -122,11 +154,11 @@ const updateCharts = () => {
     charts.value.cwDistance.data.datasets[1].data = [{ x: store.params.m4_adj_cw, y: currentCwDistance }];
 
     // Uppdatera kurvorna
-    charts.value.headshell.data.datasets[0].data = generateResonanceCurveData('m_headshell', Array.from({length: 231}, (_, i) => 2 + i * 0.1));
-    charts.value.cw.data.datasets[0].data = generateResonanceCurveData('m4_adj_cw', Array.from({length: 161}, (_, i) => 40 + i * 1));
-    charts.value.compliance.data.datasets[0].data = generateResonanceCurveData('compliance', Array.from({length: 351}, (_, i) => 5 + i * 0.1));
-    charts.value.armwand.data.datasets[0].data = generateResonanceCurveData('m_tube_percentage', Array.from({length: 101}, (_, i) => i));
-    charts.value.cwDistance.data.datasets[0].data = generateCwDistanceCurveData(Array.from({length: 161}, (_, i) => 40 + i * 1));
+    charts.value.headshell.data.datasets[0].data = headshellData.data;
+    charts.value.cw.data.datasets[0].data = cwData.data;
+    charts.value.compliance.data.datasets[0].data = complianceData.data;
+    charts.value.armwand.data.datasets[0].data = armwandData.data;
+    charts.value.cwDistance.data.datasets[0].data = cwDistanceData.data;
     
     // Anropa update() på alla grafer för att rita om dem
     Object.values(charts.value).forEach(chart => {
@@ -154,7 +186,7 @@ onMounted(() => {
             warningZoneLower: { type: 'box', yMin: 7, yMax: 8, backgroundColor: 'rgba(255, 193, 7, 0.15)', borderColor: 'rgba(255, 193, 7, 0.05)'},
             warningZoneUpper: { type: 'box', yMin: 11, yMax: 12, backgroundColor: 'rgba(255, 193, 7, 0.15)', borderColor: 'rgba(255, 193, 7, 0.05)'}
         }}},
-        scales: { y: { min: 5, max: 17, ticks: { stepSize: 1 }, title: { display: true, text: 'Resonance Frequency (Hz)' } }, x: { title: { display: true, text: xLabel }, grid: { color: '#e9ecef' } } }
+        scales: { y: { min: 5, max: 15, ticks: { stepSize: 1 }, title: { display: true, text: 'Resonance Frequency (Hz)' } }, x: { title: { display: true, text: xLabel }, grid: { color: '#e9ecef' } } }
     });
 
     const cwDistanceChartOptions = {
@@ -178,7 +210,6 @@ onMounted(() => {
 });
 
 // Watcher som reagerar på ändringar i store.params och anropar updateCharts
-// 'immediate: true' säkerställer att den körs vid komponentladdning ELLER när store.params är redo
 watch(() => store.params, () => {
     store.addDebugMessage('SensitivityCharts:watch', 'store.params changed or immediate watch triggered. Calling updateCharts().');
     updateCharts();
