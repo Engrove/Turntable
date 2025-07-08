@@ -1,6 +1,7 @@
 <script setup>
 import InputPanel from './components/InputPanel.vue'
 import ResultsPanel from './components/ResultsPanel.vue'
+import Visualizations from './components/Visualizations.vue'
 import TonearmVisualizer from './components/TonearmVisualizer.vue' // <-- Importera den nya komponenten
 </script>
 
