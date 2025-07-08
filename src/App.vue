@@ -1,7 +1,7 @@
 <script setup>
 import InputPanel from './components/InputPanel.vue'
 import ResultsPanel from './components/ResultsPanel.vue'
-import Visualizations from './components/Visualizations.vue'
+import TonearmVisualizer from './components/TonearmVisualizer.vue' // <-- Importera den nya komponenten
 </script>
 
 <template>
@@ -11,16 +11,24 @@ import Visualizations from './components/Visualizations.vue'
   </header>
 
   <main>
-    <div class="calculator-grid">
-      <InputPanel />
-      <ResultsPanel />
+    <!-- Lägg till en yttre container för bättre layout -->
+    <div class="main-content">
+      <div class="calculator-grid">
+        <InputPanel />
+        <ResultsPanel />
+      </div>
+      
+      <!-- Lägg till den nya visualiseringskomponenten här -->
+      <TonearmVisualizer class="visualizer-section" />
     </div>
-    <Visualizations />
   </main>
 </template>
 
 <style scoped>
-main > .calculator-grid {
-  margin-bottom: 2rem;
+/* Lägg till lite styling för att separera sektionerna */
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 </style>
