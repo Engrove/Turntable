@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watchEffect } from 'vue' // <-- Importera watchEffect
 import { useTonearmStore } from '@/store/tonearmStore.js'
 import { Chart } from 'chart.js/auto';
 import annotationPlugin from 'chartjs-plugin-annotation';
@@ -16,6 +16,7 @@ const armwandChartCanvas = ref(null);
 const cwDistanceChartCanvas = ref(null);
 
 let charts = {};
+const chartsReady = ref(false); // Flagga för att signalera när graferna är skapade
 
 // Hjälpfunktion för att generera data för resonansfrekvens
 const generateResonanceCurveData = (paramToVary, range) => {
@@ -74,6 +75,7 @@ const generateCwDistanceCurveData = (range) => {
 const createChart = (canvasRef, options) => {
     if (!canvasRef.value) return;
     const ctx = canvasRef.value.getContext('2d');
+    // Förstör en eventuell befintlig graf på samma canvas (bra vid hot-reloading)
     if (Chart.getChart(ctx)) {
       Chart.getChart(ctx).destroy();
     }
@@ -81,7 +83,7 @@ const createChart = (canvasRef, options) => {
 };
 
 const updateCharts = () => {
-    if (Object.keys(charts).length === 0 || !store.calculatedResults || store.calculatedResults.isUnbalanced) return;
+    if (Object.keys(charts).length === 0) return;
 
     const currentFreq = store.calculatedResults.F;
     const currentCwDistance = store.calculatedResults.L4_adj_cw;
@@ -127,10 +129,20 @@ onMounted(() => {
     charts.armwand = createChart(armwandChartCanvas, { datasets: commonDatasetConfig, config: { ...resonanceChartOptions, plugins: { ...resonanceChartOptions.plugins, title: { ...resonanceChartOptions.plugins.title, text: '4. Effect of Armwand/Fixed CW Mass Distribution'}}, scales: { ...resonanceChartOptions.scales, x: { ...resonanceChartOptions.scales.x, title: { display: true, text: 'Armwand Percentage of Rear Mass (%)'}}}}});
     
     charts.cwDistance = createChart(cwDistanceChartCanvas, { datasets: commonDatasetConfig, config: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: '5. Counterweight Distance vs. Mass', font: { size: 16 } }, legend: { position: 'top' }}, scales: { y: { min: 0, title: { display: true, text: 'Required Distance from Pivot (mm)'} }, x: { title: { display: true, text: 'Adjustable Counterweight Mass (g)'} } }}});
+    
+    // När alla grafer har skapats, sätt flaggan till true
+    chartsReady.value = true;
 });
 
-// KORRIGERING: Lade till { immediate: true } för att tvinga en uppdatering när komponenten laddas.
-watch(() => store.params, updateCharts, { deep: true, immediate: true });
+// DENNA ERSÄTTER DEN GAMLA `watch`-FUNKTIONEN
+// `watchEffect` körs när `chartsReady` blir true, och körs sedan om
+// varje gång `store.calculatedResults` ändras.
+watchEffect(() => {
+    if (chartsReady.value && store.calculatedResults && !store.calculatedResults.isUnbalanced) {
+        updateCharts();
+    }
+});
+
 </script>
 
 <template>
