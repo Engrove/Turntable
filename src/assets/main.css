@@ -94,9 +94,9 @@ input[type="range"] {
     cursor: pointer;
 }
 
-.value-display {
+input[type="number"].value-display {
     font-weight: 600;
-    min-width: 60px;
+    width: 70px;
     text-align: right;
     background-color: #fff;
     padding: 0.25rem 0.5rem;
@@ -141,3 +141,15 @@ input[type="range"] {
 .diagnosis.ideal { background-color: var(--ideal-color); color: var(--ideal-text); }
 .diagnosis.warning { background-color: var(--warning-color); color: var(--warning-text); }
 .diagnosis.danger { background-color: var(--danger-color); color: var(--danger-text); }
+
+fieldset {
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 1rem 1rem 0.25rem 1rem;
+  margin-bottom: 1.5rem;
+}
+legend {
+  font-weight: 600;
+  color: var(--header-color);
+  padding: 0 0.5rem;
+}
