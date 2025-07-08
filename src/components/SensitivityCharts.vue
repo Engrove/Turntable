@@ -1,3 +1,20 @@
+const resonanceChartOptions = (title, xLabel) => ({
+  type: 'line',
+  data: { datasets: commonDatasetConfig() },
+  options: { // <-- Options-objektet startar här
+    responsive: true,
+    // ... många rader för plugins och skalor ...
+    scales: { y: { ... }, x: { ... } } // <-- Här stänger 'scales'-objektet
+  // OCH HÄR SKULLE 'options'-OBJEKTET HA STÄNGTS MED EN }
+}); // <-- Här trodde kompilatorn att den fortfarande var inuti 'options'-objektet och förväntade sig mer data eller en komma.```
+
+### Den slutgiltiga lösningen
+
+Jag har lagt till den saknade stängande måsvingen (`}`) för `options`-objektet. Dessutom behåller jag den dynamiska Y-axeln som du bad om, vilket är en viktig förbättring.
+
+**Ersätt hela innehållet i `Turntable-main/src/components/SensitivityCharts.vue` med koden nedan.**
+
+```vue
 <script setup>
 import { onMounted, ref, watch } from 'vue';
 import { useTonearmStore } from '@/store/tonearmStore.js';
@@ -127,12 +144,12 @@ const updateCharts = () => {
         cwData.maxY,
         complianceData.maxY,
         armwandData.maxY,
-        12 // Behåll en baslinje för varningszonen
+        12 // Behåll en baslinje för varningszonen (om alla värden är låga)
     );
     // Lägg till en liten marginal
-    overallMaxResonanceY = Math.ceil(overallMaxResonanceY * 1.05); // 5% marginal, avrundat uppåt
+    overallMaxResonanceY = Math.ceil(overallMaxResonanceY * 1.05); // 5% marginal, avrundat uppåt till närmaste heltal
 
-    // Beräkna övergripande max Y för Counterweight Distance-grafen (samma logik)
+    // Beräkna övergripande max Y för Counterweight Distance-grafen
     let overallMaxCwDistanceY = Math.max(cwDistanceData.maxY, 120); // Behåll en baslinje för att undvika för liten skala
     overallMaxCwDistanceY = Math.ceil(overallMaxCwDistanceY * 1.10); // 10% marginal
 
@@ -145,6 +162,7 @@ const updateCharts = () => {
 
     // Motviktsgrafen
     if (charts.value.cwDistance) charts.value.cwDistance.options.scales.y.max = overallMaxCwDistanceY;
+
 
     // Uppdatera punkter (röda pricken)
     charts.value.headshell.data.datasets[1].data = [{ x: store.params.m_headshell, y: currentFreq }];
@@ -176,9 +194,10 @@ onMounted(() => {
         label: 'Your Current Value', data: [], backgroundColor: 'red', borderColor: 'darkred', pointRadius: 6, type: 'scatter'
     }]);
     
+    // Använder en funktion för att skapa options-objektet för att säkerställa att varje graf får en unik instans
     const resonanceChartOptions = (title, xLabel) => ({
       type: 'line',
-      data: { datasets: commonDatasetConfig() }, // Ny data-objekt
+      data: { datasets: commonDatasetConfig() },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { title: { display: true, text: title, font: { size: 16 } }, legend: { position: 'top' }, annotation: { annotations: {
@@ -187,11 +206,12 @@ onMounted(() => {
             warningZoneUpper: { type: 'box', yMin: 11, yMax: 12, backgroundColor: 'rgba(255, 193, 7, 0.15)', borderColor: 'rgba(255, 193, 7, 0.05)'}
         }}},
         scales: { y: { min: 5, max: 15, ticks: { stepSize: 1 }, title: { display: true, text: 'Resonance Frequency (Hz)' } }, x: { title: { display: true, text: xLabel }, grid: { color: '#e9ecef' } } }
+      } // <-- HÄR ÄR DEN SAKNADE MÅSVINGEN! Jag lägger till den nu.
     });
 
     const cwDistanceChartOptions = {
         type: 'line',
-        data: { datasets: commonDatasetConfig() }, // Ny data-objekt
+        data: { datasets: commonDatasetConfig() },
         options: {
             responsive: true, maintainAspectRatio: false,
             plugins: { title: { display: true, text: '5. Counterweight Distance vs. Mass', font: { size: 16 } }, legend: { position: 'top' }},
@@ -210,6 +230,7 @@ onMounted(() => {
 });
 
 // Watcher som reagerar på ändringar i store.params och anropar updateCharts
+// 'immediate: true' säkerställer att den körs vid komponentladdning ELLER när store.params är redo
 watch(() => store.params, () => {
     store.addDebugMessage('SensitivityCharts:watch', 'store.params changed or immediate watch triggered. Calling updateCharts().');
     updateCharts();
