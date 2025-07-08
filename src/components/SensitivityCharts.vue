@@ -63,7 +63,7 @@ const generateCwDistanceCurveData = (range) => {
         // Kopierad beräkningslogik från storen
         const m1 = simParams.m_headshell + simParams.m_pickup + simParams.m_screws;
         const m2_tube = simParams.m_rear_assembly * (simParams.m_tube_percentage / 100.0);
-        const m3_fixed_cw = simParams.m_rear_assembly - m2_tube; // Korrekt nu
+        const m3_fixed_cw = simParams.m_rear_assembly - m2_tube;
         
         const numerator = (m1 * simParams.L1) + (m2_tube * simParams.L2) - (m3_fixed_cw * simParams.L3_fixed_cw) - (simParams.vtf * simParams.L1);
         
@@ -94,10 +94,12 @@ const createChart = (canvasRef, options) => {
 
 // Denna funktion uppdaterar grafdata och ritar om graferna
 const updateCharts = () => {
+    // Vänta tills alla grafer har initierats i onMounted
     if (Object.keys(charts.value).length === 0) {
         store.addDebugMessage('SensitivityCharts:updateCharts', 'Charts object is empty. Skipping update.');
         return;
     }
+    // Hoppa över uppdatering om resultaten är obalanserade eller ännu inte beräknade
     if (!store.calculatedResults || store.calculatedResults.isUnbalanced) {
         store.addDebugMessage('SensitivityCharts:updateCharts', 'CalculatedResults is unbalanced or null. Skipping update.', { calculatedResults: store.calculatedResults });
         return;
@@ -152,8 +154,8 @@ onMounted(() => {
             warningZoneLower: { type: 'box', yMin: 7, yMax: 8, backgroundColor: 'rgba(255, 193, 7, 0.15)', borderColor: 'rgba(255, 193, 7, 0.05)'},
             warningZoneUpper: { type: 'box', yMin: 11, yMax: 12, backgroundColor: 'rgba(255, 193, 7, 0.15)', borderColor: 'rgba(255, 193, 7, 0.05)'}
         }}},
-        scales: { y: { min: 5, max: 15, ticks: { stepSize: 1 }, title: { display: true, text: 'Resonance Frequency (Hz)' } }, x: { title: { display: true, text: xLabel }, grid: { color: '#e9ecef' } } }
-    }});
+        scales: { y: { min: 5, max: 17, ticks: { stepSize: 1 }, title: { display: true, text: 'Resonance Frequency (Hz)' } }, x: { title: { display: true, text: xLabel }, grid: { color: '#e9ecef' } } }
+    });
 
     const cwDistanceChartOptions = {
         type: 'line',
