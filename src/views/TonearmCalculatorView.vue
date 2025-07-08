@@ -5,9 +5,9 @@ import ResultsPanel from '@/components/ResultsPanel.vue'
 import TonearmVisualizer from '@/components/TonearmVisualizer.vue'
 import SensitivityCharts from '@/components/SensitivityCharts.vue'
 import HelpModal from '@/components/HelpModal.vue'
-import { useTonearmStore } from '@/store/tonearmStore.js' // Importera storen
+import { useTonearmStore } from '@/store/tonearmStore.js'
 
-const store = useTonearmStore(); // Initiera storen för att komma åt datan
+const store = useTonearmStore();
 
 // Reaktiva variabler för att styra modalerna
 const showHelp = ref(false);
@@ -16,7 +16,8 @@ const copyButtonText = ref('Copy Log');
 
 // En computed property som samlar all relevant data till en läsbar textsträng
 const debugLog = computed(() => {
-  return `
+  // Lägg till grundläggande info i början av loggen
+  const baseInfo = `
 --- DEBUG LOG ---
 Timestamp: ${new Date().toISOString()}
 
@@ -31,7 +32,12 @@ ${JSON.stringify(store.calculatedResults, null, 2)}
 
 [Computed: diagnosis]
 ${JSON.stringify(store.diagnosis, null, 2)}
+
+--- Component & Runtime Logs ---
   `.trim();
+
+  // Returnera basinfo följt av meddelanden från storen
+  return baseInfo + '\n' + store.debugMessages.join('\n');
 });
 
 // Funktion för att kopiera loggen till urklipp
@@ -46,6 +52,13 @@ const copyLog = () => {
     copyButtonText.value = 'Failed to copy!';
   });
 };
+
+const clearCurrentLog = () => {
+  store.clearDebugMessages();
+};
+
+// Logga att TonearmCalculatorView mountas (för att se flödet)
+store.addDebugMessage('TonearmCalculatorView', 'Component mounted.');
 </script>
 
 <template>
@@ -95,7 +108,7 @@ const copyLog = () => {
       </template>
     </HelpModal>
 
-    <!-- Debug-modalen (din utmärkta idé) -->
+    <!-- Debug-modalen -->
     <HelpModal :isOpen="showDebug" @close="showDebug = false">
         <template #header>
             <h2>Live Debug Log</h2>
@@ -103,6 +116,7 @@ const copyLog = () => {
         <template #default>
             <div class="debug-controls">
                 <button @click="copyLog" class="copy-button">{{ copyButtonText }}</button>
+                <button @click="clearCurrentLog" class="copy-button">Clear Log</button>
             </div>
             <pre class="log-content"><code>{{ debugLog }}</code></pre>
         </template>
@@ -174,6 +188,8 @@ const copyLog = () => {
 /* Stilar för innehållet i debug-modalen */
 .debug-controls {
     margin-bottom: 1rem;
+    display: flex; /* För att placera knappar bredvid varandra */
+    gap: 10px; /* Mellanrum mellan knappar */
 }
 .copy-button {
     padding: 0.6rem 1.2rem;
@@ -191,5 +207,7 @@ const copyLog = () => {
     word-wrap: break-word;
     max-height: 50vh;
     overflow-y: auto;
+    font-family: monospace; /* Gör loggen mer läsbar */
+    font-size: 0.85rem;
 }
 </style>
