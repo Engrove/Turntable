@@ -13,7 +13,7 @@ const headshellChartCanvas = ref(null);
 const cwChartCanvas = ref(null);
 const complianceChartCanvas = ref(null);
 const armwandChartCanvas = ref(null);
-const cwDistanceChartCanvas = ref(null); // <-- Ny canvas för motviktskurvan
+const cwDistanceChartCanvas = ref(null);
 
 let charts = {};
 
@@ -49,7 +49,7 @@ const generateResonanceCurveData = (paramToVary, range) => {
     return dataPoints;
 };
 
-// Ny hjälpfunktion för motviktsdistans-kurvan
+// Hjälpfunktion för motviktsdistans-kurvan
 const generateCwDistanceCurveData = (range) => {
     const dataPoints = [];
     const originalParams = JSON.parse(JSON.stringify(store.params));
@@ -74,33 +74,34 @@ const generateCwDistanceCurveData = (range) => {
 const createChart = (canvasRef, options) => {
     if (!canvasRef.value) return;
     const ctx = canvasRef.value.getContext('2d');
+    if (Chart.getChart(ctx)) {
+      Chart.getChart(ctx).destroy();
+    }
     return new Chart(ctx, { type: 'line', data: { datasets: options.datasets }, options: options.config });
 };
 
 const updateCharts = () => {
-    if (Object.keys(charts).length === 0 || !store.calculatedResults) return;
+    if (Object.keys(charts).length === 0 || !store.calculatedResults || store.calculatedResults.isUnbalanced) return;
 
     const currentFreq = store.calculatedResults.F;
     const currentCwDistance = store.calculatedResults.L4_adj_cw;
 
-    if (!store.calculatedResults.isUnbalanced) {
-        // Uppdatera punkter och kurvor för resonansgraferna
-        charts.headshell.data.datasets[1].data = [{ x: store.params.m_headshell, y: currentFreq }];
-        charts.cw.data.datasets[1].data = [{ x: store.params.m4_adj_cw, y: currentFreq }];
-        charts.compliance.data.datasets[1].data = [{ x: store.params.compliance, y: currentFreq }];
-        charts.armwand.data.datasets[1].data = [{ x: store.params.m_tube_percentage, y: currentFreq }];
-        
-        charts.headshell.data.datasets[0].data = generateResonanceCurveData('m_headshell', Array.from({length: 231}, (_, i) => 2 + i * 0.1));
-        charts.cw.data.datasets[0].data = generateResonanceCurveData('m4_adj_cw', Array.from({length: 161}, (_, i) => 40 + i * 1));
-        charts.compliance.data.datasets[0].data = generateResonanceCurveData('compliance', Array.from({length: 351}, (_, i) => 5 + i * 0.1));
-        charts.armwand.data.datasets[0].data = generateResonanceCurveData('m_tube_percentage', Array.from({length: 101}, (_, i) => i));
+    // Uppdatera punkter och kurvor för resonansgraferna
+    charts.headshell.data.datasets[1].data = [{ x: store.params.m_headshell, y: currentFreq }];
+    charts.cw.data.datasets[1].data = [{ x: store.params.m4_adj_cw, y: currentFreq }];
+    charts.compliance.data.datasets[1].data = [{ x: store.params.compliance, y: currentFreq }];
+    charts.armwand.data.datasets[1].data = [{ x: store.params.m_tube_percentage, y: currentFreq }];
+    
+    charts.headshell.data.datasets[0].data = generateResonanceCurveData('m_headshell', Array.from({length: 231}, (_, i) => 2 + i * 0.1));
+    charts.cw.data.datasets[0].data = generateResonanceCurveData('m4_adj_cw', Array.from({length: 161}, (_, i) => 40 + i * 1));
+    charts.compliance.data.datasets[0].data = generateResonanceCurveData('compliance', Array.from({length: 351}, (_, i) => 5 + i * 0.1));
+    charts.armwand.data.datasets[0].data = generateResonanceCurveData('m_tube_percentage', Array.from({length: 101}, (_, i) => i));
 
-        // Uppdatera punkt och kurva för motviktsgrafen
-        charts.cwDistance.data.datasets[1].data = [{ x: store.params.m4_adj_cw, y: currentCwDistance }];
-        charts.cwDistance.data.datasets[0].data = generateCwDistanceCurveData(Array.from({length: 161}, (_, i) => 40 + i * 1));
+    // Uppdatera punkt och kurva för motviktsgrafen
+    charts.cwDistance.data.datasets[1].data = [{ x: store.params.m4_adj_cw, y: currentCwDistance }];
+    charts.cwDistance.data.datasets[0].data = generateCwDistanceCurveData(Array.from({length: 161}, (_, i) => 40 + i * 1));
 
-        Object.values(charts).forEach(chart => chart.update('none'));
-    }
+    Object.values(charts).forEach(chart => chart.update('none'));
 };
 
 onMounted(() => {
@@ -126,9 +127,9 @@ onMounted(() => {
     charts.armwand = createChart(armwandChartCanvas, { datasets: commonDatasetConfig, config: { ...resonanceChartOptions, plugins: { ...resonanceChartOptions.plugins, title: { ...resonanceChartOptions.plugins.title, text: '4. Effect of Armwand/Fixed CW Mass Distribution'}}, scales: { ...resonanceChartOptions.scales, x: { ...resonanceChartOptions.scales.x, title: { display: true, text: 'Armwand Percentage of Rear Mass (%)'}}}}});
     
     charts.cwDistance = createChart(cwDistanceChartCanvas, { datasets: commonDatasetConfig, config: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: '5. Counterweight Distance vs. Mass', font: { size: 16 } }, legend: { position: 'top' }}, scales: { y: { min: 0, title: { display: true, text: 'Required Distance from Pivot (mm)'} }, x: { title: { display: true, text: 'Adjustable Counterweight Mass (g)'} } }}});
-    
 });
 
+// KORRIGERING: Lade till { immediate: true } för att tvinga en uppdatering när komponenten laddas.
 watch(() => store.params, updateCharts, { deep: true, immediate: true });
 </script>
 
