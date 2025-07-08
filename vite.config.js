@@ -9,5 +9,10 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
-  }
+  },
+  // Lägg till denna sektion för att konfigurera Vitest
+  test: {
+    globals: true,
+    environment: 'jsdom',
+  },
 })
