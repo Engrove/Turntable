@@ -1,14 +1,14 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import path from 'path' // <-- Lägg till denna import för att hantera sökvägar
+import { fileURLToPath, URL } from 'node:url' // <-- Importera moderna verktyg
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue()],
-  // Lägg till denna sektion för att definiera sökvägs-alias
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      // Använd den robusta metoden för att peka på src-mappen
+      '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   }
 })
