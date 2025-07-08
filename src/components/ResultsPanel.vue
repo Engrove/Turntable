@@ -1,5 +1,5 @@
 <script setup>
-import { useTonearmStore } from '@/stores/tonearmStore.js' // <-- Notera .js
+import { useTonearmStore } from '@/store/tonearmStore.js' // <-- Notera .js
 const store = useTonearmStore()
 </script>
 
