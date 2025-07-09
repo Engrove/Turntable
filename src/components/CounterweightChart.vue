@@ -51,24 +51,57 @@ const updateChart = () => {
 };
 
 onMounted(() => {
-    const ctx = chartCanvas.value.getContext('2d');
-    chartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-            datasets: [
-                { label: 'Required Distance', data: [], borderColor: '#27ae60', borderWidth: 2, pointRadius: 0 },
-                { label: 'Your Current Value', data: [], backgroundColor: '#c0392b', pointRadius: 6, type: 'scatter' }
-            ]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { title: { display: true, text: 'Counterweight Mass vs. Required Distance', font: { size: 16 } } },
-            scales: {
-                x: { title: { display: true, text: 'Adjustable Counterweight Mass (g)' }, min: 40, max: 200 },
-                y: { title: { display: true, text: 'Distance from Pivot (mm)' }, min: 0 }
-            }
-        }
-    });
+const ctx = chartCanvas.value.getContext('2d');
+chartInstance = new Chart(ctx, {
+type: 'line',
+data: {
+datasets: [
+{
+label: 'Required Distance',
+data: [],
+borderColor: '#27ae60',
+borderWidth: 2,
+pointRadius: 0
+},
+{
+label: 'Your Current Value',
+data: [],
+backgroundColor: '#c0392b',
+pointRadius: 6,
+type: 'scatter'
+}
+]
+},
+options: {
+responsive: true,
+maintainAspectRatio: false,
+plugins: {
+title: {
+display: true,
+text: 'Counterweight Mass vs. Required Distance',
+font: { size: 16 }
+}
+},
+scales: {
+x: {
+// TILLAGD RAD: specificerar axeltypen
+type: 'linear',
+title: { display: true, text: 'Adjustable Counterweight Mass (g)' },
+min: 40,
+max: 200
+},
+y: {
+// TILLAGD RAD: specificerar axeltypen
+type: 'linear',
+title: { display: true, text: 'Distance from Pivot (mm)' },
+min: 0
+}
+}
+}
+});
+updateChart();
+});
+
     updateChart();
 });
 
