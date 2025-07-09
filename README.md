@@ -1,6 +1,6 @@
 # Engrove Audio Engineering Toolkit
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/b4bbaf12-a4ea-49d6-956a-cd12fe736618/deploy-status)](https://app.netlify.com/sites/engrove/deploys)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/4d71a3dc-4b8a-4d08-95c1-f8d47151b193/deploy-status)](https://app.netlify.com/sites/engrove/deploys)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 An open-source collection of interactive web-based tools for the DIY audio enthusiast, born out of the "95% overthinking" philosophy from the [Double Decker Madness Lenco Project](https://www.lencoheaven.net/forum/index.php?topic=45949.0).
