@@ -11,7 +11,7 @@ const generateData = () => {
 const dataPoints = [];
 // Använd en icke-reaktiv, djup kopia för simulering för att garantera konsistens
 const simParams = JSON.parse(JSON.stringify(store.params));
-// Beräkna de härledda massorna EN GÅNG, eftersom de inte ändras i denna specifika graf
+    // Beräkna de härledda massorna EN GÅNG, eftersom de inte ändras i denna specifika graf
 const m1 = simParams.m_headshell + simParams.m_pickup + simParams.m_screws;
 const m2_tube = simParams.m_rear_assembly * (simParams.m_tube_percentage / 100.0);
 const m3_fixed_cw = simParams.m_rear_assembly - m2_tube;
@@ -33,11 +33,14 @@ for (const m4_val of range) {
     }
 }
 
-// För felsökning: skriv ut resultatet till konsolen i webbläsaren
-console.log("Generated data for Counterweight Chart:", dataPoints);
+// NY, MER DETALJERAD FELSÖKNINGS-LOGG
+console.log("--- Counterweight Chart Debug ---");
+console.log("Värde för 'constantNumerator':", constantNumerator);
+console.log("Första 5 beräknade datapunkter:", dataPoints.slice(0, 5));
+console.log("---------------------------------");
 
 return dataPoints;
-};       
+};
 
 const updateChart = () => {
     if (!chartInstance) return;
