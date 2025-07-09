@@ -1,6 +1,9 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
-import router from '@/router'
+import { RouterLink, RouterView, useRouter } from 'vue-router'
+
+// Hämta den aktiva router-instansen från applikationens kontext.
+// Detta är det rekommenderade sättet i Vue 3.
+const router = useRouter();
 </script>
 
 <template>
@@ -10,12 +13,16 @@ import router from '@/router'
         <h3>Engrove Toolkit</h3>
       </div>
       <nav class="main-nav">
+        <!-- Loopen fungerar exakt som förut, men den använder nu den korrekta router-instansen -->
         <RouterLink 
           v-for="route in router.options.routes" 
           :key="route.name"
           :to="route.path"
         >
-          {{ route.meta.title }}
+          <!-- Vi lägger till en v-if för att bara rendera länkar som har en titel, för framtida flexibilitet -->
+          <template v-if="route.meta && route.meta.title">
+            {{ route.meta.title }}
+          </template>
         </RouterLink>
       </nav>
       <div class="sidebar-footer">
