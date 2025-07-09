@@ -25,82 +25,76 @@ export const useEstimatorStore = defineStore('estimator', () => {
     const trainingData = pickupData.filter(p => !p.is_estimated_10hz && p.cu_dynamic_10hz > 0);
 
     // ---- GETTERS ----
-    
-    // Definition av våra scenarion. Detta gör logiken tydligare.
-    const scenarios = {
-        'A1': { base: '100hz', props: ['type', 'cantilever_class', 'stylus_family'] },
-        'A2': { base: '100hz', props: ['type', 'cantilever_class'] },
-        'A3': { base: '100hz', props: ['type'] },
-        'B1': { base: 'static', props: ['type', 'cantilever_class', 'stylus_family'] },
-        'B2': { base: 'static', props: ['type', 'cantilever_class'] },
-        'B3': { base: 'static', props: ['type'] },
-    };
 
-    // Denna logik är korrekt och bestämmer vilket scenario som är aktivt.
-    const activeScenarioKey = computed(() => {
+    /**
+     * Detta är nu den centrala beräkningsfunktionen.
+     * Den loopar igenom scenarion i prioriteringsordning och returnerar det första som lyckas.
+     * Den returnerar ett helt objekt med all nödvändig information.
+     */
+    const estimationResult = computed(() => {
         const { cu_dynamic_100hz, cu_static, type, cantilever_class, stylus_family } = userInput.value;
-        if (!type) return null;
-        const has100Hz = cu_dynamic_100hz > 0;
-        const hasStatic = cu_static > 0;
-        const hasCantilever = !!cantilever_class;
-        const hasStylus = !!stylus_family;
 
-        if (has100Hz) {
-            if (hasCantilever && hasStylus) return 'A1';
-            if (hasCantilever) return 'A2';
-            return 'A3';
-        } else if (hasStatic) {
-            if (hasCantilever && hasStylus) return 'B1';
-            if (hasCantilever) return 'B2';
-            return 'B3';
+        // Om grundläggande krav inte är uppfyllda, avsluta tidigt.
+        if (!type || (!cu_dynamic_100hz && !cu_static)) {
+            return { value: null, key: null };
         }
-        return null;
-    });
 
-    // **HÄR ÄR DEN KORRIGERADE BERÄKNINGSLOGIKEN**
-    const estimatedCompliance = computed(() => {
-        const key = activeScenarioKey.value;
-        if (!key) return null; // Avsluta direkt om inget scenario är aktivt
+        // Definiera scenarion i prioriteringsordning (mest specifik först)
+        const scenarioHierarchy = [
+            { key: 'A1', base: '100hz', props: ['type', 'cantilever_class', 'stylus_family'] },
+            { key: 'B1', base: 'static', props: ['type', 'cantilever_class', 'stylus_family'] },
+            { key: 'A2', base: '100hz', props: ['type', 'cantilever_class'] },
+            { key: 'B2', base: 'static', props: ['type', 'cantilever_class'] },
+            { key: 'A3', base: '100hz', props: ['type'] },
+            { key: 'B3', base: 'static', props: ['type'] },
+        ];
 
-        const scenario = scenarios[key]; // Hämta reglerna för det aktiva scenariot
-        const { cu_dynamic_100hz, cu_static } = userInput.value;
+        for (const scenario of scenarioHierarchy) {
+            // Kontrollera om scenariot är relevant baserat på indata
+            const isBaseValueAvailable = (scenario.base === '100hz' && cu_dynamic_100hz > 0) || (scenario.base === 'static' && cu_static > 0);
+            const hasAllProps = scenario.props.every(p => !!userInput.value[p]);
+            
+            if (isBaseValueAvailable && hasAllProps) {
+                // Filtrera fram den matchande gruppen
+                let matchingGroup = trainingData;
+                for (const prop of scenario.props) {
+                    matchingGroup = matchingGroup.filter(p => p[prop] === userInput.value[prop]);
+                }
 
-        // Börja med all träningsdata
-        let matchingGroup = trainingData;
-
-        // Filtrera gruppen baserat på de egenskaper som definieras av det aktiva scenariot
-        for (const prop of scenario.props) {
-            if (userInput.value[prop]) {
-                matchingGroup = matchingGroup.filter(p => p[prop] === userInput.value[prop]);
+                // Försök utföra beräkningen
+                let ratios = [];
+                if (scenario.base === '100hz') {
+                    ratios = matchingGroup
+                        .filter(p => p.cu_dynamic_100hz > 0)
+                        .map(p => p.cu_dynamic_10hz / p.cu_dynamic_100hz);
+                } else { // scenario.base === 'static'
+                    ratios = matchingGroup
+                        .filter(p => p.cu_static > 0)
+                        .map(p => p.cu_dynamic_10hz / p.cu_static);
+                }
+                
+                // Om vi kunde beräkna ett förhållande, har vi ett resultat!
+                if (ratios.length > 0) {
+                    const baseValue = scenario.base === '100hz' ? cu_dynamic_100hz : cu_static;
+                    const calculatedValue = baseValue * calculateMedian(ratios);
+                    // Returnera det första lyckade resultatet.
+                    return { value: calculatedValue, key: scenario.key };
+                }
             }
         }
         
-        // Om vi hittade en matchande grupp, utför beräkningen
-        if (matchingGroup.length > 0) {
-            if (scenario.base === '100hz' && cu_dynamic_100hz > 0) {
-                const ratios = matchingGroup
-                    .filter(p => p.cu_dynamic_100hz > 0)
-                    .map(p => p.cu_dynamic_10hz / p.cu_dynamic_100hz);
-                if (ratios.length > 0) {
-                    return cu_dynamic_100hz * calculateMedian(ratios);
-                }
-            } else if (scenario.base === 'static' && cu_static > 0) {
-                const ratios = matchingGroup
-                    .filter(p => p.cu_static > 0)
-                    .map(p => p.cu_dynamic_10hz / p.cu_static);
-                if (ratios.length > 0) {
-                    return cu_static * calculateMedian(ratios);
-                }
-            }
-        }
-
-        // Om ingen beräkning kunde göras (t.ex. inga matchande pickuper med rätt data), returnera null
-        return null;
+        // Om loopen slutförs utan att hitta ett resultat
+        return { value: null, key: null };
     });
+    
+    // De andra getters blir nu enkla avläsare från det centrala resultatobjektet
+    const estimatedCompliance = computed(() => estimationResult.value.value);
+    const activeScenarioKey = computed(() => estimationResult.value.key);
 
     const confidence = computed(() => {
-        if (activeScenarioKey.value && confidenceData[activeScenarioKey.value]) {
-            return confidenceData[activeScenarioKey.value];
+        const key = activeScenarioKey.value;
+        if (key && confidenceData[key]) {
+            return confidenceData[key];
         }
         return { confidence: 0, sampleSize: 0, description: 'Not enough data provided.' };
     });
