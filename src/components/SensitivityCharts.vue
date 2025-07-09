@@ -15,14 +15,16 @@ const complianceChartCanvas = ref(null);
 const armwandChartCanvas = ref(null);
 const cwDistanceChartCanvas = ref(null);
 
-// En enda reaktiv variabel för att hålla alla grafer
-const charts = ref({});
+// KORRIGERING: Gå tillbaka till en vanlig JavaScript-objekt för Chart-instanserna.
+// Detta är det mest robusta sättet att hantera dem när de instansieras i onMounted.
+let charts = {}; 
 
 // Hjälpfunktion för att generera data för resonansfrekvens OCH hitta maxvärde
 const generateResonanceCurveData = (paramToVary, range) => {
     store.addDebugMessage('SensitivityCharts:generateResonanceCurveData', `Generating data for ${paramToVary}`);
     const dataPoints = [];
-    const originalParams = JSON.parse(JSON.stringify(store.params));
+    // Deep kopia är viktig här för att inte modifiera store.params direkt under simulering
+    const originalParams = JSON.parse(JSON.stringify(store.params)); 
     let currentMaxY = 5; // Starta med minsta Y-värdet på axeln
 
     for (const val of range) {
@@ -56,7 +58,7 @@ const generateResonanceCurveData = (paramToVary, range) => {
 const generateCwDistanceCurveData = (range) => {
     store.addDebugMessage('SensitivityCharts:generateCwDistanceCurveData', `Generating data for Counterweight Distance`);
     const dataPoints = [];
-    const originalParams = JSON.parse(JSON.stringify(store.params));
+    const originalParams = JSON.parse(JSON.stringify(store.params)); // Deep kopia
     let currentMaxY = 0; // Starta med 0
 
     for (const val of range) {
@@ -80,7 +82,7 @@ const generateCwDistanceCurveData = (range) => {
     return { data: dataPoints, maxY: currentMaxY };
 };
 
-// Generisk funktion för att skapa Chart.js-instanser (utan att fylla data direkt)
+// Generisk funktion för att skapa Chart.js-instanser
 const createChart = (canvasRef, options) => {
     if (!canvasRef.value) {
         store.addDebugMessage('SensitivityCharts:createChart', 'Canvas reference is null for chart creation.', { canvasRef });
@@ -88,7 +90,7 @@ const createChart = (canvasRef, options) => {
     }
     const ctx = canvasRef.value.getContext('2d');
     if (Chart.getChart(ctx)) {
-      Chart.getChart(ctx).destroy();
+      Chart.getChart(ctx).destroy(); // Förstör befintlig graf om den finns
     }
     const newChart = new Chart(ctx, options);
     store.addDebugMessage('SensitivityCharts:createChart', `Chart created for ${options.options.plugins.title.text}`);
@@ -96,9 +98,10 @@ const createChart = (canvasRef, options) => {
 };
 
 // Denna funktion uppdaterar grafdata och ritar om graferna
-const updateChartsData = () => { // Bytte namn från updateCharts till updateChartsData för tydlighet
-    if (Object.keys(charts.value).length === 0) {
-        store.addDebugMessage('SensitivityCharts:updateChartsData', 'Charts object is empty. Skipping update. (This is expected before onMounted finishes)');
+const updateChartsData = () => {
+    // KORRIGERING: Denna if-sats är viktig. Nu refererar charts direkt till objektet, inte charts.value
+    if (Object.keys(charts).length === 0) { 
+        store.addDebugMessage('SensitivityCharts:updateChartsData', 'Charts object is empty. Skipping update (expected during initial render before onMounted finishes).');
         return;
     }
     if (!store.calculatedResults || store.calculatedResults.isUnbalanced) {
@@ -138,30 +141,32 @@ const updateChartsData = () => { // Bytte namn från updateCharts till updateCha
 
     // UPPDATERA AXELSKALORNA DYNAMISKT FÖR VARJE GRAF
     // Resonansgraferna
-    if (charts.value.headshell) charts.value.headshell.options.scales.y.max = overallMaxResonanceY;
-    if (charts.value.cw) charts.value.cw.options.scales.y.max = overallMaxResonanceY;
-    if (charts.value.compliance) charts.value.compliance.options.scales.y.max = overallMaxResonanceY;
-    if (charts.value.armwand) charts.value.armwand.options.scales.y.max = overallMaxResonanceY;
+    // KORRIGERING: Refererar till charts direkt
+    if (charts.headshell) charts.headshell.options.scales.y.max = overallMaxResonanceY;
+    if (charts.cw) charts.cw.options.scales.y.max = overallMaxResonanceY;
+    if (charts.compliance) charts.compliance.options.scales.y.max = overallMaxResonanceY;
+    if (charts.armwand) charts.armwand.options.scales.y.max = overallMaxResonanceY;
 
     // Motviktsgrafen
-    if (charts.value.cwDistance) charts.value.cwDistance.options.scales.y.max = overallMaxCwDistanceY;
+    if (charts.cwDistance) charts.cwDistance.options.scales.y.max = overallMaxCwDistanceY;
 
     // Uppdatera punkter (röda pricken)
-    charts.value.headshell.data.datasets[1].data = [{ x: store.params.m_headshell, y: currentFreq }];
-    charts.value.cw.data.datasets[1].data = [{ x: store.params.m4_adj_cw, y: currentFreq }];
-    charts.value.compliance.data.datasets[1].data = [{ x: store.params.compliance, y: currentFreq }];
-    charts.value.armwand.data.datasets[1].data = [{ x: store.params.m_tube_percentage, y: currentFreq }];
-    charts.value.cwDistance.data.datasets[1].data = [{ x: store.params.m4_adj_cw, y: currentCwDistance }];
+    charts.headshell.data.datasets[1].data = [{ x: store.params.m_headshell, y: currentFreq }];
+    charts.cw.data.datasets[1].data = [{ x: store.params.m4_adj_cw, y: currentFreq }];
+    charts.compliance.data.datasets[1].data = [{ x: store.params.compliance, y: currentFreq }];
+    charts.armwand.data.datasets[1].data = [{ x: store.params.m_tube_percentage, y: currentFreq }];
+    charts.cwDistance.data.datasets[1].data = [{ x: store.params.m4_adj_cw, y: currentCwDistance }];
 
     // Uppdatera kurvorna
-    charts.value.headshell.data.datasets[0].data = headshellData.data;
-    charts.value.cw.data.datasets[0].data = cwData.data;
-    charts.value.compliance.data.datasets[0].data = complianceData.data;
-    charts.value.armwand.data.datasets[0].data = armwandData.data;
-    charts.value.cwDistance.data.datasets[0].data = cwDistanceData.data;
+    charts.headshell.data.datasets[0].data = headshellData.data;
+    charts.cw.data.datasets[0].data = cwData.data;
+    charts.compliance.data.datasets[0].data = complianceData.data;
+    charts.armwand.data.datasets[0].data = armwandData.data;
+    charts.cwDistance.data.datasets[0].data = cwDistanceData.data;
     
     // Anropa update() på alla grafer för att rita om dem
-    Object.values(charts.value).forEach(chart => {
+    // KORRIGERING: Refererar till charts direkt
+    Object.values(charts).forEach(chart => { 
         if (chart) chart.update('none');
     });
     store.addDebugMessage('SensitivityCharts:updateChartsData', 'Charts data update completed.');
@@ -179,7 +184,7 @@ onMounted(() => {
     // Använder en funktion för att skapa options-objektet för att säkerställa att varje graf får en unik instans
     const resonanceChartOptions = (title, xLabel) => ({
       type: 'line',
-      data: { datasets: commonDatasetConfig() }, // Ny data-objekt
+      data: { datasets: commonDatasetConfig() },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { title: { display: true, text: title, font: { size: 16 } }, legend: { position: 'top' }, annotation: { annotations: {
@@ -201,25 +206,25 @@ onMounted(() => {
         }
     };
 
-    charts.value = {
-        headshell: createChart(headshellChartCanvas, resonanceChartOptions('1. Effect of Headshell Mass', 'Headshell Mass (g)')),
-        cw: createChart(cwChartCanvas, resonanceChartOptions('2. Effect of Adjustable Counterweight Mass', 'Adjustable Counterweight Mass (g)')),
-        compliance: createChart(complianceChartCanvas, resonanceChartOptions('3. Effect of Cartridge Compliance', 'Cartridge Compliance (µm/mN)')),
-        armwand: createChart(armwandChartCanvas, resonanceChartOptions('4. Effect of Armwand/Fixed CW Mass Distribution', 'Armwand Percentage of Rear Mass (%)')),
-        cwDistance: createChart(cwDistanceChartCanvas, cwDistanceChartOptions)
-    };
+    // Initialisera Chart.js instanser och tilldela dem direkt till `charts` objektet
+    charts.headshell = createChart(headshellChartCanvas, resonanceChartOptions('1. Effect of Headshell Mass', 'Headshell Mass (g)'));
+    charts.cw = createChart(cwChartCanvas, resonanceChartOptions('2. Effect of Adjustable Counterweight Mass', 'Adjustable Counterweight Mass (g)'));
+    charts.compliance = createChart(complianceChartCanvas, resonanceChartOptions('3. Effect of Cartridge Compliance', 'Cartridge Compliance (µm/mN)'));
+    charts.armwand = createChart(armwandChartCanvas, resonanceChartOptions('4. Effect of Armwand/Fixed CW Mass Distribution', 'Armwand Percentage of Rear Mass (%)'));
+    charts.cwDistance = createChart(cwDistanceChartCanvas, cwDistanceChartOptions);
+    
     store.addDebugMessage('SensitivityCharts', 'All chart instances initialized and stored.');
 
-    // Nu när graferna är skapade, uppdatera deras data för första gången
-    updateChartsData(); // <-- KALLAS HÄR FÖRSTA GÅNGEN!
+    // KORRIGERING: Anropa updateChartsData HÄR, direkt efter att alla charts-instanser är garanterat skapade.
+    updateChartsData(); 
 });
 
-// Watcher som reagerar på ändringar i store.params och anropar updateChartsData
-// OBS! immediate: true är BORTTAGEN här, eftersom onMounted nu kallar den första gången
+// Watcher som reagerar på ändringar i store.params
+// KORRIGERING: Ta bort `immediate: true` här. onMounted hanterar den första körningen.
 watch(() => store.params, () => {
     store.addDebugMessage('SensitivityCharts:watch', 'store.params changed. Calling updateChartsData().');
     updateChartsData();
-}, { deep: true }); // Ta bort immediate: true
+}, { deep: true }); 
 
 </script>
 
