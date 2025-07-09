@@ -3,16 +3,19 @@
 import TonearmVisualization from '../components/TonearmVisualization.vue';
 import InputPanel from '../components/InputPanel.vue';
 import ResultsPanel from '../components/ResultsPanel.vue';
-// I en riktig app skulle du importera och använda din Pinia store här
+import { useTonearmStore } from '@/store/tonearmStore';
+const store = useTonearmStore();
 </script>
 
 <template>
   <div>
     <header class="app-header">
       <h1>Tonearm Resonance Calculator</h1>
-      <a href="https://github.com/Engrove/Turntable" target="_blank">Help & Methodology</a>
+      <!-- Denna länk är nu en knapp som anropar en action i storen -->
+      <a href="#" @click.prevent="store.showHelpModal()">Help & Methodology</a>
     </header>
 
+    <!-- Denna sektion är nu en container för dina RIKTIGA grafer -->
     <section class="visualization-container">
       <TonearmVisualization />
     </section>
@@ -23,7 +26,3 @@ import ResultsPanel from '../components/ResultsPanel.vue';
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Inga specifika stilar behövs här, då allt styrs från main.css */
-</style>
