@@ -29,9 +29,13 @@ return dataPoints;
 
 const updateChart = () => {
 if (!chartInstance) return;
+
+// KORRIGERING: Mata in data till RÄTT dataset med index och
 chartInstance.data.datasets.data = generateData();
+
 const currentL4 = store.calculatedResults.isUnbalanced ? NaN : store.calculatedResults.L4_adj_cw;
 chartInstance.data.datasets.data = [{ x: store.params.m4_adj_cw, y: currentL4 }];
+
 chartInstance.update('none');
 };
 
