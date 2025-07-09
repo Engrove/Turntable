@@ -34,5 +34,17 @@ import router from '@/router'
 </style>
 
 <style>
-#app{padding:0;max-width:none;height:100vh}body{padding:0}
+/* Global layout-fix för att eliminera den yttre scrollbaren */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Denna rad är nyckeln: Förbjuder webbläsarens scrollbar */
+}
+
+#app {
+  height: 100%; /* Använder 100% för att perfekt fylla body-elementet */
+  padding: 0;
+  max-width: none;
+}
 </style>
