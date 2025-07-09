@@ -16,8 +16,8 @@ const routeIcons = {
 </script>
 
 <template>
-  <div class="app-layout">
-    <aside class="sidebar" :class="{ 'is-expanded': isMenuExpanded }">
+  <div class="app-layout" :class="{ 'menu-collapsed': !isMenuExpanded }">
+    <aside class="sidebar">
       <div class="sidebar-header">
         <h3 v-show="isMenuExpanded">Engrove Toolkit</h3>
       </div>
@@ -27,76 +27,69 @@ const routeIcons = {
           :key="route.name"
           :to="route.path"
           class="nav-link"
-          :title="route.meta.title"
+          :title="isMenuExpanded ? route.meta.title : ''"
         >
           <span class="nav-icon" v-html="routeIcons[route.name]"></span>
-          <span class="nav-text" v-show="isMenuExpanded">{{ route.meta.title }}</span>
+          <span class="nav-text">{{ route.meta.title }}</span>
         </RouterLink>
       </nav>
-
       <div class="menu-toggle-wrap">
         <button @click="toggleMenu" class="menu-toggle" title="Toggle Menu">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 18 9 12 15 6"></polyline>
-          </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
         </button>
       </div>
     </aside>
-
     <main class="content-area">
       <RouterView />
     </main>
   </div>
 </template>
 
-<style scoped>
-/* **HÄR ÄR KORRIGERINGEN FÖR MENYN** */
-/* Variablerna definieras nu på toppnivå-elementet för layouten. */
-.app-layout {
+<!-- OBS: DENNA ÄR INTE 'SCOPED' - DETTA ÄR NYCKELN TILL LÖSNINGEN -->
+<style>
+:root {
   --sidebar-width-expanded: 260px;
   --sidebar-width-collapsed: 80px;
-  display: flex;
 }
-
-/* Sidomenyn (Sidebar) */
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+.app-layout {
+  display: flex;
+  height: 100vh;
+}
 .sidebar {
   background-color: var(--header-color);
   color: #ecf0f1;
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   padding: 1rem 0;
-  transition: width 0.3s ease-in-out;
+  flex-shrink: 0;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   width: var(--sidebar-width-expanded);
 }
-
-.sidebar:not(.is-expanded) {
+.app-layout.menu-collapsed .sidebar {
   width: var(--sidebar-width-collapsed);
 }
-.sidebar:not(.is-expanded) .nav-link {
-  justify-content: center;
-}
-.sidebar:not(.is-expanded) .sidebar-header {
-  height: 36px;
-}
-
 .sidebar-header {
   padding: 0 1.5rem;
   margin-bottom: 2rem;
   font-size: 1.2rem;
-  transition: opacity 0.2s ease-in-out;
-}
-.sidebar-header h3 {
-  margin: 0;
   white-space: nowrap;
+  overflow: hidden;
+  height: 36px;
+  display: flex;
+  align-items: center;
 }
-
+.sidebar-header h3 { margin: 0; }
 .main-nav {
   flex-grow: 1;
-  display: flex;
-  flex-direction: column;
+  overflow: hidden;
 }
-
 .nav-link {
   display: flex;
   align-items: center;
@@ -104,9 +97,12 @@ const routeIcons = {
   padding: 1rem 1.5rem;
   color: #bdc3c7;
   text-decoration: none;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.2s ease;
   white-space: nowrap;
-  overflow: hidden;
+}
+.app-layout.menu-collapsed .nav-link {
+  justify-content: center;
+  padding: 1rem;
 }
 .nav-link:hover {
   background-color: #495057;
@@ -120,27 +116,25 @@ const routeIcons = {
 .nav-link.router-link-exact-active .nav-icon {
   color: var(--accent-color, #007bff);
 }
-
 .nav-icon {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  display: inline-block;
 }
-
 .nav-text {
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 1;
-  transition: opacity 0.2s ease-in-out;
 }
-.sidebar:not(.is-expanded) .nav-text {
+.app-layout.menu-collapsed .nav-text {
   opacity: 0;
+  width: 0;
 }
-
 .menu-toggle-wrap {
   display: flex;
   justify-content: flex-end;
   padding: 0 1.5rem;
-  margin-top: 1rem;
+}
+.app-layout.menu-collapsed .menu-toggle-wrap {
+  justify-content: center;
+  padding: 0;
 }
 .menu-toggle {
   background: none;
@@ -155,28 +149,14 @@ const routeIcons = {
   background-color: #495057;
   color: #fff;
 }
-.sidebar:not(.is-expanded) .menu-toggle {
+.app-layout.menu-collapsed .menu-toggle {
   transform: rotate(180deg);
 }
-
 .content-area {
   flex-grow: 1;
   padding: 2rem;
   overflow-y: auto;
   height: 100vh;
-}
-</style>
-
-<style>
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-}
-#app {
-  height: 100%;
-  padding: 0;
-  max-width: none;
+  min-width: 0; /* Viktigt för flexbox-innehåll */
 }
 </style>
