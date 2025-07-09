@@ -27,67 +27,72 @@ export const useEstimatorStore = defineStore('estimator', () => {
     // ---- GETTERS ----
 
     /**
-     * Detta är nu den centrala beräkningsfunktionen.
-     * Den loopar igenom scenarion i prioriteringsordning och returnerar det första som lyckas.
-     * Den returnerar ett helt objekt med all nödvändig information.
+     * Helper-funktion för att köra ett specifikt scenario.
      */
-    const estimationResult = computed(() => {
-        const { cu_dynamic_100hz, cu_static, type, cantilever_class, stylus_family } = userInput.value;
-
-        // Om grundläggande krav inte är uppfyllda, avsluta tidigt.
-        if (!type || (!cu_dynamic_100hz && !cu_static)) {
-            return { value: null, key: null };
-        }
-
-        // Definiera scenarion i prioriteringsordning (mest specifik först)
-        const scenarioHierarchy = [
-            { key: 'A1', base: '100hz', props: ['type', 'cantilever_class', 'stylus_family'] },
-            { key: 'B1', base: 'static', props: ['type', 'cantilever_class', 'stylus_family'] },
-            { key: 'A2', base: '100hz', props: ['type', 'cantilever_class'] },
-            { key: 'B2', base: 'static', props: ['type', 'cantilever_class'] },
-            { key: 'A3', base: '100hz', props: ['type'] },
-            { key: 'B3', base: 'static', props: ['type'] },
-        ];
-
-        for (const scenario of scenarioHierarchy) {
-            // Kontrollera om scenariot är relevant baserat på indata
-            const isBaseValueAvailable = (scenario.base === '100hz' && cu_dynamic_100hz > 0) || (scenario.base === 'static' && cu_static > 0);
-            const hasAllProps = scenario.props.every(p => !!userInput.value[p]);
-            
-            if (isBaseValueAvailable && hasAllProps) {
-                // Filtrera fram den matchande gruppen
-                let matchingGroup = trainingData;
-                for (const prop of scenario.props) {
-                    matchingGroup = matchingGroup.filter(p => p[prop] === userInput.value[prop]);
-                }
-
-                // Försök utföra beräkningen
-                let ratios = [];
-                if (scenario.base === '100hz') {
-                    ratios = matchingGroup
-                        .filter(p => p.cu_dynamic_100hz > 0)
-                        .map(p => p.cu_dynamic_10hz / p.cu_dynamic_100hz);
-                } else { // scenario.base === 'static'
-                    ratios = matchingGroup
-                        .filter(p => p.cu_static > 0)
-                        .map(p => p.cu_dynamic_10hz / p.cu_static);
-                }
-                
-                // Om vi kunde beräkna ett förhållande, har vi ett resultat!
-                if (ratios.length > 0) {
-                    const baseValue = scenario.base === '100hz' ? cu_dynamic_100hz : cu_static;
-                    const calculatedValue = baseValue * calculateMedian(ratios);
-                    // Returnera det första lyckade resultatet.
-                    return { value: calculatedValue, key: scenario.key };
-                }
+    function runScenario(baseType, propsToMatch) {
+        let matchingGroup = trainingData;
+        for (const prop of propsToMatch) {
+            if (userInput.value[prop]) {
+                matchingGroup = matchingGroup.filter(p => p[prop] === userInput.value[prop]);
+            } else {
+                return null; // Kräver att alla props för scenariot finns
             }
         }
         
-        // Om loopen slutförs utan att hitta ett resultat
+        let ratios = [];
+        if (baseType === '100hz') {
+            ratios = matchingGroup
+                .filter(p => p.cu_dynamic_100hz > 0)
+                .map(p => p.cu_dynamic_10hz / p.cu_dynamic_100hz);
+        } else { // baseType === 'static'
+            ratios = matchingGroup
+                .filter(p => p.cu_static > 0)
+                .map(p => p.cu_dynamic_10hz / p.cu_static);
+        }
+
+        if (ratios.length > 0) {
+            const baseValue = baseType === '100hz' ? userInput.value.cu_dynamic_100hz : userInput.value.cu_static;
+            return baseValue * calculateMedian(ratios);
+        }
+        return null;
+    }
+
+    /**
+     * Central beräkningsfunktion med korrekt fallback-logik.
+     */
+    const estimationResult = computed(() => {
+        const { cu_dynamic_100hz, cu_static, type } = userInput.value;
+        if (!type) return { value: null, key: null };
+
+        // Prioritera 100Hz-beräkningar
+        if (cu_dynamic_100hz > 0) {
+            const scenarios100Hz = [
+                { key: 'A1', props: ['type', 'cantilever_class', 'stylus_family'] },
+                { key: 'A2', props: ['type', 'cantilever_class'] },
+                { key: 'A3', props: ['type'] },
+            ];
+            for (const scenario of scenarios100Hz) {
+                const result = runScenario('100hz', scenario.props);
+                if (result !== null) return { value: result, key: scenario.key };
+            }
+        }
+
+        // Fallback till statiska beräkningar om 100Hz misslyckades eller saknas
+        if (cu_static > 0) {
+            const scenariosStatic = [
+                { key: 'B1', props: ['type', 'cantilever_class', 'stylus_family'] },
+                { key: 'B2', props: ['type', 'cantilever_class'] },
+                { key: 'B3', props: ['type'] },
+            ];
+            for (const scenario of scenariosStatic) {
+                const result = runScenario('static', scenario.props);
+                if (result !== null) return { value: result, key: scenario.key };
+            }
+        }
+        
         return { value: null, key: null };
     });
     
-    // De andra getters blir nu enkla avläsare från det centrala resultatobjektet
     const estimatedCompliance = computed(() => estimationResult.value.value);
     const activeScenarioKey = computed(() => estimationResult.value.key);
 
@@ -102,7 +107,6 @@ export const useEstimatorStore = defineStore('estimator', () => {
     const availableCantileverClasses = computed(() => classifications.cantilever_class.categories.map(c => c.id));
     const availableStylusFamilies = computed(() => classifications.stylus_family.categories.map(c => c.id));
     
-    // ---- ACTIONS ----
     function resetInput() {
         userInput.value = {
             cu_dynamic_100hz: null,
@@ -113,13 +117,5 @@ export const useEstimatorStore = defineStore('estimator', () => {
         };
     }
 
-    return {
-        userInput,
-        estimatedCompliance,
-        confidence,
-        activeScenarioKey,
-        availableCantileverClasses,
-        availableStylusFamilies,
-        resetInput
-    };
+    return { userInput, estimatedCompliance, confidence, activeScenarioKey, availableCantileverClasses, availableStylusFamilies, resetInput };
 });
