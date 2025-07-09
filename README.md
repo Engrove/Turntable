@@ -52,6 +52,14 @@ This toolkit is an ongoing project. Future modules planned include:
 
 ---
 
+### **Disclaimer**
+
+This toolkit is provided as a design aid for theoretical exploration and educational purposes. The calculations are based on established physics, but are subject to the following limitations:
+-   **Theoretical Nature:** The results are theoretical and do not account for all real-world variables, such as manufacturing tolerances, material inconsistencies, or environmental factors.
+-   **No Guarantee of Accuracy:** While developed with care, this tool is a hobbyist project. There is no guarantee of the absolute accuracy of the calculations.
+-   **User Responsibility:** Users are encouraged to cross-reference the results with their own measurements and practical experience. The ultimate responsibility for any physical build rests with the user.
+
+---
 ### **Contributing**
 
 This is an open-source project built for the community. Feedback, bug reports, and suggestions are warmly welcomed. Please feel free to open an issue on the GitHub repository.
