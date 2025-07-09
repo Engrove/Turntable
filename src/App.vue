@@ -3,16 +3,12 @@ import { ref } from 'vue';
 import { RouterLink, RouterView, useRouter } from 'vue-router';
 
 const router = useRouter();
-
-// En reaktiv variabel för att hålla koll på om menyn är expanderad
 const isMenuExpanded = ref(true);
 
-// Funktion för att växla menyns tillstånd
 const toggleMenu = () => {
   isMenuExpanded.value = !isMenuExpanded.value;
 };
 
-// Associera varje route med en SVG-ikon
 const routeIcons = {
   'tonearm-calculator': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="2"></circle><line x1="12" y1="3" x2="12" y2="1"></line><line x1="19" y1="12" x2="21" y2="12"></line><path d="M16 8L12 12 8 8"></path></svg>`,
   'compliance-estimator': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20V16"></path></svg>`
@@ -21,8 +17,6 @@ const routeIcons = {
 
 <template>
   <div class="app-layout">
-    <!-- SIDOMENYN (Sidebar) -->
-    <!-- Klassen 'is-expanded' styr bredd och innehållets synlighet -->
     <aside class="sidebar" :class="{ 'is-expanded': isMenuExpanded }">
       <div class="sidebar-header">
         <h3 v-show="isMenuExpanded">Engrove Toolkit</h3>
@@ -40,7 +34,6 @@ const routeIcons = {
         </RouterLink>
       </nav>
 
-      <!-- Meny-växlare i botten -->
       <div class="menu-toggle-wrap">
         <button @click="toggleMenu" class="menu-toggle" title="Toggle Menu">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -50,7 +43,6 @@ const routeIcons = {
       </div>
     </aside>
 
-    <!-- HUVUDINNEHÅLL -->
     <main class="content-area">
       <RouterView />
     </main>
@@ -58,12 +50,11 @@ const routeIcons = {
 </template>
 
 <style scoped>
-:root {
+/* **HÄR ÄR KORRIGERINGEN FÖR MENYN** */
+/* Variablerna definieras nu på toppnivå-elementet för layouten. */
+.app-layout {
   --sidebar-width-expanded: 260px;
   --sidebar-width-collapsed: 80px;
-}
-
-.app-layout {
   display: flex;
 }
 
@@ -75,12 +66,10 @@ const routeIcons = {
   display: flex;
   flex-direction: column;
   padding: 1rem 0;
-  /* Animera bredd-förändringen */
   transition: width 0.3s ease-in-out;
-  width: var(--sidebar-width-expanded); /* Standard är expanderad */
+  width: var(--sidebar-width-expanded);
 }
 
-/* Stilar för minimerad meny */
 .sidebar:not(.is-expanded) {
   width: var(--sidebar-width-collapsed);
 }
@@ -88,7 +77,7 @@ const routeIcons = {
   justify-content: center;
 }
 .sidebar:not(.is-expanded) .sidebar-header {
-  height: 36px; /* Matcha höjden för när texten visas för att undvika hopp */
+  height: 36px;
 }
 
 .sidebar-header {
@@ -99,7 +88,7 @@ const routeIcons = {
 }
 .sidebar-header h3 {
   margin: 0;
-  white-space: nowrap; /* Förhindra textbrytning under animation */
+  white-space: nowrap;
 }
 
 .main-nav {
@@ -147,7 +136,6 @@ const routeIcons = {
   opacity: 0;
 }
 
-/* Meny-växlare (Toggle) */
 .menu-toggle-wrap {
   display: flex;
   justify-content: flex-end;
@@ -167,13 +155,10 @@ const routeIcons = {
   background-color: #495057;
   color: #fff;
 }
-/* Rotera pilen när menyn är minimerad */
 .sidebar:not(.is-expanded) .menu-toggle {
   transform: rotate(180deg);
 }
 
-
-/* Huvudinnehållet */
 .content-area {
   flex-grow: 1;
   padding: 2rem;
@@ -183,7 +168,6 @@ const routeIcons = {
 </style>
 
 <style>
-/* Globala stilar - oförändrade */
 html, body {
   height: 100%;
   margin: 0;
