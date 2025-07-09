@@ -8,16 +8,8 @@ const router = createRouter({
       path: '/',
       name: 'tonearm-calculator',
       component: TonearmCalculatorView,
-      // Vi kan lägga till meta-data för menyn
-      meta: { title: 'Tonearm Calculator', icon: 'fas fa-ruler-combined' } 
+      meta: { title: 'Tonearm Calculator' } 
     },
-    // Här kommer vi att lägga till framtida verktyg
-    // {
-    //   path: '/vibration-isolator',
-    //   name: 'vibration-isolator',
-    //   component: () => import('../views/VibrationIsolatorView.vue'),
-    //   meta: { title: 'Vibration Isolator', icon: 'fas fa-wave-square' }
-    // }
   ]
 })
 
