@@ -8,14 +8,22 @@ const store = useTonearmStore();
 <template>
   <div class="app-container">
     <aside class="sidebar">
-      <!-- ... din sidomeny som förut ... -->
+      <div class="sidebar-brand">
+        <span class="icon">🎚️</span>
+        <span class="text">Engrove Toolkit</span>
+      </div>
+      <nav>
+        <router-link to="/" class="nav-link active">
+          <span class="icon">🔧</span>
+          <span class="text">Tonearm Calculator</span>
+        </router-link>
+      </nav>
     </aside>
 
     <main class="main-content">
       <router-view />
     </main>
     
-    <!-- Lägg till modalen här, den visas/döljs via storen -->
     <HelpModal v-if="store.isHelpModalVisible" />
   </div>
 </template>
