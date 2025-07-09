@@ -81,7 +81,19 @@ const showHelp = ref(false);
         <code>F = 1000 / (2π * √(M_eff * Compliance))</code>
         
         <hr>
-        <p><em><strong>Disclaimer:</strong> This is a design tool for theoretical exploration. The ultimate proof is always in the physical build, where real-world factors and manufacturing tolerances come into play.</em></p>
+                <hr>
+        <h4>Disclaimer and Limitations</h4>
+        <p>
+          This toolkit is a design aid for theoretical exploration, developed as a personal, open-source project. While the calculations are based on established physical principles, the following limitations should be understood:
+        </p>
+        <ul>
+            <li>The results are theoretical and do not account for all real-world variables, such as material inconsistencies, manufacturing tolerances, or complex damping effects.</li>
+            <li>Errors may exist in the underlying code or formulas. This tool should not be used as the sole basis for critical design decisions.</li>
+            <li>The ultimate proof of any design is always in the physical build and empirical measurement.</li>
+        </ul>
+        <p>
+          Feedback, bug reports, and suggestions for improvement are actively encouraged to enhance the accuracy and utility of this tool for the community.
+        </p>
       </template>
     </HelpModal>
   </div>
