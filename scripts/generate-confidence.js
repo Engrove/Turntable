@@ -2,12 +2,22 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Importera data med JSON-assertion
-import pickupData from '../data/pickup_data.json' assert { type: 'json' };
-import classifications from '../data/classifications.json' assert { type: 'json' };
+// --- RÄTTNING BÖRJAR HÄR ---
+
+// Importera data med fs.readFileSync för maximal kompatibilitet i Node.js-miljöer
+function readJsonFileSync(filePath) {
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(fileContent);
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const pickupData = readJsonFileSync(path.resolve(__dirname, '../data/pickup_data.json'));
+const classifications = readJsonFileSync(path.resolve(__dirname, '../data/classifications.json'));
+
+// --- RÄTTNING SLUTAR HÄR ---
+
 
 /**
  * Beräknar medianen för en array av nummer.
