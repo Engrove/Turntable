@@ -3,9 +3,15 @@
     "id": 1,
     "model": "Ortofon OM10",
     "cu_static": 25,
-    "cu_dynamic": 25,
-    "cu_dynamic_hz": 10,
-    "source": "Ortofon Official Spec",
+    "cu_dynamic_10hz": 25,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Ortofon Official Spec",
+        "url": "https://www.ortofon.com/om-series-p-550"
+      }
+    ],
     "manufacturer": "Ortofon",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -37,9 +43,15 @@
     "id": 2,
     "model": "Audio-Technica AT95E",
     "cu_static": 20,
-    "cu_dynamic": 11,
-    "cu_dynamic_hz": 10,
-    "source": "hifi-wiki.de / Calculated",
+    "cu_dynamic_10hz": 11,
+    "cu_dynamic_100hz": 6.5,
+    "is_estimated_10hz": true,
+    "sources": [
+      {
+        "name": "hifi-wiki.de",
+        "url": "https://www.hifi-wiki.de/index.php/Audio-Technica_AT_95_E"
+      }
+    ],
     "manufacturer": "Audio-Technica",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -57,7 +69,7 @@
     "sonic_character_en": "Punchy, energetic, slightly warm, great value.",
     "review_summary_en": "A legendary budget cartridge, the predecessor to the VM95 series. Praised for its energetic and engaging sound with a slightly warm mid-bass bump. Not the most detailed, but offers incredible performance for its price.",
     "image_url": null,
-    "notes_en": "The 10Hz dynamic compliance is an estimation based on the official 6.5 cu @ 100Hz spec.",
+    "notes_en": "The 10Hz dynamic compliance is an estimation (x1.7) based on the official 6.5 cu @ 100Hz spec.",
     "stylus_family": "Elliptical",
     "cantilever_class": "Aluminum",
     "compliance_level": "low",
@@ -72,9 +84,19 @@
     "id": 3,
     "model": "Denon DL-103",
     "cu_static": null,
-    "cu_dynamic": 12,
-    "cu_dynamic_hz": 10,
-    "source": "Denon / Calculated",
+    "cu_dynamic_10hz": 12,
+    "cu_dynamic_100hz": 5,
+    "is_estimated_10hz": true,
+    "sources": [
+      {
+        "name": "Denon Official",
+        "url": null
+      },
+      {
+        "name": "Various user measurements",
+        "url": null
+      }
+    ],
     "manufacturer": "Denon",
     "type": "MC",
     "stylus_type": "Conical",
@@ -92,7 +114,7 @@
     "sonic_character_en": "Dynamic, powerful bass, rich midrange, musical, not hyper-detailed.",
     "review_summary_en": "A legendary broadcast standard. Official dynamic compliance is 5 @ 100Hz; the effective value at 10Hz is widely measured and accepted to be around 10-13. Praised for its musical energy and powerful bass.",
     "image_url": null,
-    "notes_en": "Requires a medium-to-high mass tonearm to perform its best. The 10Hz compliance is an estimation.",
+    "notes_en": "Requires a medium-to-high mass tonearm to perform its best. 10Hz compliance estimated with a factor of ~2.2.",
     "stylus_family": "Conical",
     "cantilever_class": "Aluminum",
     "compliance_level": "medium",
@@ -107,9 +129,15 @@
     "id": 4,
     "model": "Denon DL-103R",
     "cu_static": null,
-    "cu_dynamic": 12,
-    "cu_dynamic_hz": 10,
-    "source": "Denon / Calculated",
+    "cu_dynamic_10hz": 12,
+    "cu_dynamic_100hz": 5,
+    "is_estimated_10hz": true,
+    "sources": [
+      {
+        "name": "Denon Official",
+        "url": null
+      }
+    ],
     "manufacturer": "Denon",
     "type": "MC",
     "stylus_type": "Conical",
@@ -141,9 +169,15 @@
     "id": 5,
     "model": "Shure M97xE",
     "cu_static": 25,
-    "cu_dynamic": 25,
-    "cu_dynamic_hz": 10,
-    "source": "Shure Official Spec",
+    "cu_dynamic_10hz": 25,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Shure User Guide",
+        "url": null
+      }
+    ],
     "manufacturer": "Shure",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -175,16 +209,26 @@
     "id": 6,
     "model": "Nagaoka MP-110",
     "cu_static": 18,
-    "cu_dynamic": 10.2,
-    "cu_dynamic_hz": 10,
-    "source": "Multiple Sources / Calculated",
+    "cu_dynamic_10hz": 10.2,
+    "cu_dynamic_100hz": 6,
+    "is_estimated_10hz": true,
+    "sources": [
+      {
+        "name": "Nagaoka Official",
+        "url": null
+      },
+      {
+        "name": "LP Gear",
+        "url": "https://www.lpgear.com/product/NAGAOKAMP110.html"
+      }
+    ],
     "manufacturer": "Nagaoka",
     "type": "MI",
     "stylus_type": "Elliptical",
     "cantilever_material": "Aluminum",
     "weight_g": 6.5,
     "tracking_force_min_g": 1.5,
-    "tracking_force_max_g": 2,
+    "tracking_force_max_g": 2.0,
     "output_voltage_mv": 5,
     "frequency_response_min_hz": 20,
     "frequency_response_max_hz": 20000,
@@ -193,9 +237,9 @@
     "load_capacitance_min_pf": 150,
     "load_capacitance_max_pf": 200,
     "sonic_character_en": "Warm, rich, full bass, musical, balanced.",
-    "review_summary_en": "A giant-killer in the budget cartridge category. Official dynamic compliance is 6.0 @ 100Hz, which calculates to 10.2 @ 10Hz. Known for its rich, warm, and musical sound with a powerful bass response that never feels bloated. Praised for being very quiet in the groove.",
+    "review_summary_en": "A giant-killer in the budget cartridge category. Known for its rich, warm, and musical sound with a powerful bass response that never feels bloated. Praised for being very quiet in the groove.",
     "image_url": null,
-    "notes_en": "The 10Hz dynamic compliance is an estimation based on the official 6.0 cu @ 100Hz spec.",
+    "notes_en": "The 10Hz dynamic compliance is an estimation (x1.7) from the official 6.0 cu @ 100Hz spec.",
     "stylus_family": "Elliptical",
     "cantilever_class": "Aluminum",
     "compliance_level": "low",
@@ -209,9 +253,15 @@
     "id": 7,
     "model": "Goldring Eroica H",
     "cu_static": 18,
-    "cu_dynamic": 10,
-    "cu_dynamic_hz": 10,
-    "source": "Goldring Support",
+    "cu_dynamic_10hz": 10,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Goldring Support",
+        "url": null
+      }
+    ],
     "manufacturer": "Goldring",
     "type": "MC",
     "stylus_type": "Gyger II",
@@ -243,9 +293,15 @@
     "id": 8,
     "model": "Audio-Technica AT150SA",
     "cu_static": 40,
-    "cu_dynamic": 17,
-    "cu_dynamic_hz": 10,
-    "source": "AudioShark Forum",
+    "cu_dynamic_10hz": 17,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "AudioShark Forum",
+        "url": null
+      }
+    ],
     "manufacturer": "Audio-Technica",
     "type": "MM",
     "stylus_type": "Shibata",
@@ -277,9 +333,15 @@
     "id": 9,
     "model": "Ortofon M20E Super",
     "cu_static": 40,
-    "cu_dynamic": 25,
-    "cu_dynamic_hz": 10,
-    "source": "Ortofon / hifi-wiki.de",
+    "cu_dynamic_10hz": 25,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "hifi-wiki.de",
+        "url": "https://www.hifi-wiki.de/index.php/Ortofon_M_20_E_Super"
+      }
+    ],
     "manufacturer": "Ortofon",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -311,9 +373,15 @@
     "id": 10,
     "model": "Audio-Technica AT-OC9III",
     "cu_static": 35,
-    "cu_dynamic": 18,
-    "cu_dynamic_hz": 100,
-    "source": "Audio-Technica",
+    "cu_dynamic_10hz": null,
+    "cu_dynamic_100hz": 18,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Audio-Technica Official",
+        "url": null
+      }
+    ],
     "manufacturer": "Audio-Technica",
     "type": "MC",
     "stylus_type": "Line-Contact",
@@ -346,9 +414,15 @@
     "id": 11,
     "model": "Goldring 1042",
     "cu_static": 24,
-    "cu_dynamic": 11,
-    "cu_dynamic_hz": 10,
-    "source": "Goldring Support",
+    "cu_dynamic_10hz": 11,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Goldring Support",
+        "url": null
+      }
+    ],
     "manufacturer": "Goldring",
     "type": "MM",
     "stylus_type": "Gyger S",
@@ -381,9 +455,15 @@
     "id": 12,
     "model": "Shure V15 Type III",
     "cu_static": 25,
-    "cu_dynamic": 22.5,
-    "cu_dynamic_hz": 10,
-    "source": "Vinyl Engine Forum",
+    "cu_dynamic_10hz": 22.5,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Vinyl Engine Forum",
+        "url": "https://www.vinylengine.com/cartridge_database.php?m=Shure&t=any&mod=V15+III&sort=2&Search=Search&sty=&ovlo=&ovhi=&can=&dclo=&dchi=&stid=&masslo=&masshi=&notes=&prlo=&prhi="
+      }
+    ],
     "manufacturer": "Shure",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -415,9 +495,15 @@
     "id": 13,
     "model": "Grado Prestige Black",
     "cu_static": 20,
-    "cu_dynamic": 10,
-    "cu_dynamic_hz": 10,
-    "source": "Grado Labs",
+    "cu_dynamic_10hz": 20,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Grado Labs",
+        "url": null
+      }
+    ],
     "manufacturer": "Grado",
     "type": "MI",
     "stylus_type": "Elliptical",
@@ -438,7 +524,7 @@
     "notes_en": "Grado cartridges can be sensitive to hum on some turntables.",
     "stylus_family": "Elliptical",
     "cantilever_class": "Aluminum",
-    "compliance_level": "low",
+    "compliance_level": "high",
     "tags": [
       "Warm",
       "Musical",
@@ -449,9 +535,15 @@
     "id": 14,
     "model": "Audio-Technica AT33PTG/II",
     "cu_static": 40,
-    "cu_dynamic": 10,
-    "cu_dynamic_hz": 100,
-    "source": "Audio-Technica",
+    "cu_dynamic_10hz": null,
+    "cu_dynamic_100hz": 10,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Audio-Technica Official",
+        "url": null
+      }
+    ],
     "manufacturer": "Audio-Technica",
     "type": "MC",
     "stylus_type": "MicroLine",
@@ -484,9 +576,15 @@
     "id": 15,
     "model": "Denon DL-110",
     "cu_static": 14,
-    "cu_dynamic": 8,
-    "cu_dynamic_hz": 10,
-    "source": "hifi-wiki.de",
+    "cu_dynamic_10hz": 8,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "hifi-wiki.de",
+        "url": "https://www.hifi-wiki.de/index.php/Denon_DL-110"
+      }
+    ],
     "manufacturer": "Denon",
     "type": "MC",
     "stylus_type": "Elliptical",
@@ -519,9 +617,15 @@
     "id": 16,
     "model": "Denon DL-160",
     "cu_static": 14,
-    "cu_dynamic": 10,
-    "cu_dynamic_hz": 10,
-    "source": "hifi-wiki.de",
+    "cu_dynamic_10hz": 10,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "hifi-wiki.de",
+        "url": "https://www.hifi-wiki.de/index.php/Denon_DL-160"
+      }
+    ],
     "manufacturer": "Denon",
     "type": "MC",
     "stylus_type": "Elliptical",
@@ -553,9 +657,15 @@
     "id": 17,
     "model": "Denon DL-301MkII",
     "cu_static": null,
-    "cu_dynamic": 13,
-    "cu_dynamic_hz": 100,
-    "source": "Denon",
+    "cu_dynamic_10hz": null,
+    "cu_dynamic_100hz": 13,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Denon Official",
+        "url": null
+      }
+    ],
     "manufacturer": "Denon",
     "type": "MC",
     "stylus_type": "Elliptical",
@@ -588,9 +698,15 @@
     "id": 18,
     "model": "Denon DL-304",
     "cu_static": null,
-    "cu_dynamic": 14,
-    "cu_dynamic_hz": 100,
-    "source": "Denon",
+    "cu_dynamic_10hz": null,
+    "cu_dynamic_100hz": 14,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Denon Official",
+        "url": null
+      }
+    ],
     "manufacturer": "Denon",
     "type": "MC",
     "stylus_type": "Elliptical",
@@ -622,9 +738,15 @@
     "id": 19,
     "model": "Ortofon 2M Red",
     "cu_static": 20,
-    "cu_dynamic": 20,
-    "cu_dynamic_hz": 10,
-    "source": "Ortofon",
+    "cu_dynamic_10hz": 20,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Ortofon Official",
+        "url": "https://www.ortofon.com/ortofon-2m-red-p-314"
+      }
+    ],
     "manufacturer": "Ortofon",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -657,9 +779,15 @@
     "id": 20,
     "model": "Ortofon 2M Blue",
     "cu_static": 20,
-    "cu_dynamic": 20,
-    "cu_dynamic_hz": 10,
-    "source": "Ortofon",
+    "cu_dynamic_10hz": 20,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Ortofon Official",
+        "url": "https://www.ortofon.com/ortofon-2m-blue-p-333"
+      }
+    ],
     "manufacturer": "Ortofon",
     "type": "MM",
     "stylus_type": "Nude Elliptical",
@@ -691,9 +819,15 @@
     "id": 21,
     "model": "Ortofon 2M Bronze",
     "cu_static": 22,
-    "cu_dynamic": 22,
-    "cu_dynamic_hz": 10,
-    "source": "Ortofon",
+    "cu_dynamic_10hz": 22,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Ortofon Official",
+        "url": "https://www.ortofon.com/ortofon-2m-bronze-p-346"
+      }
+    ],
     "manufacturer": "Ortofon",
     "type": "MM",
     "stylus_type": "Fine Line",
@@ -725,9 +859,15 @@
     "id": 22,
     "model": "Ortofon 2M Black",
     "cu_static": 22,
-    "cu_dynamic": 22,
-    "cu_dynamic_hz": 10,
-    "source": "Ortofon",
+    "cu_dynamic_10hz": 22,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Ortofon Official",
+        "url": "https://www.ortofon.com/ortofon-2m-black-p-359"
+      }
+    ],
     "manufacturer": "Ortofon",
     "type": "MM",
     "stylus_type": "Shibata",
@@ -760,9 +900,15 @@
     "id": 23,
     "model": "Nagaoka MP-150",
     "cu_static": null,
-    "cu_dynamic": 7.2,
-    "cu_dynamic_hz": 100,
-    "source": "Nagaoka",
+    "cu_dynamic_10hz": null,
+    "cu_dynamic_100hz": 7.2,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Nagaoka Official",
+        "url": null
+      }
+    ],
     "manufacturer": "Nagaoka",
     "type": "MI",
     "stylus_type": "Elliptical",
@@ -794,9 +940,15 @@
     "id": 24,
     "model": "Nagaoka MP-200",
     "cu_static": null,
-    "cu_dynamic": 7.8,
-    "cu_dynamic_hz": 100,
-    "source": "Nagaoka",
+    "cu_dynamic_10hz": null,
+    "cu_dynamic_100hz": 7.8,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Nagaoka Official",
+        "url": null
+      }
+    ],
     "manufacturer": "Nagaoka",
     "type": "MI",
     "stylus_type": "Elliptical",
@@ -829,9 +981,15 @@
     "id": 25,
     "model": "Sumiko Pearl",
     "cu_static": 12,
-    "cu_dynamic": 12,
-    "cu_dynamic_hz": 10,
-    "source": "Sumiko",
+    "cu_dynamic_10hz": 12,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Sumiko",
+        "url": null
+      }
+    ],
     "manufacturer": "Sumiko",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -864,9 +1022,15 @@
     "id": 26,
     "model": "Sumiko Black Pearl",
     "cu_static": 12,
-    "cu_dynamic": 12,
-    "cu_dynamic_hz": 10,
-    "source": "Sumiko",
+    "cu_dynamic_10hz": 12,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Sumiko",
+        "url": null
+      }
+    ],
     "manufacturer": "Sumiko",
     "type": "MM",
     "stylus_type": "Conical",
@@ -899,9 +1063,15 @@
     "id": 27,
     "model": "Rega Carbon",
     "cu_static": 16,
-    "cu_dynamic": 8,
-    "cu_dynamic_hz": 10,
-    "source": "Rega",
+    "cu_dynamic_10hz": 8,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Rega",
+        "url": null
+      }
+    ],
     "manufacturer": "Rega",
     "type": "MM",
     "stylus_type": "Conical",
@@ -933,9 +1103,15 @@
     "id": 28,
     "model": "Rega Exact",
     "cu_static": null,
-    "cu_dynamic": 10,
-    "cu_dynamic_hz": 10,
-    "source": "Rega",
+    "cu_dynamic_10hz": 10,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Rega",
+        "url": null
+      }
+    ],
     "manufacturer": "Rega",
     "type": "MM",
     "stylus_type": "Vital",
@@ -967,9 +1143,15 @@
     "id": 29,
     "model": "Empire 2000E/III",
     "cu_static": 30,
-    "cu_dynamic": 12,
-    "cu_dynamic_hz": 10,
-    "source": "Vinyl Engine Forum",
+    "cu_dynamic_10hz": 12,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Vinyl Engine Forum",
+        "url": null
+      }
+    ],
     "manufacturer": "Empire",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -1001,9 +1183,15 @@
     "id": 30,
     "model": "Stanton 681EEE",
     "cu_static": 30,
-    "cu_dynamic": 12,
-    "cu_dynamic_hz": 10,
-    "source": "Stanton",
+    "cu_dynamic_10hz": 12,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Stanton",
+        "url": null
+      }
+    ],
     "manufacturer": "Stanton",
     "type": "MI",
     "stylus_type": "Elliptical",
@@ -1034,9 +1222,15 @@
     "id": 31,
     "model": "Pickering XV-15/625E",
     "cu_static": 25,
-    "cu_dynamic": 12,
-    "cu_dynamic_hz": 10,
-    "source": "Pickering",
+    "cu_dynamic_10hz": 12,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Pickering",
+        "url": null
+      }
+    ],
     "manufacturer": "Pickering",
     "type": "MI",
     "stylus_type": "Elliptical",
@@ -1068,9 +1262,15 @@
     "id": 32,
     "model": "Clearaudio Concept V2 MM",
     "cu_static": 15,
-    "cu_dynamic": 9,
-    "cu_dynamic_hz": 10,
-    "source": "Clearaudio",
+    "cu_dynamic_10hz": 9,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Clearaudio",
+        "url": null
+      }
+    ],
     "manufacturer": "Clearaudio",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -1103,9 +1303,15 @@
     "id": 33,
     "model": "Clearaudio Maestro V2",
     "cu_static": 15,
-    "cu_dynamic": 9,
-    "cu_dynamic_hz": 10,
-    "source": "Clearaudio",
+    "cu_dynamic_10hz": 9,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Clearaudio",
+        "url": null
+      }
+    ],
     "manufacturer": "Clearaudio",
     "type": "MM",
     "stylus_type": "HD Diamond",
@@ -1137,9 +1343,15 @@
     "id": 34,
     "model": "Benz Micro Glider SL",
     "cu_static": 18,
-    "cu_dynamic": 9,
-    "cu_dynamic_hz": 10,
-    "source": "Benz Micro",
+    "cu_dynamic_10hz": 9,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Benz Micro",
+        "url": null
+      }
+    ],
     "manufacturer": "Benz Micro",
     "type": "MC",
     "stylus_type": "Line-Contact",
@@ -1171,9 +1383,15 @@
     "id": 35,
     "model": "Dynavector 10x5",
     "cu_static": null,
-    "cu_dynamic": 12,
-    "cu_dynamic_hz": 10,
-    "source": "Dynavector",
+    "cu_dynamic_10hz": 12,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Dynavector",
+        "url": null
+      }
+    ],
     "manufacturer": "Dynavector",
     "type": "MC",
     "stylus_type": "Elliptical",
@@ -1205,9 +1423,15 @@
     "id": 36,
     "model": "Dynavector DV-20X2L",
     "cu_static": null,
-    "cu_dynamic": 10,
-    "cu_dynamic_hz": 10,
-    "source": "Dynavector",
+    "cu_dynamic_10hz": 10,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Dynavector",
+        "url": null
+      }
+    ],
     "manufacturer": "Dynavector",
     "type": "MC",
     "stylus_type": "Micro-Ridge",
@@ -1240,9 +1464,15 @@
     "id": 37,
     "model": "Sumiko Blue Point No. 2",
     "cu_static": 15,
-    "cu_dynamic": 10,
-    "cu_dynamic_hz": 10,
-    "source": "Sumiko",
+    "cu_dynamic_10hz": 10,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Sumiko",
+        "url": null
+      }
+    ],
     "manufacturer": "Sumiko",
     "type": "MC",
     "stylus_type": "Elliptical",
@@ -1274,9 +1504,15 @@
     "id": 38,
     "model": "Sumiko Amethyst",
     "cu_static": 12,
-    "cu_dynamic": 12,
-    "cu_dynamic_hz": 10,
-    "source": "Sumiko",
+    "cu_dynamic_10hz": 12,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Sumiko",
+        "url": null
+      }
+    ],
     "manufacturer": "Sumiko",
     "type": "MM",
     "stylus_type": "Nude Line-Contact",
@@ -1309,9 +1545,15 @@
     "id": 39,
     "model": "Audio-Technica AT-VM95ML",
     "cu_static": 20,
-    "cu_dynamic": 17,
-    "cu_dynamic_hz": 10,
-    "source": "Audio-Technica",
+    "cu_dynamic_10hz": 17,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Audio-Technica",
+        "url": null
+      }
+    ],
     "manufacturer": "Audio-Technica",
     "type": "MM",
     "stylus_type": "MicroLine",
@@ -1343,9 +1585,15 @@
     "id": 40,
     "model": "Shure V15 Type IV",
     "cu_static": 30,
-    "cu_dynamic": 23,
-    "cu_dynamic_hz": 10,
-    "source": "Korf Audio",
+    "cu_dynamic_10hz": 23,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Korf Audio",
+        "url": null
+      }
+    ],
     "manufacturer": "Shure",
     "type": "MM",
     "stylus_type": "Hyperelliptical",
@@ -1377,9 +1625,15 @@
     "id": 41,
     "model": "Audio-Technica VM95E",
     "cu_static": 17,
-    "cu_dynamic": 11.9,
-    "cu_dynamic_hz": 10,
-    "source": "Multiple Sources",
+    "cu_dynamic_10hz": 11.9,
+    "cu_dynamic_100hz": 7,
+    "is_estimated_10hz": true,
+    "sources": [
+      {
+        "name": "Audio-Technica",
+        "url": null
+      }
+    ],
     "manufacturer": "Audio-Technica",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -1397,7 +1651,7 @@
     "sonic_character_en": "Energetic, punchy, balanced, great all-rounder.",
     "review_summary_en": "The modern successor to the legendary AT95E. The VM95E continues the tradition of offering excellent, balanced performance for a very reasonable price. It's a great all-round performer that is a significant step-up from the most basic conical styli.",
     "image_url": null,
-    "notes_en": null,
+    "notes_en": "10Hz compliance is estimated from 100Hz value.",
     "stylus_family": "Elliptical",
     "cantilever_class": "Aluminum",
     "compliance_level": "low",
@@ -1411,9 +1665,15 @@
     "id": 42,
     "model": "Audio-Technica VM95EN",
     "cu_static": 17,
-    "cu_dynamic": 11.9,
-    "cu_dynamic_hz": 10,
-    "source": "Multiple Sources",
+    "cu_dynamic_10hz": 11.9,
+    "cu_dynamic_100hz": 7,
+    "is_estimated_10hz": true,
+    "sources": [
+      {
+        "name": "Audio-Technica",
+        "url": null
+      }
+    ],
     "manufacturer": "Audio-Technica",
     "type": "MM",
     "stylus_type": "Nude Elliptical",
@@ -1431,7 +1691,7 @@
     "sonic_character_en": "More refined, detailed, cleaner highs than 'E' model.",
     "review_summary_en": "A step up from the bonded elliptical of the VM95E, the Nude Elliptical stylus on the VM95EN offers lower tip mass, resulting in a more refined and detailed sound. It particularly improves high-frequency performance, making it cleaner and more extended.",
     "image_url": null,
-    "notes_en": null,
+    "notes_en": "10Hz compliance is estimated from 100Hz value.",
     "stylus_family": "Nude Elliptical",
     "cantilever_class": "Aluminum",
     "compliance_level": "low",
@@ -1445,9 +1705,15 @@
     "id": 43,
     "model": "Audio-Technica VM95C",
     "cu_static": 14,
-    "cu_dynamic": 8.5,
-    "cu_dynamic_hz": 10,
-    "source": "Multiple Sources",
+    "cu_dynamic_10hz": 8.5,
+    "cu_dynamic_100hz": 5,
+    "is_estimated_10hz": true,
+    "sources": [
+      {
+        "name": "Audio-Technica",
+        "url": null
+      }
+    ],
     "manufacturer": "Audio-Technica",
     "type": "MM",
     "stylus_type": "Conical",
@@ -1465,7 +1731,7 @@
     "sonic_character_en": "Warm, forgiving, robust, basic.",
     "review_summary_en": "The entry-level model in the VM95 series with a conical (spherical) stylus. It's robust and very forgiving of worn records. The sound is warm and pleasant, though it lacks the detail and refinement of the more advanced stylus shapes in the series. A great, affordable starting point.",
     "image_url": null,
-    "notes_en": null,
+    "notes_en": "10Hz compliance is estimated from 100Hz value.",
     "stylus_family": "Conical",
     "cantilever_class": "Aluminum",
     "compliance_level": "low",
@@ -1478,9 +1744,15 @@
     "id": 44,
     "model": "Audio-Technica VM95SH",
     "cu_static": 22,
-    "cu_dynamic": 15,
-    "cu_dynamic_hz": 10,
-    "source": "Multiple Sources",
+    "cu_dynamic_10hz": 15,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Audio-Technica",
+        "url": null
+      }
+    ],
     "manufacturer": "Audio-Technica",
     "type": "MM",
     "stylus_type": "Shibata",
@@ -1513,9 +1785,15 @@
     "id": 45,
     "model": "Shure M44-7",
     "cu_static": 24,
-    "cu_dynamic": 16,
-    "cu_dynamic_hz": 10,
-    "source": "Shure",
+    "cu_dynamic_10hz": 16,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Shure",
+        "url": null
+      }
+    ],
     "manufacturer": "Shure",
     "type": "MM",
     "stylus_type": "Conical",
@@ -1547,9 +1825,15 @@
     "id": 46,
     "model": "Shure M75 EG",
     "cu_static": 28,
-    "cu_dynamic": 13,
-    "cu_dynamic_hz": 10,
-    "source": "Shure",
+    "cu_dynamic_10hz": 13,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Shure",
+        "url": null
+      }
+    ],
     "manufacturer": "Shure",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -1581,9 +1865,15 @@
     "id": 47,
     "model": "Stanton 500 AL",
     "cu_static": 30,
-    "cu_dynamic": 12,
-    "cu_dynamic_hz": 10,
-    "source": "Stanton",
+    "cu_dynamic_10hz": 12,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Stanton",
+        "url": null
+      }
+    ],
     "manufacturer": "Stanton",
     "type": "MM",
     "stylus_type": "Conical",
@@ -1614,9 +1904,15 @@
     "id": 48,
     "model": "Stanton 680SL",
     "cu_static": 28,
-    "cu_dynamic": 11.2,
-    "cu_dynamic_hz": 10,
-    "source": "Stanton",
+    "cu_dynamic_10hz": 11.2,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Stanton",
+        "url": null
+      }
+    ],
     "manufacturer": "Stanton",
     "type": "MI",
     "stylus_type": "Elliptical",
@@ -1647,9 +1943,15 @@
     "id": 49,
     "model": "Ortofon Quintet Red",
     "cu_static": null,
-    "cu_dynamic": 15,
-    "cu_dynamic_hz": 10,
-    "source": "Ortofon",
+    "cu_dynamic_10hz": 15,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Ortofon",
+        "url": null
+      }
+    ],
     "manufacturer": "Ortofon",
     "type": "MC",
     "stylus_type": "Elliptical",
@@ -1682,9 +1984,15 @@
     "id": 50,
     "model": "Ortofon Quintet Bronze",
     "cu_static": null,
-    "cu_dynamic": 15,
-    "cu_dynamic_hz": 10,
-    "source": "Ortofon",
+    "cu_dynamic_10hz": 15,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Ortofon",
+        "url": null
+      }
+    ],
     "manufacturer": "Ortofon",
     "type": "MC",
     "stylus_type": "Nude Fine Line",
@@ -1716,9 +2024,15 @@
     "id": 51,
     "model": "Ortofon Jubilee",
     "cu_static": 25,
-    "cu_dynamic": 15,
-    "cu_dynamic_hz": 10,
-    "source": "Ortofon",
+    "cu_dynamic_10hz": 15,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Ortofon",
+        "url": null
+      }
+    ],
     "manufacturer": "Ortofon",
     "type": "MC",
     "stylus_type": "Shibata",
@@ -1750,9 +2064,15 @@
     "id": 52,
     "model": "Ortofon Cadenza Blue",
     "cu_static": null,
-    "cu_dynamic": 12,
-    "cu_dynamic_hz": 10,
-    "source": "Ortofon",
+    "cu_dynamic_10hz": 12,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Ortofon",
+        "url": null
+      }
+    ],
     "manufacturer": "Ortofon",
     "type": "MC",
     "stylus_type": "Nude Gyger 70",
@@ -1785,9 +2105,15 @@
     "id": 53,
     "model": "Sumiko Songbird",
     "cu_static": 32,
-    "cu_dynamic": 14,
-    "cu_dynamic_hz": 10,
-    "source": "Sumiko",
+    "cu_dynamic_10hz": 14,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Sumiko",
+        "url": null
+      }
+    ],
     "manufacturer": "Sumiko",
     "type": "MC",
     "stylus_type": "Elliptical",
@@ -1820,9 +2146,15 @@
     "id": 54,
     "model": "Ortofon NightClub",
     "cu_static": null,
-    "cu_dynamic": 8,
-    "cu_dynamic_hz": 10,
-    "source": "Ortofon",
+    "cu_dynamic_10hz": 8,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Ortofon",
+        "url": null
+      }
+    ],
     "manufacturer": "Ortofon",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -1854,9 +2186,15 @@
     "id": 55,
     "model": "ADC XLM MKII",
     "cu_static": 65,
-    "cu_dynamic": 35,
-    "cu_dynamic_hz": 10,
-    "source": "hifi-wiki.de",
+    "cu_dynamic_10hz": 35,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "hifi-wiki.de",
+        "url": "https://www.hifi-wiki.de/index.php/ADC_XLM_MK_II"
+      }
+    ],
     "manufacturer": "ADC",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -1887,9 +2225,15 @@
     "id": 56,
     "model": "Elac ESG 796 H30",
     "cu_static": 30,
-    "cu_dynamic": 30,
-    "cu_dynamic_hz": 10,
-    "source": "Elac",
+    "cu_dynamic_10hz": 30,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Elac",
+        "url": null
+      }
+    ],
     "manufacturer": "Elac",
     "type": "MM",
     "stylus_type": "van den Hul II",
@@ -1921,9 +2265,15 @@
     "id": 57,
     "model": "Grado Prestige Gold",
     "cu_static": 20,
-    "cu_dynamic": 20,
-    "cu_dynamic_hz": 10,
-    "source": "Grado Labs",
+    "cu_dynamic_10hz": 20,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Grado Labs",
+        "url": null
+      }
+    ],
     "manufacturer": "Grado",
     "type": "MI",
     "stylus_type": "Elliptical",
@@ -1956,9 +2306,15 @@
     "id": 58,
     "model": "Ortofon VMS 20 E MkII",
     "cu_static": 25,
-    "cu_dynamic": 20,
-    "cu_dynamic_hz": 10,
-    "source": "Ortofon",
+    "cu_dynamic_10hz": 20,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Ortofon",
+        "url": null
+      }
+    ],
     "manufacturer": "Ortofon",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -1990,9 +2346,15 @@
     "id": 59,
     "model": "Shure V15 V",
     "cu_static": 40,
-    "cu_dynamic": 20,
-    "cu_dynamic_hz": 10,
-    "source": "Korf Audio",
+    "cu_dynamic_10hz": 20,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Korf Audio",
+        "url": null
+      }
+    ],
     "manufacturer": "Shure",
     "type": "MM",
     "stylus_type": "Micro-Ridge",
@@ -2024,9 +2386,15 @@
     "id": 60,
     "model": "Hana SL",
     "cu_static": 10,
-    "cu_dynamic": 10,
-    "cu_dynamic_hz": 100,
-    "source": "Hana",
+    "cu_dynamic_10hz": null,
+    "cu_dynamic_100hz": 10,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Hana",
+        "url": null
+      }
+    ],
     "manufacturer": "Hana",
     "type": "MC",
     "stylus_type": "Shibata",
@@ -2058,9 +2426,15 @@
     "id": 61,
     "model": "Dual DMS 242 E",
     "cu_static": 20,
-    "cu_dynamic": 15,
-    "cu_dynamic_hz": 10,
-    "source": "hifi-wiki.de",
+    "cu_dynamic_10hz": 15,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "hifi-wiki.de",
+        "url": "https://www.hifi-wiki.de/index.php/Dual_DMS_242_E"
+      }
+    ],
     "manufacturer": "Dual",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -2091,9 +2465,15 @@
     "id": 62,
     "model": "Ortofon F 15 E MkII",
     "cu_static": 25,
-    "cu_dynamic": 15,
-    "cu_dynamic_hz": 10,
-    "source": "hifi-wiki.de",
+    "cu_dynamic_10hz": 15,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "hifi-wiki.de",
+        "url": "https://www.hifi-wiki.de/index.php/Ortofon_F_15_E_MK_II"
+      }
+    ],
     "manufacturer": "Ortofon",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -2125,9 +2505,15 @@
     "id": 63,
     "model": "Philips GP 412 MkII",
     "cu_static": 30,
-    "cu_dynamic": 20,
-    "cu_dynamic_hz": 10,
-    "source": "hifi-wiki.de",
+    "cu_dynamic_10hz": 20,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "hifi-wiki.de",
+        "url": "https://www.hifi-wiki.de/index.php/Philips_GP_412_II"
+      }
+    ],
     "manufacturer": "Philips",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -2159,9 +2545,15 @@
     "id": 64,
     "model": "Sony XL-45",
     "cu_static": 20,
-    "cu_dynamic": 15,
-    "cu_dynamic_hz": 10,
-    "source": "hifi-wiki.de",
+    "cu_dynamic_10hz": 15,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "hifi-wiki.de",
+        "url": "https://www.hifi-wiki.de/index.php/Sony_XL-45"
+      }
+    ],
     "manufacturer": "Sony",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -2193,9 +2585,15 @@
     "id": 65,
     "model": "AKG P8ES",
     "cu_static": 35,
-    "cu_dynamic": 25,
-    "cu_dynamic_hz": 10,
-    "source": "hifi-wiki.de",
+    "cu_dynamic_10hz": 25,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "hifi-wiki.de",
+        "url": "https://www.hifi-wiki.de/index.php/AKG_P_8_ES"
+      }
+    ],
     "manufacturer": "AKG",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -2227,9 +2625,15 @@
     "id": 66,
     "model": "Excel ES-70EX",
     "cu_static": 22,
-    "cu_dynamic": 12,
-    "cu_dynamic_hz": 10,
-    "source": "Vinyl Engine",
+    "cu_dynamic_10hz": 12,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Vinyl Engine",
+        "url": "https://www.vinylengine.com/library/excel-sound/es-70.shtml"
+      }
+    ],
     "manufacturer": "Excel Sound",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -2260,9 +2664,15 @@
     "id": 67,
     "model": "Clearaudio Charisma V2",
     "cu_static": 15,
-    "cu_dynamic": 15,
-    "cu_dynamic_hz": 10,
-    "source": "Clearaudio",
+    "cu_dynamic_10hz": 15,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Clearaudio",
+        "url": null
+      }
+    ],
     "manufacturer": "Clearaudio",
     "type": "MM",
     "stylus_type": "Micro HD",
@@ -2293,9 +2703,15 @@
     "id": 68,
     "model": "Goldring E1",
     "cu_static": 20,
-    "cu_dynamic": 13,
-    "cu_dynamic_hz": 10,
-    "source": "Goldring Support",
+    "cu_dynamic_10hz": 13,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Goldring Support",
+        "url": null
+      }
+    ],
     "manufacturer": "Goldring",
     "type": "MM",
     "stylus_type": "Spherical",
@@ -2326,9 +2742,15 @@
     "id": 69,
     "model": "Goldring E2",
     "cu_static": 20,
-    "cu_dynamic": 13,
-    "cu_dynamic_hz": 10,
-    "source": "Goldring Support",
+    "cu_dynamic_10hz": 13,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Goldring Support",
+        "url": null
+      }
+    ],
     "manufacturer": "Goldring",
     "type": "MM",
     "stylus_type": "Spherical",
@@ -2358,9 +2780,15 @@
     "id": 70,
     "model": "Goldring E3",
     "cu_static": 20,
-    "cu_dynamic": 13,
-    "cu_dynamic_hz": 10,
-    "source": "Goldring Support",
+    "cu_dynamic_10hz": 13,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Goldring Support",
+        "url": null
+      }
+    ],
     "manufacturer": "Goldring",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -2392,9 +2820,15 @@
     "id": 71,
     "model": "Goldring E4",
     "cu_static": 22,
-    "cu_dynamic": 13,
-    "cu_dynamic_hz": 10,
-    "source": "Goldring Support",
+    "cu_dynamic_10hz": 13,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Goldring Support",
+        "url": null
+      }
+    ],
     "manufacturer": "Goldring",
     "type": "MM",
     "stylus_type": "Nude Elliptical",
@@ -2426,9 +2860,15 @@
     "id": 72,
     "model": "Goldring 1006",
     "cu_static": 24,
-    "cu_dynamic": 13,
-    "cu_dynamic_hz": 10,
-    "source": "Goldring Support",
+    "cu_dynamic_10hz": 13,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Goldring Support",
+        "url": null
+      }
+    ],
     "manufacturer": "Goldring",
     "type": "MM",
     "stylus_type": "Elliptical",
@@ -2460,9 +2900,15 @@
     "id": 73,
     "model": "Goldring 1012GX",
     "cu_static": 24,
-    "cu_dynamic": 13,
-    "cu_dynamic_hz": 10,
-    "source": "Goldring Support",
+    "cu_dynamic_10hz": 13,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Goldring Support",
+        "url": null
+      }
+    ],
     "manufacturer": "Goldring",
     "type": "MM",
     "stylus_type": "Gyger II",
@@ -2493,9 +2939,15 @@
     "id": 74,
     "model": "Goldring 1022GX",
     "cu_static": 24,
-    "cu_dynamic": 13,
-    "cu_dynamic_hz": 10,
-    "source": "Goldring Support",
+    "cu_dynamic_10hz": 13,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Goldring Support",
+        "url": null
+      }
+    ],
     "manufacturer": "Goldring",
     "type": "MM",
     "stylus_type": "Vital",
@@ -2527,9 +2979,15 @@
     "id": 75,
     "model": "Goldring 2100",
     "cu_static": 35,
-    "cu_dynamic": 16,
-    "cu_dynamic_hz": 10,
-    "source": "Goldring Specs",
+    "cu_dynamic_10hz": 16,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Goldring Specs",
+        "url": null
+      }
+    ],
     "manufacturer": "Goldring",
     "type": "MI",
     "stylus_type": "Elliptical",
@@ -2561,9 +3019,15 @@
     "id": 76,
     "model": "Goldring 2200",
     "cu_static": 35,
-    "cu_dynamic": 16,
-    "cu_dynamic_hz": 10,
-    "source": "Goldring Specs",
+    "cu_dynamic_10hz": 16,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Goldring Specs",
+        "url": null
+      }
+    ],
     "manufacturer": "Goldring",
     "type": "MI",
     "stylus_type": "Elliptical",
@@ -2595,9 +3059,15 @@
     "id": 77,
     "model": "Goldring 2300",
     "cu_static": 35,
-    "cu_dynamic": 16,
-    "cu_dynamic_hz": 10,
-    "source": "Goldring Specs",
+    "cu_dynamic_10hz": 16,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Goldring Specs",
+        "url": null
+      }
+    ],
     "manufacturer": "Goldring",
     "type": "MI",
     "stylus_type": "Vital",
@@ -2629,9 +3099,15 @@
     "id": 78,
     "model": "Goldring 2400",
     "cu_static": 35,
-    "cu_dynamic": 16,
-    "cu_dynamic_hz": 10,
-    "source": "Goldring Specs",
+    "cu_dynamic_10hz": 16,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Goldring Specs",
+        "url": null
+      }
+    ],
     "manufacturer": "Goldring",
     "type": "MI",
     "stylus_type": "Vital",
@@ -2662,9 +3138,15 @@
     "id": 79,
     "model": "Goldring 2500",
     "cu_static": 35,
-    "cu_dynamic": 16,
-    "cu_dynamic_hz": 10,
-    "source": "Goldring Specs",
+    "cu_dynamic_10hz": 16,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Goldring Specs",
+        "url": null
+      }
+    ],
     "manufacturer": "Goldring",
     "type": "MI",
     "stylus_type": "2SD Line-Contact",
@@ -2696,9 +3178,15 @@
     "id": 80,
     "model": "Goldring Elite",
     "cu_static": 30,
-    "cu_dynamic": 18,
-    "cu_dynamic_hz": 10,
-    "source": "Goldring Specs",
+    "cu_dynamic_10hz": 18,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Goldring Specs",
+        "url": null
+      }
+    ],
     "manufacturer": "Goldring",
     "type": "MC",
     "stylus_type": "Gyger S",
@@ -2730,9 +3218,15 @@
     "id": 81,
     "model": "Goldring Legacy",
     "cu_static": 25,
-    "cu_dynamic": 15,
-    "cu_dynamic_hz": 10,
-    "source": "Goldring Specs",
+    "cu_dynamic_10hz": 15,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Goldring Specs",
+        "url": null
+      }
+    ],
     "manufacturer": "Goldring",
     "type": "MC",
     "stylus_type": "Vital fine line",
@@ -2764,9 +3258,15 @@
     "id": 82,
     "model": "Goldring Ethos",
     "cu_static": 25,
-    "cu_dynamic": 15,
-    "cu_dynamic_hz": 10,
-    "source": "Goldring Specs",
+    "cu_dynamic_10hz": 15,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Goldring Specs",
+        "url": null
+      }
+    ],
     "manufacturer": "Goldring",
     "type": "MC",
     "stylus_type": "Vital line-contact",
