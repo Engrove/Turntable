@@ -2,202 +2,183 @@
 import { ref } from 'vue';
 import { RouterLink, RouterView, useRouter } from 'vue-router';
 
-// Använd den rekommenderade metoden för att hämta routern
 const router = useRouter();
 
-// En reaktiv variabel för att hålla koll på om menyn är öppen eller stängd
-const isMenuOpen = ref(false);
+// En reaktiv variabel för att hålla koll på om menyn är expanderad
+const isMenuExpanded = ref(true);
 
-// Funktion för att stänga menyn. Anropas från flera ställen.
-const closeMenu = () => {
-  isMenuOpen.value = false;
+// Funktion för att växla menyns tillstånd
+const toggleMenu = () => {
+  isMenuExpanded.value = !isMenuExpanded.value;
+};
+
+// Associera varje route med en SVG-ikon
+const routeIcons = {
+  'tonearm-calculator': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="2"></circle><line x1="12" y1="3" x2="12" y2="1"></line><line x1="19" y1="12" x2="21" y2="12"></line><path d="M16 8L12 12 8 8"></path></svg>`,
+  'compliance-estimator': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20V16"></path></svg>`
 };
 </script>
 
 <template>
-  <div class="app-container">
+  <div class="app-layout">
     <!-- SIDOMENYN (Sidebar) -->
-    <!-- Den har en klass 'is-open' när isMenuOpen är true, vilket styr dess synlighet via CSS -->
-    <aside class="sidebar" :class="{ 'is-open': isMenuOpen }">
+    <!-- Klassen 'is-expanded' styr bredd och innehållets synlighet -->
+    <aside class="sidebar" :class="{ 'is-expanded': isMenuExpanded }">
       <div class="sidebar-header">
-        <h3>Engrove Toolkit</h3>
-        <!-- En tydlig stängningsknapp inuti menyn -->
-        <button @click="closeMenu" class="close-menu-btn">×</button>
+        <h3 v-show="isMenuExpanded">Engrove Toolkit</h3>
       </div>
       <nav class="main-nav">
         <RouterLink
           v-for="route in router.options.routes"
           :key="route.name"
           :to="route.path"
-          @click="closeMenu"
+          class="nav-link"
+          :title="route.meta.title"
         >
-          <template v-if="route.meta && route.meta.title">
-            {{ route.meta.title }}
-          </template>
+          <span class="nav-icon" v-html="routeIcons[route.name]"></span>
+          <span class="nav-text" v-show="isMenuExpanded">{{ route.meta.title }}</span>
         </RouterLink>
       </nav>
-      <div class="sidebar-footer">
-        <p>v1.0.0</p>
+
+      <!-- Meny-växlare i botten -->
+      <div class="menu-toggle-wrap">
+        <button @click="toggleMenu" class="menu-toggle" title="Toggle Menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
       </div>
     </aside>
 
-    <!-- En overlay som täcker innehållet när menyn är öppen -->
-    <!-- Ett klick på den stänger menyn -->
-    <div v-if="isMenuOpen" class="menu-overlay" @click="closeMenu"></div>
-
     <!-- HUVUDINNEHÅLL -->
-    <div class="main-wrapper">
-      <header class="main-header">
-        <!-- "Hamburger"-knappen för att öppna menyn -->
-        <button @click="isMenuOpen = true" class="hamburger-btn">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-      </header>
-      <main class="content-area">
-        <RouterView />
-      </main>
-    </div>
+    <main class="content-area">
+      <RouterView />
+    </main>
   </div>
 </template>
 
 <style scoped>
-/* Behållare för hela appen */
-.app-container {
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-  background-color: #e9ecef;
+:root {
+  --sidebar-width-expanded: 260px;
+  --sidebar-width-collapsed: 80px;
 }
 
-/* Sidomenyn (Sidebar) - NU DOLD SOM STANDARD */
+.app-layout {
+  display: flex;
+}
+
+/* Sidomenyn (Sidebar) */
 .sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 260px;
   background-color: var(--header-color);
   color: #ecf0f1;
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 1.5rem 0;
-  z-index: 1001; /* Högst upp */
-  transform: translateX(-100%); /* Dold utanför skärmen */
-  transition: transform 0.3s ease-in-out;
+  padding: 1rem 0;
+  /* Animera bredd-förändringen */
+  transition: width 0.3s ease-in-out;
+  width: var(--sidebar-width-expanded); /* Standard är expanderad */
 }
 
-/* Stilen för menyn när den är öppen */
-.sidebar.is-open {
-  transform: translateX(0);
-  box-shadow: 5px 0 15px rgba(0,0,0,0.2);
+/* Stilar för minimerad meny */
+.sidebar:not(.is-expanded) {
+  width: var(--sidebar-width-collapsed);
+}
+.sidebar:not(.is-expanded) .nav-link {
+  justify-content: center;
+}
+.sidebar:not(.is-expanded) .sidebar-header {
+  height: 36px; /* Matcha höjden för när texten visas för att undvika hopp */
 }
 
 .sidebar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   padding: 0 1.5rem;
   margin-bottom: 2rem;
   font-size: 1.2rem;
+  transition: opacity 0.2s ease-in-out;
 }
-.sidebar-header h3 { margin: 0; }
-
-.close-menu-btn {
-  background: none;
-  border: none;
-  color: #bdc3c7;
-  font-size: 2.5rem;
-  line-height: 1;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-.close-menu-btn:hover {
-  color: #fff;
+.sidebar-header h3 {
+  margin: 0;
+  white-space: nowrap; /* Förhindra textbrytning under animation */
 }
 
 .main-nav {
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
 }
-.main-nav a {
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
   color: #bdc3c7;
   text-decoration: none;
-  padding: 1rem 1.5rem;
-  transition: background-color .2s ease,color .2s ease;
-  border-left: 3px solid transparent;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
 }
-.main-nav a:hover {
+.nav-link:hover {
   background-color: #495057;
   color: #fff;
 }
-.main-nav a.router-link-exact-active {
+.nav-link.router-link-exact-active {
   background-color: rgba(0, 123, 255, 0.15);
   color: #fff;
   font-weight: 600;
-  border-left-color: var(--accent-color, #007bff);
+}
+.nav-link.router-link-exact-active .nav-icon {
+  color: var(--accent-color, #007bff);
 }
 
-.sidebar-footer {
-  padding: 0 1.5rem;
-  font-size: .8rem;
-  color: #7f8c8d;
+.nav-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: inline-block;
 }
 
-/* Overlay som täcker innehållet */
-.menu-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+.nav-text {
+  opacity: 1;
+  transition: opacity 0.2s ease-in-out;
+}
+.sidebar:not(.is-expanded) .nav-text {
+  opacity: 0;
 }
 
-/* Behållare för huvud-header och content-area */
-.main-wrapper {
-  flex-grow: 1;
+/* Meny-växlare (Toggle) */
+.menu-toggle-wrap {
   display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
+  justify-content: flex-end;
+  padding: 0 1.5rem;
+  margin-top: 1rem;
 }
-
-/* Header för huvudinnehållet (med hamburger-knappen) */
-.main-header {
-  background: white;
-  padding: 0.75rem 2rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  z-index: 100;
-}
-
-.hamburger-btn {
+.menu-toggle {
   background: none;
   border: none;
+  color: #bdc3c7;
   cursor: pointer;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  width: 32px;
-  height: 28px;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: background-color 0.2s ease, transform 0.3s ease-in-out;
 }
-.hamburger-btn span {
-  display: block;
-  width: 100%;
-  height: 3px;
-  background: var(--header-color);
-  border-radius: 3px;
+.menu-toggle:hover {
+  background-color: #495057;
+  color: #fff;
 }
+/* Rotera pilen när menyn är minimerad */
+.sidebar:not(.is-expanded) .menu-toggle {
+  transform: rotate(180deg);
+}
+
 
 /* Huvudinnehållet */
 .content-area {
   flex-grow: 1;
   padding: 2rem;
   overflow-y: auto;
+  height: 100vh;
 }
 </style>
 
@@ -209,7 +190,6 @@ html, body {
   padding: 0;
   overflow: hidden;
 }
-
 #app {
   height: 100%;
   padding: 0;
