@@ -13,7 +13,6 @@ function calculateMedian(arr) {
 }
 
 export const useEstimatorStore = defineStore('estimator', () => {
-    // ---- STATE ----
     const userInput = ref({
         cu_dynamic_100hz: null,
         cu_static: null,
@@ -21,78 +20,73 @@ export const useEstimatorStore = defineStore('estimator', () => {
         cantilever_class: null,
         stylus_family: null,
     });
-    
-    const trainingData = pickupData.filter(p => !p.is_estimated_10hz && p.cu_dynamic_10hz > 0);
 
-    // ---- GETTERS ----
-
-    /**
-     * Helper-funktion för att köra ett specifikt scenario.
-     */
-    function runScenario(baseType, propsToMatch) {
-        let matchingGroup = trainingData;
-        for (const prop of propsToMatch) {
-            if (userInput.value[prop]) {
-                matchingGroup = matchingGroup.filter(p => p[prop] === userInput.value[prop]);
-            } else {
-                return null; // Kräver att alla props för scenariot finns
-            }
-        }
-        
-        let ratios = [];
-        if (baseType === '100hz') {
-            ratios = matchingGroup
-                .filter(p => p.cu_dynamic_100hz > 0)
-                .map(p => p.cu_dynamic_10hz / p.cu_dynamic_100hz);
-        } else { // baseType === 'static'
-            ratios = matchingGroup
-                .filter(p => p.cu_static > 0)
-                .map(p => p.cu_dynamic_10hz / p.cu_static);
-        }
-
-        if (ratios.length > 0) {
-            const baseValue = baseType === '100hz' ? userInput.value.cu_dynamic_100hz : userInput.value.cu_static;
-            return baseValue * calculateMedian(ratios);
-        }
-        return null;
-    }
-
-    /**
-     * Central beräkningsfunktion med korrekt fallback-logik.
-     */
     const estimationResult = computed(() => {
         const { cu_dynamic_100hz, cu_static, type } = userInput.value;
         if (!type) return { value: null, key: null };
 
-        // Prioritera 100Hz-beräkningar
+        const tryGetEstimate = (baseType, scenarios) => {
+            for (const scenario of scenarios) {
+                // Skapa korrekt referensgrupp FÖR DETTA SCENARIO
+                let referenceGroup;
+                if (baseType === '100hz') {
+                    // Behöver pickuper med BÅDE 100Hz och 10Hz värden för att skapa ett förhållande
+                    referenceGroup = pickupData.filter(p => !p.is_estimated_10hz && p.cu_dynamic_100hz > 0 && p.cu_dynamic_10hz > 0);
+                } else { // baseType === 'static'
+                    // Behöver pickuper med BÅDE statiskt och 10Hz värden
+                    referenceGroup = pickupData.filter(p => !p.is_estimated_10hz && p.cu_static > 0 && p.cu_dynamic_10hz > 0);
+                }
+
+                // Filtrera referensgruppen baserat på användarens val
+                let matchingGroup = referenceGroup;
+                if (scenario.props.every(p => !!userInput.value[p])) {
+                    for (const prop of scenario.props) {
+                        matchingGroup = matchingGroup.filter(p => p[prop] === userInput.value[prop]);
+                    }
+
+                    if (matchingGroup.length > 0) {
+                        let ratios;
+                        if (baseType === '100hz') {
+                             ratios = matchingGroup.map(p => p.cu_dynamic_10hz / p.cu_dynamic_100hz);
+                        } else {
+                             ratios = matchingGroup.map(p => p.cu_dynamic_10hz / p.cu_static);
+                        }
+                        
+                        if (ratios.length > 0) {
+                            const baseValue = baseType === '100hz' ? cu_dynamic_100hz : cu_static;
+                            return { value: baseValue * calculateMedian(ratios), key: scenario.key };
+                        }
+                    }
+                }
+            }
+            return null; // Inget resultat hittades för denna bas-typ
+        };
+
+        // KÖRHÅLLNING: Prioritera 100Hz
         if (cu_dynamic_100hz > 0) {
             const scenarios100Hz = [
                 { key: 'A1', props: ['type', 'cantilever_class', 'stylus_family'] },
                 { key: 'A2', props: ['type', 'cantilever_class'] },
                 { key: 'A3', props: ['type'] },
             ];
-            for (const scenario of scenarios100Hz) {
-                const result = runScenario('100hz', scenario.props);
-                if (result !== null) return { value: result, key: scenario.key };
-            }
+            const result = tryGetEstimate('100hz', scenarios100Hz);
+            if (result) return result;
         }
 
-        // Fallback till statiska beräkningar om 100Hz misslyckades eller saknas
+        // FALLBACK: Om 100Hz misslyckades eller saknas, försök med statisk
         if (cu_static > 0) {
             const scenariosStatic = [
                 { key: 'B1', props: ['type', 'cantilever_class', 'stylus_family'] },
                 { key: 'B2', props: ['type', 'cantilever_class'] },
                 { key: 'B3', props: ['type'] },
             ];
-            for (const scenario of scenariosStatic) {
-                const result = runScenario('static', scenario.props);
-                if (result !== null) return { value: result, key: scenario.key };
-            }
+            const result = tryGetEstimate('static', scenariosStatic);
+            if (result) return result;
         }
-        
+
         return { value: null, key: null };
     });
-    
+
     const estimatedCompliance = computed(() => estimationResult.value.value);
     const activeScenarioKey = computed(() => estimationResult.value.key);
 
@@ -101,20 +95,14 @@ export const useEstimatorStore = defineStore('estimator', () => {
         if (key && confidenceData[key]) {
             return confidenceData[key];
         }
-        return { confidence: 0, sampleSize: 0, description: 'Not enough data provided.' };
+        return { confidence: 0, sampleSize: 0, description: 'Please provide more data...' };
     });
     
     const availableCantileverClasses = computed(() => classifications.cantilever_class.categories.map(c => c.id));
     const availableStylusFamilies = computed(() => classifications.stylus_family.categories.map(c => c.id));
     
     function resetInput() {
-        userInput.value = {
-            cu_dynamic_100hz: null,
-            cu_static: null,
-            type: null,
-            cantilever_class: null,
-            stylus_family: null,
-        };
+        userInput.value = { cu_dynamic_100hz: null, cu_static: null, type: null, cantilever_class: null, stylus_family: null };
     }
 
     return { userInput, estimatedCompliance, confidence, activeScenarioKey, availableCantileverClasses, availableStylusFamilies, resetInput };
