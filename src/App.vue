@@ -1,50 +1,29 @@
-<script setup>
-import { RouterLink, RouterView } from 'vue-router'
-import router from '@/router'
-</script>
-
+<!-- src/App.vue -->
 <template>
-  <div class="toolkit-wrapper">
+  <div class="app-container">
     <aside class="sidebar">
-      <div class="sidebar-header">
-        <h3>Engrove Toolkit</h3>
+      <div class="sidebar-brand">
+        <!-- Ikon (inline SVG) -->
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+        <span class="text">Engrove Toolkit</span>
       </div>
-      <nav class="main-nav">
-        <RouterLink 
-          v-for="route in router.options.routes" 
-          :key="route.name"
-          :to="route.path"
-        >
-          {{ route.meta.title }}
-        </RouterLink>
+
+      <nav>
+        <router-link to="/" class="nav-link active">
+          <!-- Kalkylator-ikon -->
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+          <span class="text">Tonearm Calculator</span>
+        </router-link>
+        <!-- Framtida länkar kan läggas till här -->
       </nav>
-      <div class="sidebar-footer">
-        <p>v1.0.0</p>
-      </div>
     </aside>
-    <main class="content-area">
-      <RouterView />
+
+    <main class="main-content">
+      <router-view />
     </main>
   </div>
 </template>
 
 <style scoped>
-/* ... (samma CSS som tidigare) ... */
-.toolkit-wrapper{display:flex;height:100%}.sidebar{width:240px;background-color:var(--header-color);color:#ecf0f1;display:flex;flex-direction:column;padding:1.5rem 0;flex-shrink:0}.sidebar-header{padding:0 1.5rem;margin-bottom:2rem;font-size:1.2rem}.sidebar-header h3{margin:0}.main-nav{display:flex;flex-direction:column;flex-grow:1}.main-nav a{color:#bdc3c7;text-decoration:none;padding:1rem 1.5rem;transition:background-color .2s ease,color .2s ease}.main-nav a:hover{background-color:#495057;color:#fff}.main-nav a.router-link-exact-active{background-color:var(--accent-color,#007bff);color:#fff;font-weight:600}.sidebar-footer{padding:0 1.5rem;font-size:.8rem;color:#7f8c8d}.content-area{flex-grow:1;padding:2rem;overflow-y:auto}
-</style>
-
-<style>
-/* Global layout-fix för att eliminera den yttre scrollbaren */
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden; /* Denna rad är nyckeln: Förbjuder webbläsarens scrollbar */
-}
-
-#app {
-  height: 100%; /* Använder 100% för att perfekt fylla body-elementet */
-  padding: 0;
-  max-width: none;
-}
+/* Scoped styles för App.vue om det skulle behövas, men det mesta ligger i main.css */
 </style>
