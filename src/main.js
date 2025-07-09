@@ -6,17 +6,17 @@ import router from './router'
 
 import './assets/main.css'
 
-// Skapa en app-instans
+// 1. Skapa Vue-applikationen
 const app = createApp(App)
 
-// Installera Pinia för state management.
-// Detta måste ske INNAN vi använder några stores.
+// 2. Installera Pinia (State Management).
+//    Detta måste ske INNAN routern och INNAN appen monteras.
 app.use(createPinia())
 
-// Installera Vue Router.
-// Detta måste ske INNAN vi monterar appen.
+// 3. Installera Vue Router.
+//    Detta gör routern tillgänglig globalt via `useRouter()`.
 app.use(router)
 
-// Montera appen till DOM-elementet med id="app".
-// Detta är det absolut sista steget.
+// 4. Montera appen till HTML-sidan.
+//    Detta är det absolut sista steget.
 app.mount('#app')
