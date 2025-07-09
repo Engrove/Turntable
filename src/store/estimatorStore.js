@@ -2,9 +2,13 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 
 // Importera vår data
-import pickupData from '@/data/pickup_data.json';
-import classifications from '@/data/classifications.json';
-import confidenceData from '@/data/confidence_levels.json';
+// import pickupData from '@/data/pickup_data.json';
+// import classifications from '@/data/classifications.json';
+// import confidenceData from '@/data/confidence_levels.json';
+
+import pickupData from '../../data/pickup_data.json';
+import classifications from '../../data/classifications.json';
+import confidenceData from '../../data/confidence_levels.json';
 
 // --- Hjälpfunktioner (kan ligga i en separat fil vid behov) ---
 function calculateMedian(arr) {
