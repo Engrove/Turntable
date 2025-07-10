@@ -1,7 +1,8 @@
 import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
-import pickupData from '@/data/pickup_data.json';
-import classifications from '@/data/classifications.json';
+// KORRIGERADE SÖKVÄGAR NEDAN
+import pickupData from '../../data/pickup_data.json';
+import classifications from '../../data/classifications.json';
 
 export const useEstimatorStore = defineStore('estimator', () => {
   // --- STATE ---
@@ -17,8 +18,6 @@ export const useEstimatorStore = defineStore('estimator', () => {
   const availableCantileverClasses = computed(() => classifications.cantilever_class.categories.map(c => c.name));
   const availableStylusFamilies = computed(() => classifications.stylus_family.categories.map(c => c.name));
 
-  // Denna funktion skapar en filtrerad lista baserat på indata.
-  // Den används av både 'estimatedCompliance' och 'confidence' för att hålla logiken konsekvent.
   const getFilteredLearningSet = () => {
     const mode = userInput.value.cu_dynamic_100hz ? 'dynamic100' : (userInput.value.cu_static ? 'static' : null);
     if (!mode || !userInput.value.type) return { list: [], mode: null };
@@ -30,7 +29,6 @@ export const useEstimatorStore = defineStore('estimator', () => {
       learningSet = pickupData.filter(p => p.cu_static && p.cu_dynamic_10hz);
     }
 
-    // Applicera ytterligare filter
     if (userInput.value.type) {
       learningSet = learningSet.filter(p => p.type === userInput.value.type);
     }
@@ -85,7 +83,6 @@ export const useEstimatorStore = defineStore('estimator', () => {
     if (userInput.value.cantilever_class) score += 15;
     if (userInput.value.stylus_family) score += 15;
 
-    // Justera poängen baserat på hur många liknande pickuper som hittades.
     if (sampleSize > 10) score *= 1.0;
     else if (sampleSize > 5) score *= 0.9;
     else if (sampleSize > 0) score *= 0.75;
