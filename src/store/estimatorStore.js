@@ -17,66 +17,59 @@ export const useEstimatorStore = defineStore('estimator', () => {
   const availableCantileverClasses = computed(() => classifications.cantilever_class.categories.map(c => c.name));
   const availableStylusFamilies = computed(() => classifications.stylus_family.categories.map(c => c.name));
 
-  const filteredData = computed(() => {
-    let data = pickupData.filter(p => p.cu_dynamic_10hz);
+  // Denna funktion skapar en filtrerad lista baserat på indata.
+  // Den används av både 'estimatedCompliance' och 'confidence' för att hålla logiken konsekvent.
+  const getFilteredLearningSet = () => {
+    const mode = userInput.value.cu_dynamic_100hz ? 'dynamic100' : (userInput.value.cu_static ? 'static' : null);
+    if (!mode || !userInput.value.type) return { list: [], mode: null };
 
+    let learningSet;
+    if (mode === 'dynamic100') {
+      learningSet = pickupData.filter(p => p.cu_dynamic_100hz && p.cu_dynamic_10hz);
+    } else { // mode === 'static'
+      learningSet = pickupData.filter(p => p.cu_static && p.cu_dynamic_10hz);
+    }
+
+    // Applicera ytterligare filter
     if (userInput.value.type) {
-      data = data.filter(p => p.type === userInput.value.type);
+      learningSet = learningSet.filter(p => p.type === userInput.value.type);
     }
     if (userInput.value.cantilever_class) {
-      data = data.filter(p => p.cantilever_class === userInput.value.cantilever_class);
+      learningSet = learningSet.filter(p => p.cantilever_class === userInput.value.cantilever_class);
     }
     if (userInput.value.stylus_family) {
-      data = data.filter(p => p.stylus_family === userInput.value.stylus_family);
+      learningSet = learningSet.filter(p => p.stylus_family === userInput.value.stylus_family);
     }
-    return data;
-  });
+
+    return { list: learningSet, mode };
+  };
 
   const estimatedCompliance = computed(() => {
-    const data = filteredData.value;
-    if (data.length === 0 || !userInput.value.type) return null;
+    const { list: filteredLearningSet, mode } = getFilteredLearningSet();
+    
+    if (filteredLearningSet.length === 0 || !mode) return null;
+
+    const referenceValue = mode === 'dynamic100' ? userInput.value.cu_dynamic_100hz : userInput.value.cu_static;
+    if (!referenceValue) return null;
 
     let totalRatio = 0;
-    let count = 0;
-    let referenceValue = null;
+    filteredLearningSet.forEach(p => {
+      if (mode === 'dynamic100') {
+        totalRatio += p.cu_dynamic_10hz / p.cu_dynamic_100hz;
+      } else {
+        totalRatio += p.cu_dynamic_10hz / p.cu_static;
+      }
+    });
 
-    // --- KORRIGERAD LOGIK NEDAN ---
-    // Prioritera ALLTID 100Hz-värdet om det finns, eftersom det är mer exakt.
-    if (userInput.value.cu_dynamic_100hz) {
-      referenceValue = userInput.value.cu_dynamic_100hz;
-      data.forEach(p => {
-        // Använd bara datapunkter som har både 100Hz och 10Hz värden för att beräkna ett förhållande.
-        if (p.cu_dynamic_100hz && p.cu_dynamic_10hz) {
-          totalRatio += p.cu_dynamic_10hz / p.cu_dynamic_100hz;
-          count++;
-        }
-      });
-    } 
-    // Använd ENDAST det statiska värdet om 100Hz-värdet saknas.
-    else if (userInput.value.cu_static) {
-      referenceValue = userInput.value.cu_static;
-      data.forEach(p => {
-        // Använd bara datapunkter som har både statisk och 10Hz värden.
-        if (p.cu_static && p.cu_dynamic_10hz) {
-          totalRatio += p.cu_dynamic_10hz / p.cu_static;
-          count++;
-        }
-      });
-    }
-    // --- SLUT PÅ KORRIGERAD LOGIK ---
-
-    if (count === 0 || referenceValue === null) return null;
-
-    const averageRatio = totalRatio / count;
+    const averageRatio = totalRatio / filteredLearningSet.length;
     return referenceValue * averageRatio;
   });
 
   const confidence = computed(() => {
-    const maxScore = 100;
-    let score = 0;
-    const sampleSize = filteredData.value.length;
+    const { list: filteredLearningSet } = getFilteredLearningSet();
+    const sampleSize = filteredLearningSet.length;
 
-    if (!userInput.value.type || (!userInput.value.cu_static && !userInput.value.cu_dynamic_100hz)) {
+    if (!userInput.value.type || (!userInput.value.cu_static && !userInput.value.cu_dynamic_100hz) || sampleSize === 0) {
       return {
         confidence: 0,
         sampleSize: 0,
@@ -84,23 +77,19 @@ export const useEstimatorStore = defineStore('estimator', () => {
       };
     }
 
+    let score = 0;
     if (userInput.value.type) score += 30;
-    if (userInput.value.cu_static) score += 20;
     if (userInput.value.cu_dynamic_100hz) score += 40;
+    else if (userInput.value.cu_static) score += 20;
+    
     if (userInput.value.cantilever_class) score += 15;
     if (userInput.value.stylus_family) score += 15;
 
     // Justera poängen baserat på hur många liknande pickuper som hittades.
-    if (sampleSize > 10) {
-      score *= 1.0;
-    } else if (sampleSize > 5) {
-      score *= 0.9;
-    } else if (sampleSize > 0) {
-      score *= 0.75;
-    } else {
-      score = 0;
-    }
-
+    if (sampleSize > 10) score *= 1.0;
+    else if (sampleSize > 5) score *= 0.9;
+    else if (sampleSize > 0) score *= 0.75;
+    
     return {
       confidence: Math.min(100, Math.round(score)),
       sampleSize: sampleSize,
@@ -123,7 +112,6 @@ export const useEstimatorStore = defineStore('estimator', () => {
     userInput,
     availableCantileverClasses,
     availableStylusFamilies,
-    filteredData,
     estimatedCompliance,
     confidence,
     resetInput
