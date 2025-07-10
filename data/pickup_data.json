@@ -3293,5 +3293,835 @@
       "Detailed",
       "Neutral"
     ]
+  },
+  {
+    "id": 83,
+    "model": "Lyra Delos",
+    "cu_static": null,
+    "cu_dynamic_10hz": 12,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Lyra Audio Official",
+        "url": null
+      },
+      {
+        "name": "Various Reviews",
+        "url": null
+      }
+    ],
+    "manufacturer": "Lyra",
+    "type": "MC",
+    "stylus_type": "Micro-Ridge",
+    "cantilever_material": "Solid Boron",
+    "weight_g": 8.8,
+    "tracking_force_min_g": 1.7,
+    "tracking_force_max_g": 1.8,
+    "output_voltage_mv": 0.6,
+    "frequency_response_min_hz": 10,
+    "frequency_response_max_hz": 50000,
+    "channel_separation_db": 30,
+    "load_impedance_ohm": 101,
+    "load_capacitance_min_pf": null,
+    "load_capacitance_max_pf": null,
+    "sonic_character_en": "Neutral, highly detailed, dynamic, transparent, precise imaging.",
+    "review_summary_en": "A benchmark in its price class, the Lyra Delos is renowned for its neutrality, transparency, and dynamic expression. It uses a pre-aged damping system to maintain performance over time. It's a highly detailed and revealing cartridge without being sterile, offering a clear window into the recording.",
+    "image_url": null,
+    "notes_en": "Features a Namiki Micro-Ridge stylus and a low-mass body.",
+    "stylus_family": "Advanced Line-Contact",
+    "cantilever_class": "Exotic/High-Performance",
+    "compliance_level": "medium",
+    "tags": [
+      "Neutral",
+      "Detailed",
+      "Dynamic",
+      "Transparent",
+      "Precise"
+    ]
+  },
+  {
+    "id": 84,
+    "model": "Koetsu Rosewood",
+    "cu_static": null,
+    "cu_dynamic_10hz": 8,
+    "cu_dynamic_100hz": 5,
+    "is_estimated_10hz": true,
+    "sources": [
+      {
+        "name": "Koetsu USA",
+        "url": null
+      }
+    ],
+    "manufacturer": "Koetsu",
+    "type": "MC",
+    "stylus_type": "Elliptical",
+    "cantilever_material": "Boron",
+    "weight_g": 9,
+    "tracking_force_min_g": 1.8,
+    "tracking_force_max_g": 2.0,
+    "output_voltage_mv": 0.4,
+    "frequency_response_min_hz": 20,
+    "frequency_response_max_hz": 100000,
+    "channel_separation_db": 25,
+    "load_impedance_ohm": 31,
+    "load_capacitance_min_pf": null,
+    "load_capacitance_max_pf": null,
+    "sonic_character_en": "Lush, rich, magical midrange, musical, warm, tonally dense.",
+    "review_summary_en": "A legendary MC cartridge famous for the 'Koetsu sound'. The Rosewood model offers a lush, harmonically rich, and tonally dense presentation with a magical midrange that makes vocals and instruments sound incredibly lifelike. It prioritizes musical beauty and emotional engagement over ultimate analytical detail.",
+    "image_url": null,
+    "notes_en": "Handmade with a natural rosewood body. Compliance is estimated from 100Hz spec.",
+    "stylus_family": "Elliptical",
+    "cantilever_class": "Exotic/High-Performance",
+    "compliance_level": "low",
+    "tags": [
+      "Rich",
+      "Musical",
+      "Good Midrange",
+      "Warm",
+      "Refined"
+    ]
+  },
+  {
+    "id": 85,
+    "model": "Hana SH",
+    "cu_static": 10,
+    "cu_dynamic_10hz": 17,
+    "cu_dynamic_100hz": 10,
+    "is_estimated_10hz": true,
+    "sources": [
+      {
+        "name": "Hana Official",
+        "url": null
+      }
+    ],
+    "manufacturer": "Hana",
+    "type": "MC",
+    "stylus_type": "Shibata",
+    "cantilever_material": "Aluminum",
+    "weight_g": 5,
+    "tracking_force_min_g": 1.8,
+    "tracking_force_max_g": 2.2,
+    "output_voltage_mv": 2.0,
+    "frequency_response_min_hz": 15,
+    "frequency_response_max_hz": 32000,
+    "channel_separation_db": 28,
+    "load_impedance_ohm": 47000,
+    "load_capacitance_min_pf": null,
+    "load_capacitance_max_pf": null,
+    "sonic_character_en": "Musical, refined, balanced, great texture, slightly sweet.",
+    "review_summary_en": "The high-output version of the acclaimed Hana SL. The 'SH' offers the same refined and musical presentation with a Shibata stylus, but its 2.0mV output allows it to be used with standard MM phono stages. It's known for its balance, excellent texture, and a slightly sweet, engaging sound.",
+    "image_url": null,
+    "notes_en": "High-output MC. Dynamic compliance @ 10Hz is estimated by multiplying the 100Hz value by 1.7.",
+    "stylus_family": "Advanced Line-Contact",
+    "cantilever_class": "Aluminum",
+    "compliance_level": "medium",
+    "tags": [
+      "Musical",
+      "Refined",
+      "Balanced",
+      "Smooth"
+    ]
+  },
+  {
+    "id": 86,
+    "model": "Ortofon SPU Classic GM E MkII",
+    "cu_static": null,
+    "cu_dynamic_10hz": 8,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Ortofon Official",
+        "url": "https://www.ortofon.com/spu-classic-gm-e-mkii-p-243"
+      }
+    ],
+    "manufacturer": "Ortofon",
+    "type": "MC",
+    "stylus_type": "Elliptical",
+    "cantilever_material": "Aluminum",
+    "weight_g": 30.5,
+    "tracking_force_min_g": 3.0,
+    "tracking_force_max_g": 5.0,
+    "output_voltage_mv": 0.2,
+    "frequency_response_min_hz": 20,
+    "frequency_response_max_hz": 20000,
+    "channel_separation_db": 20,
+    "load_impedance_ohm": 11,
+    "load_capacitance_min_pf": null,
+    "load_capacitance_max_pf": null,
+    "sonic_character_en": "Weighty, powerful, rich tone, classic 'vintage' sound.",
+    "review_summary_en": "A direct descendant of the original 1959 SPU (Stereo Pick Up). This classic model offers a weighty, dynamic, and tonally rich sound that is beloved for its presentation of classical music and jazz. It's not about hyper-detail, but about scale, authority, and musical substance.",
+    "image_url": null,
+    "notes_en": "Integrated headshell design (G-shell). Requires a high-mass tonearm.",
+    "stylus_family": "Elliptical",
+    "cantilever_class": "Aluminum",
+    "compliance_level": "low",
+    "tags": [
+      "Rich",
+      "Musical",
+      "Dynamic",
+      "Good Bass"
+    ]
+  },
+  {
+    "id": 87,
+    "model": "Audio-Technica VM740ML",
+    "cu_static": 40,
+    "cu_dynamic_10hz": 17,
+    "cu_dynamic_100hz": 10,
+    "is_estimated_10hz": true,
+    "sources": [
+      {
+        "name": "Audio-Technica Official",
+        "url": null
+      }
+    ],
+    "manufacturer": "Audio-Technica",
+    "type": "MM",
+    "stylus_type": "MicroLine",
+    "cantilever_material": "Tapered Aluminum",
+    "weight_g": 8,
+    "tracking_force_min_g": 1.8,
+    "tracking_force_max_g": 2.2,
+    "output_voltage_mv": 4,
+    "frequency_response_min_hz": 20,
+    "frequency_response_max_hz": 27000,
+    "channel_separation_db": 28,
+    "load_impedance_ohm": 47000,
+    "load_capacitance_min_pf": 100,
+    "load_capacitance_max_pf": 200,
+    "sonic_character_en": "Highly detailed, clean, superb separation, neutral-to-bright.",
+    "review_summary_en": "A high-end MM cartridge from A-T's 700 series. The VM740ML offers exceptional detail retrieval and channel separation thanks to its MicroLine stylus and dual magnet design. The sound is very clean, precise, and neutral, though it can lean towards brightness in some systems. A top-tier MM tracker.",
+    "image_url": null,
+    "notes_en": "10Hz compliance is estimated from the 100Hz value.",
+    "stylus_family": "Advanced Line-Contact",
+    "cantilever_class": "Aluminum",
+    "compliance_level": "medium",
+    "tags": [
+      "Detailed",
+      "Clean",
+      "Neutral",
+      "Bright",
+      "Precise"
+    ]
+  },
+  {
+    "id": 88,
+    "model": "Grado Reference Sonata3",
+    "cu_static": 20,
+    "cu_dynamic_10hz": 20,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Grado Labs",
+        "url": null
+      }
+    ],
+    "manufacturer": "Grado",
+    "type": "MI",
+    "stylus_type": "Elliptical",
+    "cantilever_material": "Aluminum",
+    "weight_g": 10,
+    "tracking_force_min_g": 1.5,
+    "tracking_force_max_g": 1.9,
+    "output_voltage_mv": 4.8,
+    "frequency_response_min_hz": 10,
+    "frequency_response_max_hz": 60000,
+    "channel_separation_db": 30,
+    "load_impedance_ohm": 47000,
+    "load_capacitance_min_pf": null,
+    "load_capacitance_max_pf": null,
+    "sonic_character_en": "Rich, vivid midrange, warm, musical, 'woody' character.",
+    "review_summary_en": "Part of Grado's Timbre series, the Sonata3 features a cured Jarrah wood body. It delivers a more refined and dynamic version of the famous Grado sound. It is characterized by an exceptionally rich, vivid, and textured midrange, making it a favorite for vocals and acoustic music.",
+    "image_url": null,
+    "notes_en": "Can be sensitive to hum on some turntables.",
+    "stylus_family": "Elliptical",
+    "cantilever_class": "Aluminum",
+    "compliance_level": "high",
+    "tags": [
+      "Rich",
+      "Good Midrange",
+      "Musical",
+      "Warm"
+    ]
+  },
+  {
+    "id": 89,
+    "model": "Soundsmith Otello",
+    "cu_static": null,
+    "cu_dynamic_10hz": 22,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Soundsmith Official",
+        "url": null
+      }
+    ],
+    "manufacturer": "Soundsmith",
+    "type": "MI",
+    "stylus_type": "Elliptical",
+    "cantilever_material": "Aluminum",
+    "weight_g": 6.8,
+    "tracking_force_min_g": 1.3,
+    "tracking_force_max_g": 1.7,
+    "output_voltage_mv": 2.12,
+    "frequency_response_min_hz": 20,
+    "frequency_response_max_hz": 20000,
+    "channel_separation_db": 24,
+    "load_impedance_ohm": 47000,
+    "load_capacitance_min_pf": null,
+    "load_capacitance_max_pf": null,
+    "sonic_character_en": "Smooth, detailed, excellent soundstage, low surface noise.",
+    "review_summary_en": "A popular moving iron cartridge from US manufacturer Soundsmith. The Otello is known for its smooth yet detailed presentation, excellent stereo imaging, and remarkably low surface noise. It offers a sophisticated sound and is a great entry into the Soundsmith line.",
+    "image_url": null,
+    "notes_en": "A fixed-coil design, compatible with MM phono stages.",
+    "stylus_family": "Elliptical",
+    "cantilever_class": "Aluminum",
+    "compliance_level": "high",
+    "tags": [
+      "Smooth",
+      "Detailed",
+      "Musical"
+    ]
+  },
+  {
+    "id": 90,
+    "model": "Rega Ania",
+    "cu_static": null,
+    "cu_dynamic_10hz": 10,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Rega Research",
+        "url": null
+      }
+    ],
+    "manufacturer": "Rega",
+    "type": "MC",
+    "stylus_type": "Elliptical",
+    "cantilever_material": "Boron",
+    "weight_g": 6,
+    "tracking_force_min_g": 1.75,
+    "tracking_force_max_g": 2.0,
+    "output_voltage_mv": 0.35,
+    "frequency_response_min_hz": null,
+    "frequency_response_max_hz": null,
+    "channel_separation_db": null,
+    "load_impedance_ohm": 100,
+    "load_capacitance_min_pf": 1000,
+    "load_capacitance_max_pf": 1000,
+    "sonic_character_en": "Fast, rhythmic, energetic, detailed, classic Rega PRaT.",
+    "review_summary_en": "Rega's entry-level MC, the Ania delivers the company's signature pace, rhythm, and timing (PRaT). It's a fast, energetic, and engaging listen with plenty of detail. Designed for perfect synergy with Rega's own tonearms and phono stages.",
+    "image_url": null,
+    "notes_en": "Features a three-point mounting system for Rega tonearms.",
+    "stylus_family": "Elliptical",
+    "cantilever_class": "Exotic/High-Performance",
+    "compliance_level": "low",
+    "tags": [
+      "Fast",
+      "Engaging",
+      "Dynamic",
+      "Detailed"
+    ]
+  },
+  {
+    "id": 91,
+    "model": "Ortofon Concorde Scratch",
+    "cu_static": null,
+    "cu_dynamic_10hz": 6,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Ortofon DJ",
+        "url": null
+      }
+    ],
+    "manufacturer": "Ortofon",
+    "type": "MM",
+    "stylus_type": "Spherical",
+    "cantilever_material": "Aluminum",
+    "weight_g": 18.5,
+    "tracking_force_min_g": 3.0,
+    "tracking_force_max_g": 5.0,
+    "output_voltage_mv": 10,
+    "frequency_response_min_hz": 20,
+    "frequency_response_max_hz": 18000,
+    "channel_separation_db": 20,
+    "load_impedance_ohm": 47000,
+    "load_capacitance_min_pf": 200,
+    "load_capacitance_max_pf": 400,
+    "sonic_character_en": "Extremely loud, punchy bass, superb tracking for scratching.",
+    "review_summary_en": "A legendary tool for turntablists. The Concorde Scratch is engineered for one primary purpose: to stay in the groove under the most demanding scratching and back-cueing. It has an extremely high output for a powerful, punchy sound and is built for maximum durability.",
+    "image_url": null,
+    "notes_en": "Integrated headshell design. Very high output may overload some non-DJ phono stages.",
+    "stylus_family": "Conical",
+    "cantilever_class": "Aluminum",
+    "compliance_level": "low",
+    "tags": [
+      "DJ",
+      "Durable",
+      "Punchy",
+      "Good Bass"
+    ]
+  },
+  {
+    "id": 92,
+    "model": "ADC QLM 36 Mk III",
+    "cu_static": 29,
+    "cu_dynamic_10hz": 20,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Vinyl Engine",
+        "url": "https://www.vinylengine.com/library/adc/qlm-36.shtml"
+      }
+    ],
+    "manufacturer": "ADC",
+    "type": "MM",
+    "stylus_type": "Elliptical",
+    "cantilever_material": "Aluminum",
+    "weight_g": 5.75,
+    "tracking_force_min_g": 1.0,
+    "tracking_force_max_g": 2.0,
+    "output_voltage_mv": 3.5,
+    "frequency_response_min_hz": 15,
+    "frequency_response_max_hz": 20000,
+    "channel_separation_db": 24,
+    "load_impedance_ohm": 47000,
+    "load_capacitance_min_pf": 275,
+    "load_capacitance_max_pf": 275,
+    "sonic_character_en": "Balanced, smooth, good all-rounder, pleasant listen.",
+    "review_summary_en": "A very popular and common 'workhorse' cartridge from ADC in the late 70s. The QLM (Qualified Low Mass) series was a step below the flagship XLM, offering a more moderate compliance suitable for a wider range of tonearms. It provides a balanced, smooth, and pleasant sound, making it a great all-round performer.",
+    "image_url": null,
+    "notes_en": "A solid vintage performer with good stylus availability.",
+    "stylus_family": "Elliptical",
+    "cantilever_class": "Aluminum",
+    "compliance_level": "high",
+    "tags": [
+      "Balanced",
+      "Smooth",
+      "Musical"
+    ]
+  },
+  {
+    "id": 93,
+    "model": "Shelter 501 III",
+    "cu_static": null,
+    "cu_dynamic_10hz": 9,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Shelter Inc.",
+        "url": null
+      },
+      {
+        "name": "Various Reviews",
+        "url": null
+      }
+    ],
+    "manufacturer": "Shelter",
+    "type": "MC",
+    "stylus_type": "Elliptical",
+    "cantilever_material": "Boron",
+    "weight_g": 8.1,
+    "tracking_force_min_g": 1.4,
+    "tracking_force_max_g": 2.0,
+    "output_voltage_mv": 0.5,
+    "frequency_response_min_hz": 20,
+    "frequency_response_max_hz": 20000,
+    "channel_separation_db": null,
+    "load_impedance_ohm": 100,
+    "load_capacitance_min_pf": null,
+    "load_capacitance_max_pf": null,
+    "sonic_character_en": "Musical, rich, smooth, powerful bass, engaging.",
+    "review_summary_en": "A legendary Japanese MC cartridge, the Shelter 501 III is famous for its exceptionally musical and engaging sound. It combines warmth and richness with sufficient detail to be captivating but never fatiguing. It has a powerful and authoritative bass response and a smooth, liquid midrange. A favorite for those who prioritize musical enjoyment.",
+    "image_url": null,
+    "notes_en": "Uses a 0.3 x 0.7 mil nude elliptical stylus.",
+    "stylus_family": "Elliptical",
+    "cantilever_class": "Exotic/High-Performance",
+    "compliance_level": "low",
+    "tags": [
+      "Musical",
+      "Rich",
+      "Smooth",
+      "Good Bass",
+      "Engaging"
+    ]
+  },
+  {
+    "id": 94,
+    "model": "Clearaudio Talismann V2 Gold",
+    "cu_static": null,
+    "cu_dynamic_10hz": 15,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Clearaudio",
+        "url": null
+      }
+    ],
+    "manufacturer": "Clearaudio",
+    "type": "MC",
+    "stylus_type": "Micro HD",
+    "cantilever_material": "Boron",
+    "weight_g": 11,
+    "tracking_force_min_g": 2.8,
+    "tracking_force_max_g": 2.8,
+    "output_voltage_mv": 0.5,
+    "frequency_response_min_hz": 20,
+    "frequency_response_max_hz": 100000,
+    "channel_separation_db": 30,
+    "load_impedance_ohm": 100,
+    "load_capacitance_min_pf": null,
+    "load_capacitance_max_pf": null,
+    "sonic_character_en": "Detailed, dynamic, precise, neutral, clean.",
+    "review_summary_en": "A high-end MC from Clearaudio featuring a 24-karat gold coil and an ebony wood body. It embodies the Clearaudio house sound of precision, detail, and neutrality. It is highly dynamic and clean, with superb tracking and a very wide frequency response, revealing fine nuances in the recording.",
+    "image_url": null,
+    "notes_en": "Relatively high tracking force is by design.",
+    "stylus_family": "Advanced Line-Contact",
+    "cantilever_class": "Exotic/High-Performance",
+    "compliance_level": "medium",
+    "tags": [
+      "Detailed",
+      "Dynamic",
+      "Neutral",
+      "Precise",
+      "Clean"
+    ]
+  },
+  {
+    "id": 95,
+    "model": "Stanton 881S",
+    "cu_static": 30,
+    "cu_dynamic_10hz": 25,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Stanton User Manuals",
+        "url": null
+      }
+    ],
+    "manufacturer": "Stanton",
+    "type": "MI",
+    "stylus_type": "Stereohedron",
+    "cantilever_material": "Aluminum",
+    "weight_g": 5.7,
+    "tracking_force_min_g": 0.75,
+    "tracking_force_max_g": 1.25,
+    "output_voltage_mv": 3.2,
+    "frequency_response_min_hz": 10,
+    "frequency_response_max_hz": 25000,
+    "channel_separation_db": 35,
+    "load_impedance_ohm": 47000,
+    "load_capacitance_min_pf": 275,
+    "load_capacitance_max_pf": 275,
+    "sonic_character_en": "Neutral, detailed, refined, superb tracker.",
+    "review_summary_en": "The audiophile sibling to the 681EEE, the Stanton 881S was a top-tier MI cartridge competing with the Shure V15. It featured a nude Stereohedron line-contact stylus for exceptional tracking and detail retrieval. Its sound is neutral, clean, and highly refined, with outstanding channel separation.",
+    "image_url": null,
+    "notes_en": "High-compliance design that requires a low-mass tonearm. Stereohedron is a line-contact variant.",
+    "stylus_family": "Line-Contact",
+    "cantilever_class": "Aluminum",
+    "compliance_level": "high",
+    "tags": [
+      "Neutral",
+      "Detailed",
+      "Clean",
+      "Refined"
+    ]
+  },
+  {
+    "id": 96,
+    "model": "Audio-Technica AT85EP",
+    "cu_static": null,
+    "cu_dynamic_10hz": 12,
+    "cu_dynamic_100hz": 8,
+    "is_estimated_10hz": true,
+    "sources": [
+      {
+        "name": "Audio-Technica Official",
+        "url": null
+      }
+    ],
+    "manufacturer": "Audio-Technica",
+    "type": "MM",
+    "stylus_type": "Elliptical",
+    "cantilever_material": "Aluminum",
+    "weight_g": 6,
+    "tracking_force_min_g": 1.0,
+    "tracking_force_max_g": 1.5,
+    "output_voltage_mv": 3.5,
+    "frequency_response_min_hz": 20,
+    "frequency_response_max_hz": 20000,
+    "channel_separation_db": 20,
+    "load_impedance_ohm": 47000,
+    "load_capacitance_min_pf": 100,
+    "load_capacitance_max_pf": 200,
+    "sonic_character_en": "Balanced, clear, precise, good value for P-Mount.",
+    "review_summary_en": "A modern P-Mount (T4P) standard cartridge from Audio-Technica. It provides an excellent and affordable way to keep vintage linear tracking and other P-Mount turntables running. The sound is clear, balanced, and offers good detail for its class, representing a solid upgrade over older, worn styli.",
+    "image_url": null,
+    "notes_en": "P-Mount (T4P) design. 10Hz compliance estimated from 100Hz value.",
+    "stylus_family": "Elliptical",
+    "cantilever_class": "Aluminum",
+    "compliance_level": "medium",
+    "tags": [
+      "Balanced",
+      "Clear",
+      "Precise"
+    ]
+  },
+  {
+    "id": 97,
+    "model": "Van den Hul DDT II Special",
+    "cu_static": null,
+    "cu_dynamic_10hz": 18,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Van den Hul",
+        "url": null
+      }
+    ],
+    "manufacturer": "van den Hul",
+    "type": "MC",
+    "stylus_type": "VDH-I",
+    "cantilever_material": "Solid Boron",
+    "weight_g": 8.2,
+    "tracking_force_min_g": 1.35,
+    "tracking_force_max_g": 1.6,
+    "output_voltage_mv": 0.65,
+    "frequency_response_min_hz": 5,
+    "frequency_response_max_hz": 55000,
+    "channel_separation_db": 30,
+    "load_impedance_ohm": 200,
+    "load_capacitance_min_pf": null,
+    "load_capacitance_max_pf": null,
+    "sonic_character_en": "Natural, detailed, smooth, refined, transparent.",
+    "review_summary_en": "A classic MC cartridge from A.J. van den Hul. The DDT (Depth, Detail, Timbre) II Special is famous for its natural and non-fatiguing sound, coupled with high levels of detail and transparency. It uses a VDH-I stylus on a boron cantilever to achieve a presentation that is both highly accurate and musically satisfying.",
+    "image_url": null,
+    "notes_en": "Medium-output MC.",
+    "stylus_family": "Advanced Line-Contact",
+    "cantilever_class": "Exotic/High-Performance",
+    "compliance_level": "medium",
+    "tags": [
+      "Natural",
+      "Detailed",
+      "Smooth",
+      "Refined",
+      "Transparent"
+    ]
+  },
+  {
+    "id": 98,
+    "model": "Sumiko Oyster",
+    "cu_static": 12,
+    "cu_dynamic_10hz": 12,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Sumiko",
+        "url": null
+      }
+    ],
+    "manufacturer": "Sumiko",
+    "type": "MM",
+    "stylus_type": "Spherical",
+    "cantilever_material": "Alloy Tube",
+    "weight_g": 5.3,
+    "tracking_force_min_g": 1.5,
+    "tracking_force_max_g": 2.5,
+    "output_voltage_mv": 4.0,
+    "frequency_response_min_hz": 30,
+    "frequency_response_max_hz": 20000,
+    "channel_separation_db": 25,
+    "load_impedance_ohm": 47000,
+    "load_capacitance_min_pf": null,
+    "load_capacitance_max_pf": null,
+    "sonic_character_en": "Warm, musical, forgiving, pleasant.",
+    "review_summary_en": "Sumiko's long-standing entry-level cartridge. The Oyster provides a warm, pleasant, and musical sound that is very forgiving of less-than-perfect records. It is often a stock cartridge on turntables like the Pro-Ject Debut series and offers a great, no-fuss introduction to vinyl.",
+    "image_url": null,
+    "notes_en": null,
+    "stylus_family": "Conical",
+    "cantilever_class": "Standard",
+    "compliance_level": "medium",
+    "tags": [
+      "Warm",
+      "Musical",
+      "Forgiving"
+    ]
+  },
+  {
+    "id": 99,
+    "model": "Empire 4000D/III",
+    "cu_static": 30,
+    "cu_dynamic_10hz": 20,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Vinyl Engine",
+        "url": null
+      }
+    ],
+    "manufacturer": "Empire",
+    "type": "MM",
+    "stylus_type": "4-Dimensional",
+    "cantilever_material": "Tapered Beryllium",
+    "weight_g": 6.2,
+    "tracking_force_min_g": 0.5,
+    "tracking_force_max_g": 1.25,
+    "output_voltage_mv": 3.0,
+    "frequency_response_min_hz": 5,
+    "frequency_response_max_hz": 50000,
+    "channel_separation_db": 35,
+    "load_impedance_ohm": 100000,
+    "load_capacitance_min_pf": 100,
+    "load_capacitance_max_pf": 100,
+    "sonic_character_en": "Highly detailed, airy, refined, excellent for quadraphonic.",
+    "review_summary_en": "A legendary top-of-the-line cartridge from Empire, designed for CD-4 quadraphonic playback. It featured a '4-Dimensional' nude stylus (a Shibata variant) on a vapor-deposited beryllium cantilever, a technical marvel for its time. It is known for its incredible high-frequency extension, detail, and airy presentation.",
+    "image_url": null,
+    "notes_en": "High compliance. Requires unusual 100k Ohm loading for best performance.",
+    "stylus_family": "Advanced Line-Contact",
+    "cantilever_class": "Exotic/High-Performance",
+    "compliance_level": "high",
+    "tags": [
+      "Detailed",
+      "Airy Highs",
+      "Smooth",
+      "Refined"
+    ]
+  },
+  {
+    "id": 100,
+    "model": "ZYX R50 Bloom 3",
+    "cu_static": null,
+    "cu_dynamic_10hz": 12,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "ZYX Co.",
+        "url": null
+      }
+    ],
+    "manufacturer": "ZYX",
+    "type": "MC",
+    "stylus_type": "Line-Contact",
+    "cantilever_material": "Boron",
+    "weight_g": 5.0,
+    "tracking_force_min_g": 1.7,
+    "tracking_force_max_g": 2.5,
+    "output_voltage_mv": 0.24,
+    "frequency_response_min_hz": 10,
+    "frequency_response_max_hz": 40000,
+    "channel_separation_db": 25,
+    "load_impedance_ohm": 100,
+    "load_capacitance_min_pf": null,
+    "load_capacitance_max_pf": null,
+    "sonic_character_en": "Fast, clean, transparent, detailed, great timing.",
+    "review_summary_en": "An entry point into the world of ZYX cartridges, a high-end Japanese manufacturer. The Bloom 3 is known for its 'Real Stereo' generator system which aims for perfect time and phase alignment. The result is a fast, clean, and transparent sound with excellent rhythm and pace, offering a taste of true high-end performance.",
+    "image_url": null,
+    "notes_en": "Low output MC.",
+    "stylus_family": "Line-Contact",
+    "cantilever_class": "Exotic/High-Performance",
+    "compliance_level": "medium",
+    "tags": [
+      "Fast",
+      "Clean",
+      "Transparent",
+      "Detailed"
+    ]
+  },
+  {
+    "id": 101,
+    "model": "Shure M91ED",
+    "cu_static": 28,
+    "cu_dynamic_10hz": 22,
+    "cu_dynamic_100hz": null,
+    "is_estimated_10hz": false,
+    "sources": [
+      {
+        "name": "Shure archives",
+        "url": null
+      }
+    ],
+    "manufacturer": "Shure",
+    "type": "MM",
+    "stylus_type": "Elliptical",
+    "cantilever_material": "Aluminum",
+    "weight_g": 6.3,
+    "tracking_force_min_g": 0.75,
+    "tracking_force_max_g": 1.5,
+    "output_voltage_mv": 5.0,
+    "frequency_response_min_hz": 20,
+    "frequency_response_max_hz": 20000,
+    "channel_separation_db": 20,
+    "load_impedance_ohm": 47000,
+    "load_capacitance_min_pf": 400,
+    "load_capacitance_max_pf": 500,
+    "sonic_character_en": "Warm, musical, good bass, classic Shure sound.",
+    "review_summary_en": "An immensely popular cartridge from the 70s, the M91ED was a workhorse that offered a large portion of the performance of the top-tier V15 at a much lower price. It's known for its warm, full, and musical presentation with a solid bass foundation. A classic high-compliance design that was a great match for the tonearms of its day.",
+    "image_url": null,
+    "notes_en": "High compliance design, great for medium-to-low mass tonearms.",
+    "stylus_family": "Elliptical",
+    "cantilever_class": "Aluminum",
+    "compliance_level": "high",
+    "tags": [
+      "Warm",
+      "Musical",
+      "Good Bass",
+      "Forgiving"
+    ]
+  },
+  {
+    "id": 102,
+    "model": "Audio-Technica AT-XP7",
+    "cu_static": null,
+    "cu_dynamic_10hz": 13.6,
+    "cu_dynamic_100hz": 8,
+    "is_estimated_10hz": true,
+    "sources": [
+      {
+        "name": "Audio-Technica Official",
+        "url": null
+      }
+    ],
+    "manufacturer": "Audio-Technica",
+    "type": "MM",
+    "stylus_type": "Elliptical",
+    "cantilever_material": "Aluminum",
+    "weight_g": 6.2,
+    "tracking_force_min_g": 2.0,
+    "tracking_force_max_g": 4.0,
+    "output_voltage_mv": 6.0,
+    "frequency_response_min_hz": 20,
+    "frequency_response_max_hz": 20000,
+    "channel_separation_db": 22,
+    "load_impedance_ohm": 47000,
+    "load_capacitance_min_pf": 100,
+    "load_capacitance_max_pf": 200,
+    "sonic_character_en": "Punchy, clear, durable, good for both DJing and listening.",
+    "review_summary_en": "Part of Audio-Technica's 'XP' line, the AT-XP7 is designed as a hybrid cartridge for both DJ use and high-quality listening. It features a robust suspension and high output for the demands of a DJ booth, but its elliptical stylus provides better fidelity and detail than a typical conical DJ stylus. A great choice for a versatile setup.",
+    "image_url": null,
+    "notes_en": "High output. 10Hz compliance is estimated from 100Hz value.",
+    "stylus_family": "Elliptical",
+    "cantilever_class": "Aluminum",
+    "compliance_level": "medium",
+    "tags": [
+      "DJ",
+      "Durable",
+      "Punchy",
+      "Clear"
+    ]
   }
 ]
