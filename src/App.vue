@@ -1,20 +1,38 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { RouterLink, RouterView, useRouter } from 'vue-router';
 
 const router = useRouter();
-// Sätt menyn till stängd som standard, speciellt viktigt för mobil
+// 'isMenuExpanded' styr nu både desktop-expansion och mobil-synlighet
 const isMenuExpanded = ref(false);
+const isMobile = ref(false);
 
+// Funktion för att växla menyns tillstånd
 const toggleMenu = () => {
   isMenuExpanded.value = !isMenuExpanded.value;
 };
 
-// Stäng menyn automatiskt vid navigering (bra UX på mobil)
-watch(() => router.currentRoute.value, () => {
-  if (isMenuExpanded.value) {
+// Funktion för att stänga menyn (används främst på mobil)
+const closeMenu = () => {
+  isMenuExpanded.value = false;
+};
+
+// Funktioner för att hantera fönsterstorlek och byta till mobilläge
+const checkScreenSize = () => {
+  isMobile.value = window.innerWidth < 768;
+  // Stäng menyn om vi går från desktop till mobil för att undvika konstiga tillstånd
+  if (isMobile.value) {
     isMenuExpanded.value = false;
   }
+};
+
+onMounted(() => {
+  checkScreenSize();
+  window.addEventListener('resize', checkScreenSize);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkScreenSize);
 });
 
 const routeIcons = {
@@ -24,14 +42,19 @@ const routeIcons = {
 </script>
 
 <template>
-  <div class="app-layout" :class="{ 'menu-expanded': isMenuExpanded }">
-    
-    <!-- NYTT: Overlay för att stänga menyn på mobil -->
-    <div v-if="isMenuExpanded" class="menu-overlay" @click="toggleMenu"></div>
+  <div class="app-layout" :class="{ 'mobile-view': isMobile }">
+    <!-- Mobil-specifika element -->
+    <template v-if="isMobile">
+      <button @click="toggleMenu" class="mobile-menu-trigger">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      </button>
+      <div v-if="isMenuExpanded" @click="closeMenu" class="mobile-menu-overlay"></div>
+    </template>
 
-    <aside class="sidebar">
+    <!-- Sidomeny (Sidebar) -->
+    <aside class="sidebar" :class="{ 'is-expanded': isMenuExpanded }">
       <div class="sidebar-header">
-        <h3 v-show="isMenuExpanded">Engrove Toolkit</h3>
+        <h3 v-show="isMenuExpanded || !isMobile">Engrove Toolkit</h3>
       </div>
       <nav class="main-nav">
         <RouterLink
@@ -40,194 +63,136 @@ const routeIcons = {
           :to="route.path"
           class="nav-link"
           :title="isMenuExpanded ? '' : route.meta.title"
+          @click="isMobile && closeMenu()"
         >
           <span class="nav-icon" v-html="routeIcons[route.name]"></span>
           <span class="nav-text">{{ route.meta.title }}</span>
         </RouterLink>
       </nav>
-      <div class="menu-toggle-wrap">
+      <!-- Toggle-knapp för desktop -->
+      <div v-if="!isMobile" class="menu-toggle-wrap">
         <button @click="toggleMenu" class="menu-toggle" title="Toggle Menu">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
         </button>
       </div>
     </aside>
 
+    <!-- Huvudinnehåll -->
     <main class="content-area">
       <RouterView />
     </main>
   </div>
 </template>
 
-<!-- VIKTIGT: Denna stil är global, inte 'scoped', vilket är korrekt för en huvudlayout -->
 <style>
+/* --- Grundläggande CSS-variabler och återställning --- */
 :root {
-  --sidebar-width-expanded: 260px;
-  --sidebar-width-collapsed: 68px; /* Justerad för bättre passform */
-  --header-color: #2c3e50; /* Mörkare färg för bättre kontrast */
-  --accent-color: #3498db; /* En trevligare blå */
+  --sidebar-width-expanded: 250px;
+  --sidebar-width-collapsed: 70px; /* Bredd för ikon-balken */
+  --header-color: #2c3e50; /* Mörkare, mer modern färg */
+  --accent-color: #3498db; /* Ljusare blå accent */
+  --text-light: #ecf0f1;
+  --text-muted: #bdc3c7;
+  --bg-hover: #34495e;
 }
 
-html, body, #app {
-  height: 100%;
+/* --- VIKTIG FIX: Korrekt scroll-beteende --- */
+/* Tar bort de gamla reglerna som låste scrollningen */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
   margin: 0;
-  padding: 0;
+  font-family: sans-serif;
   background-color: #f4f7f9;
 }
 
+#app {
+  width: 100%;
+}
+
+/* --- Huvudlayout --- */
 .app-layout {
-  display: flex;
-  height: 100vh;
-}
-
-/* --- MOBIL-FÖRST STILAR (Off-canvas meny) --- */
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100%;
-  z-index: 1001; /* Sidomenyn ska vara överst */
-  width: var(--sidebar-width-expanded);
-  background-color: var(--header-color);
-  color: #ecf0f1;
-  display: flex;
-  flex-direction: column;
-  padding: 1rem 0;
-  transform: translateX(-100%); /* Dold som standard */
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 0 15px rgba(0,0,0,0.2);
-}
-
-.app-layout.menu-expanded .sidebar {
-  transform: translateX(0); /* Visas när menyn är expanderad */
+  position: relative;
 }
 
 .content-area {
-  flex-grow: 1;
   padding: 2rem;
-  overflow-y: auto;
-  height: 100vh;
-  box-sizing: border-box;
-  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: margin-left 0.3s ease;
+  /* Skapa utrymme för den kollapsade menyn på desktop */
+  margin-left: var(--sidebar-width-collapsed);
 }
 
-.menu-toggle {
-  position: fixed; /* Knappen är alltid synlig */
-  bottom: 1rem;
-  left: 1rem;
-  z-index: 1002; /* Ovanpå allt annat */
-  background: var(--header-color);
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  transition: transform 0.3s ease-in-out;
-}
-
-.app-layout.menu-expanded .menu-toggle {
-  transform: rotate(180deg);
-}
-
-.menu-overlay {
-  position: fixed;
+/* --- Sidomeny (Sidebar) - Desktop-först --- */
+.sidebar {
+  background-color: var(--header-color);
+  color: var(--text-light);
+  height: 100vh; /* Tar hela höjden */
+  position: fixed; /* Fäster menyn */
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
   z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  width: var(--sidebar-width-collapsed);
+  overflow: hidden;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* --- PC/DESKTOP STILAR (min-width: 768px) --- */
-@media (min-width: 768px) {
-  .sidebar {
-    transform: translateX(0); /* Alltid på skärmen */
-    width: var(--sidebar-width-collapsed);
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: none;
-  }
-
-  .app-layout.menu-expanded .sidebar {
-    width: var(--sidebar-width-expanded);
-  }
-
-  .content-area {
-    /* Skapa utrymme för den kollapsade menyn */
-    margin-left: var(--sidebar-width-collapsed);
-  }
-
-  .menu-toggle {
-    /* Återställ positionen till inuti sidomenyn */
-    position: relative;
-    bottom: auto;
-    left: auto;
-    width: auto;
-    height: auto;
-    background: none;
-    box-shadow: none;
-    margin: 0 auto; /* Centrera knappen */
-  }
-
-  .menu-toggle-wrap {
-    padding: 0;
-    margin-top: auto; /* Knappen längst ner */
-  }
-  
-  .app-layout.menu-expanded .menu-toggle {
-    transform: rotate(0deg); /* Återställ rotation */
-  }
-  
-  .app-layout .menu-toggle {
-      transform: rotate(180deg);
-  }
-
-  .menu-overlay {
-    display: none; /* Overlay behövs inte på PC */
-  }
+.sidebar.is-expanded {
+  width: var(--sidebar-width-expanded);
 }
 
-/* --- Gemensamma stilar för menyns innehåll --- */
 .sidebar-header {
-  padding: 0 1.5rem;
+  padding: 0 1.25rem;
+  margin-top: 1rem;
   margin-bottom: 2rem;
   font-size: 1.2rem;
   white-space: nowrap;
-  overflow: hidden;
   height: 36px;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
-.sidebar-header h3 { margin: 0; }
+
+.sidebar.is-expanded .sidebar-header {
+  justify-content: flex-start;
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar.is-expanded .sidebar-header h3 {
+  opacity: 1;
+}
 
 .main-nav {
   flex-grow: 1;
-  overflow: hidden;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
-  color: #bdc3c7;
+  gap: 1.25rem;
+  padding: 1rem;
+  margin: 0.5rem;
+  border-radius: 8px;
+  color: var(--text-muted);
   text-decoration: none;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
   white-space: nowrap;
-  overflow: hidden;
 }
 
-.app-layout:not(.menu-expanded) .nav-link {
-  justify-content: center;
-  padding: 1rem;
+.sidebar.is-expanded .nav-link {
+  padding-left: 1.5rem;
 }
 
 .nav-link:hover {
-  background-color: #34495e;
+  background-color: var(--bg-hover);
   color: #fff;
 }
 
@@ -243,15 +208,104 @@ html, body, #app {
 
 .nav-icon {
   flex-shrink: 0;
+  margin-left: 0.5rem;
+  transition: margin 0.3s ease;
+}
+
+.sidebar.is-expanded .nav-icon {
+  margin-left: 0;
 }
 
 .nav-text {
-  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar.is-expanded .nav-text {
   opacity: 1;
 }
 
-.app-layout:not(.menu-expanded) .nav-text {
-  opacity: 0;
-  width: 0;
+.menu-toggle-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0;
+}
+
+.sidebar.is-expanded .menu-toggle-wrap {
+  justify-content: flex-end;
+  padding-right: 1rem;
+}
+
+.menu-toggle {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: background-color 0.2s ease, transform 0.3s ease-in-out;
+}
+
+.menu-toggle:hover {
+  background-color: var(--bg-hover);
+  color: #fff;
+}
+
+.sidebar.is-expanded .menu-toggle {
+  transform: rotate(180deg);
+}
+
+/* --- Mobil-läge (Media Query) --- */
+@media (max-width: 767px) {
+  .content-area {
+    /* Ta bort marginalen på mobil, menyn ligger över */
+    margin-left: 0;
+    padding: 1rem;
+    padding-top: 5rem; /* Utrymme för hamburgermenyn */
+  }
+
+  .sidebar {
+    /* Dölj menyn utanför skärmen som standard */
+    width: var(--sidebar-width-expanded);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar.is-expanded {
+    /* Visa menyn när den är expanderad */
+    transform: translateX(0);
+  }
+
+  .sidebar-header h3 {
+    opacity: 1; /* Texten är alltid synlig i mobilmenyn */
+  }
+
+  .nav-text {
+    opacity: 1; /* Texten är alltid synlig i mobilmenyn */
+  }
+
+  .mobile-menu-trigger {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1001; /* Ovanpå allt utom menyn */
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(5px);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.5rem;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .mobile-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999; /* Under menyn men över innehållet */
+  }
 }
 </style>
