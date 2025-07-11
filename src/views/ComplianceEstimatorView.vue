@@ -1,3 +1,5 @@
+<!-- src/views/ComplianceEstimatorView.vue -->
+
 <script setup>
 import { onUnmounted } from 'vue';
 import { useEstimatorStore } from '@/store/estimatorStore.js';
@@ -28,12 +30,7 @@ onUnmounted(() => {
 
     <div class="estimator-grid">
       <EstimatorInputPanel />
-      <EstimatorResultsPanel
-        :estimated-compliance="store.estimatedCompliance"
-        :confidence="store.confidence.confidence"
-        :sample-size="store.confidence.sampleSize"
-        :description="store.confidence.description"
-      />
+      <EstimatorResultsPanel :result="store.result" />
     </div>
   </div>
 </template>
