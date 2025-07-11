@@ -6,40 +6,46 @@ import { defineStore } from 'pinia';
 export const useEstimatorStore = defineStore('estimator', () => {
   // --- STATE ---
   const userInput = ref({
-    cu_dynamic_100hz: null,
-    cu_static: null,
-    type: null,
-    cantilever_class: null,
-    stylus_family: null,
-    weight_g: null,
+    cu_dynamic_100hz: null, cu_static: null, type: null,
+    cantilever_class: null, stylus_family: null, weight_g: null,
   });
 
   const estimationRules = ref(null);
   const allPickups = ref([]);
+  const databaseLastModified = ref(null); // <-- NY VARIABEL FÖR DATUM
   const isLoading = ref(true);
   const error = ref(null);
-  const debugLog = ref([]); // <-- VÅR NYA DEBUGG-LOGG
+  const debugLog = ref([]);
 
   // --- ACTIONS ---
 
   async function initializeStore() {
+    // ... (samma start på funktionen)
     debugLog.value.push('1. Initializing store...');
     isLoading.value = true;
     error.value = null;
     try {
       debugLog.value.push('2. Fetching estimation_rules.json...');
-      const rulesResponse = await fetch('/data/estimation_rules.json'); // Korrekt sökväg
+      const rulesResponse = await fetch('/data/estimation_rules.json');
       debugLog.value.push(`3. Rules fetch status: ${rulesResponse.status} ${rulesResponse.statusText}`);
       if (!rulesResponse.ok) throw new Error(`Failed to load estimation_rules.json`);
       
       debugLog.value.push('4. Parsing rules JSON...');
       estimationRules.value = await rulesResponse.json();
-      debugLog.value.push(`5. Rules parsed. Type: ${typeof estimationRules.value}. Keys: ${Object.keys(estimationRules.value).join(', ')}`);
+      debugLog.value.push(`5. Rules parsed. Type: ${typeof estimationRules.value}.`);
 
       debugLog.value.push('6. Fetching pickup_data.json...');
-      const pickupsResponse = await fetch('/data/pickup_data.json'); // Korrekt sökväg
+      const pickupsResponse = await fetch('/data/pickup_data.json');
       debugLog.value.push(`7. Pickups fetch status: ${pickupsResponse.status} ${pickupsResponse.statusText}`);
       if (!pickupsResponse.ok) throw new Error(`Failed to load pickup_data.json`);
+
+      // --- NY LOGIK FÖR DATUM ---
+      const lastModifiedHeader = pickupsResponse.headers.get('Last-Modified');
+      if (lastModifiedHeader) {
+        databaseLastModified.value = lastModifiedHeader;
+        debugLog.value.push(`7b. Found Last-Modified header: ${lastModifiedHeader}`);
+      }
+      // --- SLUT PÅ NY LOGIK ---
 
       debugLog.value.push('8. Parsing pickups JSON...');
       allPickups.value = await pickupsResponse.json();
@@ -59,6 +65,7 @@ export const useEstimatorStore = defineStore('estimator', () => {
     }
   }
 
+  // ... (resten av storen är oförändrad)
   function performSanityCheck() {
     if (!estimationRules.value || allPickups.value.length === 0) {
       debugLog.value.push('Sanity check skipped: data missing.');
@@ -79,18 +86,16 @@ export const useEstimatorStore = defineStore('estimator', () => {
     };
   }
 
-  // --- COMPUTED PROPERTIES ---
   const availableCantileverClasses = computed(() => ["Standard", "Aluminum", "Exotic/High-Performance"]);
   const availableStylusFamilies = computed(() => ["Conical", "Elliptical", "Nude Elliptical", "Line-Contact", "Advanced Line-Contact"]);
 
   const result = computed(() => {
-    // ... (resten av den beräknade egenskapen är oförändrad och bör fungera när datan väl finns där)
     const defaultResult = {
       compliance: null, confidence: 0, sampleSize: 0,
       description: "Enter data to begin.",
       chartData: { dataPoints: [], medianRatio: 1 }
     };
-    if (isLoading.value || error.value || !estimationRules.value) return defaultResult;
+    if (isLoading.value || error.value || !estimationRules.value || !allPickups.value.length) return defaultResult;
     const { cu_dynamic_100hz, cu_static, type } = userInput.value;
     if (!type || (!cu_dynamic_100hz && !cu_static)) return defaultResult;
     const baseValue = cu_dynamic_100hz || cu_static;
@@ -103,6 +108,7 @@ export const useEstimatorStore = defineStore('estimator', () => {
       );
     }
     const appliedRule = matchedRule || estimationRules.value.global_fallback;
+    if (!appliedRule) return defaultResult;
     const ruleType = matchedRule ? `specific rule for ${matchedRule.conditions.type} / ${matchedRule.conditions.cantilever_class}` : 'a general fallback rule';
     const estimatedCompliance = baseValue * appliedRule.median_ratio;
     let confidenceValue = matchedRule ? Math.round(60 + Math.min(40, appliedRule.sample_size * 4)) : 50;
@@ -130,7 +136,7 @@ export const useEstimatorStore = defineStore('estimator', () => {
 
   return {
     userInput, isLoading, error, result,
-    allPickups, estimationRules, debugLog, // Exportera debugLog
+    allPickups, estimationRules, debugLog, databaseLastModified, // Exportera nya datum-variabeln
     availableCantileverClasses, availableStylusFamilies,
     resetInput
   };
