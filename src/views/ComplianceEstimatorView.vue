@@ -11,59 +11,93 @@ const store = useEstimatorStore();
 
 // Återställ inputfälten när komponenten lämnas
 onUnmounted(() => {
-  store.resetInput();
+  if (store.result) { // Säkerhetskoll
+    store.resetInput();
+  }
 });
 </script>
 
 <template>
-  <div class="tool-view">
-    <div class="tool-header">
-      <h1>Compliance Estimator</h1>
-      <button @click="store.resetInput()" class="reset-button">
-        Reset Fields
-      </button>
-    </div>
-    <p class="tool-description">
-      Estimate a cartridge's dynamic compliance at 10Hz based on other known specifications.
-      The more details you provide, the higher the confidence in the result. The calculation updates in real-time.
-    </p>
-
-    <div class="estimator-grid">
-      <EstimatorInputPanel />
-      <EstimatorResultsPanel :result="store.result" />
-
-      <!-- Graf-komponenten, visas villkorligt -->
-      <EstimatorChart 
-        v-if="store.result.chartData && store.result.chartData.dataPoints.length > 0"
-        :data-points="store.result.chartData.dataPoints"
-        :median-ratio="store.result.chartData.medianRatio"
-      />
+  <div>
+    <!-- 1. Visa ett laddningsmeddelande medan storen initieras -->
+    <div v-if="store.isLoading" class="status-container">
+      <h2>Loading Estimator...</h2>
+      <p>Fetching analysis rules and database...</p>
     </div>
 
-    <!-- Databasöversikt-panelen -->
-    <div class="data-summary-panel panel">
-      <h3>Data Source Information</h3>
-      <div class="summary-items">
-        <div class="summary-item">
-          <span class="label">Total Cartridges in Database:</span>
-          <!-- Vi behöver hämta totala antalet från storen -->
-          <span class="value">{{ store.allPickups.length }}</span>
-        </div>
-        <div v-if="store.estimationRules" class="summary-item">
-          <span class="label">Analysis Last Updated:</span>
-          <span class="value">{{ new Date(store.estimationRules.timestamp).toLocaleDateString() }}</span>
-        </div>
+    <!-- 2. Visa ett felmeddelande om något gick fel -->
+    <div v-else-if="store.error" class="status-container error">
+      <h2>Initialization Failed</h2>
+      <p>Could not load the necessary data for the estimator.</p>
+      <pre>{{ store.error }}</pre>
+    </div>
+
+    <!-- 3. Visa verktyget när all data är laddad och klar -->
+    <div v-else class="tool-view">
+      <div class="tool-header">
+        <h1>Compliance Estimator</h1>
+        <button @click="store.resetInput()" class="reset-button">
+          Reset Fields
+        </button>
       </div>
-      <p class="summary-note">
-        This tool's intelligence relies on our growing open-source database.
-        The analysis is periodically updated by running a machine learning script on the available data.
+      <p class="tool-description">
+        Estimate a cartridge's dynamic compliance at 10Hz based on other known specifications.
+        The more details you provide, the higher the confidence in the result. The calculation updates in real-time.
       </p>
-    </div>
 
+      <div class="estimator-grid">
+        <EstimatorInputPanel />
+        <EstimatorResultsPanel :result="store.result" />
+
+        <EstimatorChart 
+          v-if="store.result.chartData && store.result.chartData.dataPoints.length > 0"
+          :data-points="store.result.chartData.dataPoints"
+          :median-ratio="store.result.chartData.medianRatio"
+        />
+      </div>
+
+      <div class="data-summary-panel panel">
+        <h3>Data Source Information</h3>
+        <div class="summary-items">
+          <div class="summary-item">
+            <span class="label">Total Cartridges in Database:</span>
+            <span class="value">{{ store.allPickups.length }}</span>
+          </div>
+          <div v-if="store.estimationRules" class="summary-item">
+            <span class="label">Analysis Last Updated:</span>
+            <span class="value">{{ new Date(store.estimationRules.timestamp).toLocaleDateString() }}</span>
+          </div>
+        </div>
+        <p class="summary-note">
+          This tool's intelligence relies on our growing open-source database.
+          The analysis is periodically updated by running a machine learning script on the available data.
+        </p>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.status-container {
+  padding: 2rem;
+  text-align: center;
+  background-color: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+.status-container.error {
+  background-color: var(--danger-color);
+  color: var(--danger-text);
+  border-color: #f5c6cb;
+}
+.status-container pre {
+  white-space: pre-wrap;
+  text-align: left;
+  background-color: rgba(0,0,0,0.05);
+  padding: 1rem;
+  border-radius: 4px;
+}
+
 .tool-view {
   display: flex;
   flex-direction: column;
@@ -120,7 +154,7 @@ onUnmounted(() => {
   margin-top: 2rem;
   padding: 1rem 1.5rem;
   background-color: #f8f9fa;
-  grid-column: 1 / -1; /* Säkerställer att den spänner över hela grid-bredden */
+  grid-column: 1 / -1;
 }
 
 .data-summary-panel h3 {
