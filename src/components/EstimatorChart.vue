@@ -28,19 +28,23 @@ const updateChart = () => {
   // Uppdatera scatter-data
   chartInstance.data.datasets[0].data = props.dataPoints;
 
-  // Uppdatera annotations-pluginet för att rita medianlinjen
-  // Vi behöver rita en linje från (0,0) till (X, Y) där Y = X * ratio.
-  // Vi väljer ett godtyckligt X-värde (t.ex. 25) för att definiera linjens slutpunkt.
-  const lineEndX = 25;
-  const lineEndY = lineEndX * props.medianRatio;
-  
+  // **KORRIGERAD LOGIK FÖR LINJEN**
+  // Vi definierar en linje som går genom (0,0) med lutningen = medianRatio.
+  // Chart.js' annotation plugin ritar en linje mellan (xMin, yMin) och (xMax, yMax).
+  // Vi sätter (xMin, yMin) till (0, 0) och räknar ut en rimlig slutpunkt.
+  const chartMaxX = chartInstance.scales.x.max;
+  const lineEndX = chartMaxX;
+  const lineEndY = chartMaxX * props.medianRatio;
+
   chartInstance.options.plugins.annotation.annotations.medianLine = {
     type: 'line',
-    scaleID: 'y',
-    value: 0, 
-    endValue: lineEndY,
+    // Startpunkt
     xMin: 0,
+    yMin: 0,
+    // Slutpunkt
     xMax: lineEndX,
+    yMax: lineEndY,
+    // Styling
     borderColor: 'rgba(231, 76, 60, 0.8)',
     borderWidth: 2,
     borderDash: [6, 6],
@@ -50,13 +54,10 @@ const updateChart = () => {
       position: 'end',
       backgroundColor: 'rgba(231, 76, 60, 0.8)',
       color: 'white',
-      font: {
-          size: 10
-      },
+      font: { size: 10 },
       yAdjust: -10
     }
   };
-
 
   chartInstance.update();
 };
@@ -100,7 +101,7 @@ onMounted(() => {
         },
         annotation: {
           annotations: {
-            medianLine: {} // Kommer att definieras i updateChart
+            medianLine: {} // Definieras dynamiskt i updateChart
           }
         }
       },
@@ -108,20 +109,14 @@ onMounted(() => {
         x: {
           type: 'linear',
           position: 'bottom',
-          title: {
-            display: true,
-            text: 'Dynamic Compliance @ 100Hz'
-          },
+          title: { display: true, text: 'Dynamic Compliance @ 100Hz' },
           min: 0,
           suggestedMax: 20
         },
         y: {
           type: 'linear',
           position: 'left',
-          title: {
-            display: true,
-            text: 'Dynamic Compliance @ 10Hz'
-          },
+          title: { display: true, text: 'Dynamic Compliance @ 10Hz' },
           min: 0,
           suggestedMax: 40
         }
@@ -147,6 +142,6 @@ watch(props, updateChart, { deep: true });
   padding: 1.5rem;
   background-color: #ffffff;
   border-radius: 6px;
-  grid-column: 1 / -1; /* Får grafen att ta upp hela bredden under panelerna */
+  grid-column: 1 / -1;
 }
 </style>
