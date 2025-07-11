@@ -31,7 +31,13 @@ onUnmounted(() => {
   window.removeEventListener('resize', checkScreenSize);
 });
 
-const routeIcons = { 'home': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`, 'tonearm-calculator': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="2"></circle><line x1="12" y1="3" x2="12" y2="1"></line><line x1="19" y1="12" x2="21" y2="12"></line><path d="M16 8L12 12 8 8"></path></svg>`, 'compliance-estimator': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20V16"></path></svg>`, 'data-explorer': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>` };
+const routeIcons = {
+  'home': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`,
+  'tonearm-calculator': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="2"></circle><line x1="12" y1="3" x2="12" y2="1"></line><line x1="19" y1="12" x2="21" y2="12"></line><path d="M16 8L12 12 8 8"></path></svg>`,
+  'compliance-estimator': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20V16"></path></svg>`,
+  'data-explorer': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>`
+};
+</script>
 
 <template>
   <div class="app-layout" :class="{ 'mobile-view': isMobile }">
@@ -80,9 +86,9 @@ const routeIcons = { 'home': `<svg xmlns="http://www.w3.org/2000/svg" width="24"
 /* --- Grundläggande CSS-variabler och återställning --- */
 :root {
   --sidebar-width-expanded: 250px;
-  --sidebar-width-collapsed: 70px; /* Bredd för ikon-balken */
-  --header-color: #2c3e50; /* Mörkare, mer modern färg */
-  --accent-color: #3498db; /* Ljusare blå accent */
+  --sidebar-width-collapsed: 70px;
+  --header-color: #2c3e50;
+  --accent-color: #3498db;
   --text-light: #ecf0f1;
   --text-muted: #bdc3c7;
   --bg-hover: #34495e;
@@ -98,7 +104,6 @@ const routeIcons = { 'home': `<svg xmlns="http://www.w3.org/2000/svg" width="24"
   --danger-text: #721c24;
 }
 
-/* --- VIKTIG FIX: Korrekt scroll-beteende --- */
 html {
   scroll-behavior: smooth;
 }
@@ -124,7 +129,7 @@ body {
   margin-left: var(--sidebar-width-collapsed);
 }
 
-/* --- Sidomeny (Sidebar) - Desktop-först --- */
+/* --- Sidomeny (Sidebar) --- */
 .sidebar {
   background-color: var(--header-color);
   color: var(--text-light);
@@ -255,7 +260,7 @@ body {
   transform: rotate(180deg);
 }
 
-/* --- Mobil-läge (Media Query) --- */
+/* --- Mobil-läge --- */
 @media (max-width: 767px) {
   .content-area {
     margin-left: 0;
@@ -302,7 +307,7 @@ body {
   }
 }
 
-/* Paneler och generisk styling för vyer */
+/* --- Generisk Panel Styling --- */
 .panel {
     background-color: var(--panel-bg);
     padding: 1.5rem;
