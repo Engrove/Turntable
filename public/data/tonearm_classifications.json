@@ -1,0 +1,95 @@
+{
+  "bearing_type": {
+    "name": "Bearing Type",
+    "description": "The mechanical system that allows the tonearm to move freely in both horizontal and vertical planes.",
+    "categories": [
+      {
+        "id": "gimbal",
+        "name": "Gimbal",
+        "description": "A robust and common design using two pairs of bearings on perpendicular axes. Known for stability and solid bass performance."
+      },
+      {
+        "id": "unipivot",
+        "name": "Unipivot",
+        "description": "The arm balances on a single sharp point. Known for a lively, open, and 'free' sound, but can be more challenging to set up."
+      },
+      {
+        "id": "knife_edge",
+        "name": "Knife-Edge",
+        "description": "The arm rests on a sharp, hardened 'knife' edge. A classic design that aims to combine the stability of a gimbal with low friction."
+      },
+      {
+        "id": "magnetic",
+        "name": "Magnetic",
+        "description": "Uses magnetic levitation or stabilization for a non-contact pivot. Can be part of a gimbal or unipivot design."
+      },
+      {
+        "id": "tangential_air_bearing",
+        "name": "Tangential (Air Bearing)",
+        "description": "A linear tracking arm that moves on a cushion of air, theoretically eliminating tracking error. Complex and expensive."
+      },
+      {
+        "id": "tangential_mechanical",
+        "name": "Tangential (Mechanical)",
+        "description": "A linear tracking arm that moves along a physical rail or mechanism. Aims to eliminate tracking error."
+      }
+    ]
+  },
+  "arm_material": {
+    "name": "Armtube Material",
+    "description": "The material used for the main tonearm tube, chosen for its balance of stiffness, low mass, and damping properties.",
+    "categories": [
+      {
+        "id": "aluminum",
+        "name": "Aluminum",
+        "description": "The most common material. Offers an excellent balance of performance and cost. Can be straight, tapered, or treated."
+      },
+      {
+        "id": "carbon_fibre",
+        "name": "Carbon Fibre",
+        "description": "Very light, stiff, and well-damped. Popular in modern low-to-medium mass tonearms."
+      },
+      {
+        "id": "magnesium",
+        "name": "Magnesium",
+        "description": "Lighter and better-damped than aluminum. Used in high-performance arms like the SME Series V."
+      },
+      {
+        "id": "titanium",
+        "name": "Titanium",
+        "description": "Extremely stiff and strong. Used in very high-end arms, often for critical parts or the entire tube."
+      },
+      {
+        "id": "stainless_steel",
+        "name": "Stainless Steel",
+        "description": "Very rigid and heavy. Often used in high-mass tonearms designed for low-compliance cartridges."
+      },
+      {
+        "id": "wood",
+        "name": "Wood",
+        "description": "Used for its unique resonance characteristics and natural damping. Can provide a warm, organic sound."
+      }
+    ]
+  },
+  "headshell_connector": {
+    "name": "Headshell Connector Type",
+    "description": "The type of connection used for removable headshells.",
+    "categories": [
+      {
+        "id": "integrated",
+        "name": "Integrated",
+        "description": "The headshell is a fixed, non-removable part of the armtube. Offers maximum rigidity but less flexibility."
+      },
+      {
+        "id": "sme_universal",
+        "name": "SME / Universal 4-Pin",
+        "description": "The industry standard bayonet connector, also known as H-4. Allows for easy swapping of cartridges mounted on different headshells."
+      },
+      {
+        "id": "proprietary",
+        "name": "Proprietary",
+        "description": "A unique connector specific to the manufacturer (e.g., some Dual, Lenco, or B&O models)."
+      }
+    ]
+  }
+}
