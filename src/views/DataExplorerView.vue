@@ -25,10 +25,11 @@
 
         <div v-if="store.dataType" class="filter-controls">
           <label>2. Filter Results</label>
+
+          <!-- Text- och kategorifilter -->
           <div class="control-group">
             <input type="text" placeholder="Search by name..." v-model="store.searchTerm" @input="store.currentPage = 1" class="search-input">
           </div>
-          <!-- KORRIGERAD DROPDOWN-LOGIK -->
           <div v-for="filter in store.availableFilters" :key="filter.key" class="control-group">
             <label :for="filter.key">{{ filter.name }}</label>
             <select :id="filter.key" @change="store.updateFilter(filter.key, $event.target.value)" class="filter-select">
@@ -36,14 +37,25 @@
               <option v-for="option in filter.options" :key="option.id" :value="option.id">{{ option.name }}</option>
             </select>
           </div>
+
+          <!-- NYTT: Numeriska intervallfilter -->
+          <div v-for="filter in store.availableNumericFilters" :key="filter.key" class="control-group">
+            <RangeFilter
+              :label="filter.label"
+              :unit="filter.unit"
+              :modelValue="store.numericFilters[filter.key] || { min: null, max: null }"
+              @update:modelValue="newValue => store.updateNumericFilter(filter.key, newValue)"
+            />
+          </div>
+
           <button @click="store.resetFilters" class="reset-filters-btn">Reset All Filters</button>
         </div>
       </aside>
 
       <!-- Resultatyta -->
       <main class="results-area">
-        <div v-if="store.totalResultsCount === 0 && store.searchTerm === '' && Object.keys(store.filters).length === 0" class="results-placeholder">
-           <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 17.58A5 5 0 0 0 15 8l-6.4 6.4a5 5 0 1 0 7.8 7.8L20 17.58z"></path></svg>
+        <div v-if="store.totalResultsCount === 0 && store.searchTerm === '' && Object.keys(store.filters).length === 0 && Object.keys(store.numericFilters).length === 0" class="results-placeholder">
+          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 17.58A5 5 0 0 0 15 8l-6.4 6.4a5 5 0 1 0 7.8 7.8L20 17.58z"></path></svg>
           <p>Use the filters to begin your search.</p>
         </div>
 
@@ -60,7 +72,6 @@
             <button @click="store.nextPage()" :disabled="!store.canGoNext">Next ›</button>
           </div>
           
-          <!-- SKICKA MED NYA PROPS TILL TABELLEN -->
           <ResultsTable 
             :items="store.paginatedResults" 
             :headers="currentHeaders"
@@ -80,11 +91,21 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { useExplorerStore } from '@/store/explorerStore.js';
 import ResultsTable from '@/components/ResultsTable.vue';
+import RangeFilter from '@/components/RangeFilter.vue'; // Importera nya komponenten
 
 const store = useExplorerStore();
+
+// Säkerställ att numericFilters-objektet har nycklar redo att fyllas på
+watch(() => store.availableNumericFilters, (newFilters) => {
+  newFilters.forEach(filter => {
+    if (!store.numericFilters[filter.key]) {
+      store.numericFilters[filter.key] = { min: null, max: null };
+    }
+  });
+}, { immediate: true });
 
 const cartridgeHeaders = [
   { key: 'manufacturer', label: 'Manufacturer', sortable: true }, { key: 'model', label: 'Model', sortable: true }, { key: 'type', label: 'Type', sortable: true },
@@ -98,6 +119,7 @@ const currentHeaders = computed(() => store.dataType === 'cartridges' ? cartridg
 </script>
 
 <style scoped>
+/* All CSS är oförändrad från tidigare steg */
 .tool-view { display: flex; flex-direction: column; }
 .tool-header { padding-bottom: 1rem; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
 .tool-header h1 { margin: 0; font-size: 1.75rem; color: var(--header-color); }
