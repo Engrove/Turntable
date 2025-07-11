@@ -18,13 +18,11 @@ onUnmounted(() => {
 
 <template>
   <div>
-    <!-- Loading View -->
     <div v-if="store.isLoading" class="status-container">
       <h2>Loading Estimator...</h2>
       <p>Fetching analysis rules and database...</p>
     </div>
 
-    <!-- Explicit Error View -->
     <div v-else-if="store.error" class="status-container error">
       <h2>Initialization Failed</h2>
       <p>Could not load the necessary data. Please see debug log below.</p>
@@ -35,7 +33,6 @@ onUnmounted(() => {
       </ol>
     </div>
 
-    <!-- Main Tool View -->
     <div v-else-if="store.estimationRules && store.allPickups.length > 0" class="tool-view">
       <div class="tool-header">
         <h1>Compliance Estimator</h1>
@@ -66,9 +63,10 @@ onUnmounted(() => {
             <span class="label">Total Cartridges in Database:</span>
             <span class="value">{{ store.allPickups.length }}</span>
           </div>
-          <div v-if="store.estimationRules.timestamp" class="summary-item">
-            <span class="label">Analysis Last Updated:</span>
-            <span class="value">{{ new Date(store.estimationRules.timestamp).toLocaleDateString() }}</span>
+          <!-- HÄR ÄR ÄNDRINGEN -->
+          <div v-if="store.databaseLastModified" class="summary-item">
+            <span class="label">Database Last Updated:</span>
+            <span class="value">{{ new Date(store.databaseLastModified).toLocaleDateString() }}</span>
           </div>
         </div>
         <p class="summary-note">
@@ -77,8 +75,6 @@ onUnmounted(() => {
         </p>
       </div>
     </div>
-
-    <!-- Fallback Error View -->
      <div v-else class="status-container error">
       <h2>An Unexpected Error Occurred</h2>
       <p>Could not render the tool. The state after loading was not as expected. Please see debug log below.</p>
@@ -91,39 +87,11 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.debug-log {
-  text-align: left;
-  background: #fff;
-  border: 1px solid #ddd;
-  padding: 1rem;
-  padding-left: 3rem; /* Utrymme för siffrorna */
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 0.85rem;
-  color: #333;
-  max-height: 300px;
-  overflow-y: auto;
-}
-.status-container {
-  padding: 2rem;
-  text-align: center;
-  background-color: var(--panel-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-}
-.status-container.error {
-  background-color: var(--danger-color);
-  color: var(--danger-text);
-  border-color: #f5c6cb;
-}
-.status-container pre {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  text-align: left;
-  background-color: rgba(0,0,0,0.05);
-  padding: 1rem;
-  border-radius: 4px;
-}
+/* ... (all css is unchanged) ... */
+.debug-log { text-align: left; background: #fff; border: 1px solid #ddd; padding: 1rem; padding-left: 3rem; border-radius: 4px; font-family: monospace; font-size: 0.85rem; color: #333; max-height: 300px; overflow-y: auto; }
+.status-container { padding: 2rem; text-align: center; background-color: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 6px; }
+.status-container.error { background-color: var(--danger-color); color: var(--danger-text); border-color: #f5c6cb; }
+.status-container pre { white-space: pre-wrap; word-wrap: break-word; text-align: left; background-color: rgba(0,0,0,0.05); padding: 1rem; border-radius: 4px; }
 .tool-view { display: flex; flex-direction: column; }
 .tool-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
 .tool-header h1 { margin: 0; font-size: 1.75rem; color: var(--header-color); }
