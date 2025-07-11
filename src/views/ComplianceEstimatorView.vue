@@ -5,11 +5,11 @@ import { onUnmounted } from 'vue';
 import { useEstimatorStore } from '@/store/estimatorStore.js';
 import EstimatorInputPanel from '@/components/EstimatorInputPanel.vue';
 import EstimatorResultsPanel from '@/components/EstimatorResultsPanel.vue';
+import EstimatorChart from '@/components/EstimatorChart.vue'; // Importera den nya komponenten
 
 const store = useEstimatorStore();
 
-// Återställ inputfälten när komponenten lämnas,
-// så att användaren får en ren start nästa gång de besöker sidan.
+// Återställ inputfälten när komponenten lämnas
 onUnmounted(() => {
   store.resetInput();
 });
@@ -31,6 +31,14 @@ onUnmounted(() => {
     <div class="estimator-grid">
       <EstimatorInputPanel />
       <EstimatorResultsPanel :result="store.result" />
+
+      <!-- Lägg till den nya graf-komponenten här -->
+      <!-- Den visas bara om det finns datapunkter att plotta -->
+      <EstimatorChart 
+        v-if="store.result.chartData && store.result.chartData.dataPoints.length > 0"
+        :data-points="store.result.chartData.dataPoints"
+        :median-ratio="store.result.chartData.medianRatio"
+      />
     </div>
   </div>
 </template>
