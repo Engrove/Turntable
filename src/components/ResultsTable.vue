@@ -4,7 +4,17 @@
     <table>
       <thead>
         <tr>
-          <th v-for="header in headers" :key="header.key">{{ header.label }}</th>
+          <th 
+            v-for="header in headers" 
+            :key="header.key"
+            @click="header.sortable && $emit('sort', header.key)"
+            :class="{ sortable: header.sortable, active: sortKey === header.key }"
+          >
+            {{ header.label }}
+            <span v-if="sortKey === header.key" class="sort-arrow">
+              {{ sortOrder === 'asc' ? '▲' : '▼' }}
+            </span>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -24,27 +34,22 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
-
-const props = defineProps({
-  items: {
-    type: Array,
-    required: true
-  },
-  headers: {
-    type: Array,
-    required: true
-  }
+defineProps({
+  items: { type: Array, required: true },
+  headers: { type: Array, required: true },
+  sortKey: { type: String, default: '' },
+  sortOrder: { type: String, default: 'asc' }
 });
 
-// En hjälpfunktion för att snygga till värdena, t.ex. ersätta "sme_universal" med "SME / Universal"
+defineEmits(['sort']);
+
 function formatValue(item, key) {
   const value = item[key];
   if (value === null || value === undefined) {
     return '-';
   }
-  if (typeof value === 'string') {
-    // Ersätt understreck med mellanslag och gör första bokstaven stor
+  // Denna logik kan expanderas för att formatera olika datatyper
+  if (key === 'headshell_connector' && typeof value === 'string') {
     return value.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   }
   return value;
@@ -58,39 +63,46 @@ function formatValue(item, key) {
   border: 1px solid var(--border-color);
   border-radius: 8px;
 }
-
 table {
   width: 100%;
   border-collapse: collapse;
   background-color: #fff;
 }
-
 th, td {
   padding: 12px 15px;
   text-align: left;
   border-bottom: 1px solid var(--border-color);
   white-space: nowrap;
 }
-
 thead tr {
   background-color: var(--panel-bg);
 }
-
 th {
   font-size: 0.85rem;
   font-weight: 600;
   text-transform: uppercase;
   color: var(--label-color);
+  position: relative;
 }
-
+th.sortable {
+  cursor: pointer;
+}
+th.sortable:hover {
+  color: var(--header-color);
+}
+th.active {
+  color: var(--accent-color);
+}
+.sort-arrow {
+  font-size: 0.7rem;
+  margin-left: 4px;
+}
 tbody tr:last-child td {
   border-bottom: none;
 }
-
 tbody tr:hover {
   background-color: #f1f3f5;
 }
-
 .no-results {
   text-align: center;
   padding: 3rem;
@@ -98,7 +110,6 @@ tbody tr:hover {
   font-style: italic;
 }
 
-/* Responsiv tabell-styling för mobil */
 @media (max-width: 768px) {
   thead { display: none; }
   tr { display: block; margin-bottom: 1rem; border: 1px solid var(--border-color); border-radius: 4px; }
