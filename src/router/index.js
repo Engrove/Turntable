@@ -1,19 +1,19 @@
 // src/router/index.js
 
 import { createRouter, createWebHistory } from 'vue-router';
+import HomeView from '../views/HomeView.vue';
 import TonearmCalculatorView from '../views/TonearmCalculatorView.vue';
 import ComplianceEstimatorView from '../views/ComplianceEstimatorView.vue';
-import HomeView from '../views/HomeView.vue'; // Importera den nya vyn
+import DataExplorerView from '../views/DataExplorerView.vue'; // Importera den nya vyn
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      // Den nya startsidan
       path: '/',
       name: 'home',
       component: HomeView,
-      meta: { title: 'Home' } // Text för menyn
+      meta: { title: 'Home' }
     },
     {
       path: '/tonearm-calculator',
@@ -26,6 +26,13 @@ const router = createRouter({
       name: 'compliance-estimator',
       component: ComplianceEstimatorView,
       meta: { title: 'Compliance Estimator' }
+    },
+    {
+      // Den nya vyn för Data Explorer
+      path: '/data-explorer',
+      name: 'data-explorer',
+      component: DataExplorerView,
+      meta: { title: 'Data Explorer' }
     }
   ]
 });
