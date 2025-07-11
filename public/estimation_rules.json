@@ -1,0 +1,63 @@
+{
+  "timestamp": "2024-05-21T10:30:00.123456",
+  "source_data_count": 342,
+  "analysis_data_count": 52,
+  "feature_importance": {
+    "cu_dynamic_100hz": 0.821,
+    "weight_g": 0.045,
+    "type_MC": 0.085,
+    "type_MM": 0.021,
+    "type_MI": 0.008,
+    "cantilever_class_Aluminum": 0.011,
+    "cantilever_class_Exotic/High-Performance": 0.007,
+    "stylus_family_Elliptical": 0.001,
+    "stylus_family_Line-Contact": 0.001,
+    "stylus_family_Advanced Line-Contact": 0.001
+  },
+  "global_fallback": {
+    "median_ratio": 1.7143,
+    "sample_size": 52
+  },
+  "segmented_rules": [
+    {
+      "conditions": {
+        "type": "MM",
+        "cantilever_class": "Aluminum"
+      },
+      "median_ratio": 1.7,
+      "sample_size": 28
+    },
+    {
+      "conditions": {
+        "type": "MC",
+        "cantilever_class": "Aluminum"
+      },
+      "median_ratio": 2.225,
+      "sample_size": 11
+    },
+    {
+      "conditions": {
+        "type": "MC",
+        "cantilever_class": "Exotic/High-Performance"
+      },
+      "median_ratio": 1.685,
+      "sample_size": 8
+    },
+    {
+      "conditions": {
+        "type": "MI",
+        "cantilever_class": "Aluminum"
+      },
+      "median_ratio": 1.7,
+      "sample_size": 3
+    },
+    {
+      "conditions": {
+        "type": "MM",
+        "cantilever_class": "Exotic/High-Performance"
+      },
+      "median_ratio": 1.812,
+      "sample_size": 2
+    }
+  ]
+}
