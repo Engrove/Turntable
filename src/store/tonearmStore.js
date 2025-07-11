@@ -1,74 +1,143 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+// src/store/tonearmStore.js
+
+import { ref, computed, watch } from 'vue';
+import { defineStore } from 'pinia';
 
 export const useTonearmStore = defineStore('tonearm', () => {
-    // --- STATE ---
-    const params = ref({
-        m_headshell: 11.4, m_pickup: 6.3, m_screws: 1.3,
-        m_rear_assembly: 63.0, m_tube_percentage: 35.0,
-        m4_adj_cw: 100.0, L1: 237.0, L2: 15.0, L3_fixed_cw: 12.5,
-        vtf: 1.75, compliance: 10.0,
-    });
+  // --- STATE ---
+  const params = ref({
+    m_headshell: 9.5,
+    m_pickup: 6.5,
+    m_screws: 0.5,
+    m_rear_assembly: 85.0,
+    m_tube_percentage: 25.0,
+    m4_adj_cw: 120.0,
+    L1: 229.0,
+    L2: 30.0,
+    L3_fixed_cw: 20.0,
+    vtf: 1.75,
+    compliance: 12.0,
+  });
 
-    // --- COMPUTED PROPERTIES ---
-    const m1 = computed(() => params.value.m_headshell + params.value.m_pickup + params.value.m_screws);
-    const m2_tube = computed(() => params.value.m_rear_assembly * (params.value.m_tube_percentage / 100.0));
-    const m3_fixed_cw = computed(() => params.value.m_rear_assembly - m2_tube.value);
+  const availableTonearms = ref([]);
+  const availablePickups = ref([]); // Ladda in pickuper för framtida bruk
+  const selectedTonearmId = ref(null);
+  const isLoading = ref(true);
+  const error = ref(null);
 
-    const calculatedResults = computed(() => {
-        const p = params.value;
-        if (p.m4_adj_cw <= 0) return { isUnbalanced: true, M_eff: 0, F: 0, L4_adj_cw: 0 };
-        const numerator = (m1.value * p.L1) + (m2_tube.value * p.L2) - (m3_fixed_cw.value * p.L3_fixed_cw) - (p.vtf * p.L1);
-        const L4_adj_cw = (numerator >= 0) ? numerator / p.m4_adj_cw : -1;
-        if (L4_adj_cw < 0) return { isUnbalanced: true, M_eff: 0, F: 0, L4_adj_cw: 0 };
-        const I1 = m1.value * (p.L1 ** 2), I2 = m2_tube.value * (p.L2 ** 2), I3 = m3_fixed_cw.value * (p.L3_fixed_cw ** 2), I4 = p.m4_adj_cw * (L4_adj_cw ** 2);
-        const Itot = I1 + I2 + I3 + I4;
-        const M_eff = Itot / (p.L1 ** 2);
-        const F = 1000 / (2 * Math.PI * Math.sqrt(Math.max(1, M_eff * p.compliance)));
-        return { L4_adj_cw, M_eff, F, Itot, isUnbalanced: false };
-    });
+  // --- ACTIONS ---
+  async function initialize() {
+    isLoading.value = true;
+    error.value = null;
+    try {
+      const [tonearmsRes, pickupsRes] = await Promise.all([
+        fetch('/data/tonearm_data.json'),
+        fetch('/data/pickup_data.json')
+      ]);
+      if (!tonearmsRes.ok) throw new Error('Could not load tonearm data.');
+      if (!pickupsRes.ok) throw new Error('Could not load pickup data.');
+      
+      availableTonearms.value = await tonearmsRes.json();
+      availablePickups.value = await pickupsRes.json();
+    } catch (e) {
+      error.value = e.message;
+      console.error("Failed to initialize tonearm store:", e);
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  function loadTonearmPreset(tonearmId) {
+    if (!tonearmId) {
+      selectedTonearmId.value = null;
+      return;
+    }
+
+    const preset = availableTonearms.value.find(t => t.id === tonearmId);
+    if (!preset) return;
+
+    selectedTonearmId.value = tonearmId;
+
+    // Ladda de generella parametrarna från preset
+    const newParams = { ...preset.example_params_for_calculator };
+
+    // Hantera headshell specifikt
+    if (preset.has_integrated_headshell) {
+      newParams.m_headshell = 0; // Inbyggd headshell har ingen *extra* massa
+    } else {
+      // Använd standardvikten från databasen, eller en rimlig fallback
+      newParams.m_headshell = preset.headshell_mass_g || 10; 
+    }
     
-    const diagnosis = computed(() => {
-        if (!calculatedResults.value || calculatedResults.value.isUnbalanced) {
-            return {
-                status: 'danger',
-                title: 'Arm Unbalanced',
-                recommendations: ['The arm cannot be balanced with the current parameters.', 'Try increasing the adjustable counterweight mass or reducing the headshell mass.']
-            };
-        }
-        const freq = calculatedResults.value.F;
-        if (freq >= 8.0 && freq <= 11.0) {
-            return { status: 'ideal', title: 'Excellent Match!', recommendations: ['The system resonance is perfectly within the ideal range (8-11 Hz).'] };
-        }
-        if (freq >= 7.0 && freq < 8.0 || freq > 11.0 && freq <= 12.0) {
-            return { status: 'warning', title: 'Acceptable Match', recommendations: ['The system is slightly outside the ideal range but may perform well.'] };
-        }
-        
-        const isTooLow = freq < 7.0;
-        const target_M_eff = (1000 / (2 * Math.PI * 10))**2 / params.value.compliance;
-        const delta_M_eff = target_M_eff - calculatedResults.value.M_eff;
+    // Behåll befintliga pickup-relaterade värden
+    newParams.m_pickup = params.value.m_pickup;
+    newParams.compliance = params.value.compliance;
+    newParams.vtf = params.value.vtf;
+    newParams.m_screws = params.value.m_screws;
 
-        let recommendations = [];
-        if (isTooLow) {
-             recommendations.push(
-                `Effective mass is too high. It needs to be reduced by approx. ${Math.abs(delta_M_eff).toFixed(1)}g to reach 10 Hz.`,"Priority Actions:",
-                "1. INCREASE Adjustable Counterweight Mass: This is the most effective, non-obvious solution. A heavier weight sits closer to the pivot, drastically reducing its inertia.",
-                "2. REDUCE Headshell/Cartridge Mass: The most direct way to lower the frontal mass moment."
-            );
-        } else {
-            recommendations.push(
-                `Effective mass is too low. It needs to be increased by approx. ${delta_M_eff.toFixed(1)}g to reach 10 Hz.`, "Priority Actions:",
-                "1. INCREASE Headshell Mass: Add a headshell weight or use a heavier headshell.",
-                "2. DECREASE Adjustable Counterweight Mass: A lighter weight must sit further back, increasing its inertia."
-            );
-        }
+    // Behåll justerbar motvikt om den inte finns i preset
+    newParams.m4_adj_cw = newParams.m4_adj_cw || params.value.m4_adj_cw;
 
-        return {
-            status: 'danger',
-            title: `Resonance Frequency is TOO ${isTooLow ? 'LOW' : 'HIGH'} (${freq.toFixed(1)} Hz)`,
-            recommendations: recommendations
-        };
-    });
+    // Uppdatera alla relevanta params
+    Object.assign(params.value, newParams);
+  }
 
-    return { params, m1, calculatedResults, diagnosis };
+  // Kör initialiseringen
+  initialize();
+
+  // --- COMPUTED ---
+  const m1 = computed(() => params.value.m_headshell + params.value.m_pickup + params.value.m_screws);
+  const m2_tube = computed(() => params.value.m_rear_assembly * (params.value.m_tube_percentage / 100.0));
+  const m3_fixed_cw = computed(() => params.value.m_rear_assembly - m2_tube.value);
+
+  const calculatedResults = computed(() => {
+    if (params.value.m4_adj_cw <= 0) {
+        return { isUnbalanced: true };
+    }
+    const numerator = (m1.value * params.value.L1) + (m2_tube.value * params.value.L2) - (m3_fixed_cw.value * params.value.L3_fixed_cw) - (params.value.vtf * params.value.L1);
+    if (numerator < 0) {
+        return { isUnbalanced: true };
+    }
+    const L4_adj_cw = numerator / params.value.m4_adj_cw;
+    const Itot = (m1.value * params.value.L1**2) + (m2_tube.value * params.value.L2**2) + (m3_fixed_cw.value * params.value.L3_fixed_cw**2) + (params.value.m4_adj_cw * L4_adj_cw**2);
+    const M_eff = Itot / (params.value.L1**2);
+    const F = 1000 / (2 * Math.PI * Math.sqrt(Math.max(0.1, M_eff * params.value.compliance)));
+    return { L4_adj_cw, M_eff, F, isUnbalanced: false };
+  });
+
+  const diagnosis = computed(() => {
+    if (calculatedResults.value.isUnbalanced) {
+        return { status: 'danger', title: 'Arm Unbalanced', recommendations: ['Increase adjustable counterweight mass (m4) or decrease front mass (m1).'] };
+    }
+    const F = calculatedResults.value.F;
+    if (F >= 8 && F <= 11) {
+        return { status: 'ideal', title: 'Ideal Match', recommendations: ['Resonance is in the ideal zone. Excellent compatibility.'] };
+    }
+    if (F > 11 && F <= 12) {
+        return { status: 'warning', title: 'Acceptable Match', recommendations: ['Slightly high resonance. Consider a heavier headshell/cartridge or higher compliance.'] };
+    }
+    if (F < 8 && F >= 7) {
+        return { status: 'warning', title: 'Acceptable Match', recommendations: ['Slightly low resonance. Consider a lighter headshell/cartridge or lower compliance.'] };
+    }
+    return { status: 'danger', title: 'Poor Match', recommendations: ['Resonance is outside the acceptable range. System is prone to skipping or poor bass response.'] };
+  });
+
+  const currentTonearm = computed(() => {
+    if (!selectedTonearmId.value) return null;
+    return availableTonearms.value.find(t => t.id === selectedTonearmId.value);
+  });
+
+  return {
+    params,
+    m1,
+    calculatedResults,
+    diagnosis,
+    availableTonearms,
+    availablePickups,
+    selectedTonearmId,
+    isLoading,
+    error,
+    currentTonearm,
+    loadTonearmPreset,
+  };
 });
