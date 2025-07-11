@@ -8,15 +8,12 @@
       Search, filter, and explore the complete database of tonearms and cartridges. Select a data type to begin.
     </p>
 
-    <!-- Laddnings- och felhantering -->
     <div v-if="store.isLoading" class="status-container">Loading databases...</div>
     <div v-else-if="store.error" class="status-container error">{{ store.error }}</div>
     
     <div v-else class="explorer-layout">
-      <!-- Kolumn för filter och kontroller -->
       <aside class="filter-panel">
         <h3>Controls</h3>
-        
         <div class="control-group">
           <label>1. Select Data Type</label>
           <div class="button-group">
@@ -24,14 +21,11 @@
             <button @click="store.setDataType('cartridges')" :class="{ active: store.dataType === 'cartridges' }">Cartridges</button>
           </div>
         </div>
-
         <div v-if="store.dataType" class="filter-controls">
           <label>2. Filter Results</label>
-
           <div class="control-group">
             <input type="text" placeholder="Search by name..." v-model="store.searchTerm" class="search-input">
           </div>
-
           <div v-for="filter in store.availableFilters" :key="filter.key" class="control-group">
             <label :for="filter.key">{{ filter.name }}</label>
             <select :id="filter.key" @change="store.updateFilter(filter.key, $event.target.value)" class="filter-select">
@@ -39,18 +33,15 @@
               <option v-for="option in filter.options" :key="option" :value="option">{{ option }}</option>
             </select>
           </div>
-
           <button @click="store.resetFilters" class="reset-filters-btn">Reset All Filters</button>
         </div>
       </aside>
 
-      <!-- Huvudyta för resultat -->
       <main class="results-area">
         <div v-if="!store.dataType" class="results-placeholder">
           <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           <p>Please select a data type to start exploring.</p>
         </div>
-
         <div v-else>
           <h3>Showing {{ store.filteredResults.length }} {{ store.dataType }}</h3>
           <ResultsTable :items="store.filteredResults" :headers="currentHeaders" />
@@ -66,32 +57,18 @@ import { useExplorerStore } from '@/store/explorerStore.js';
 import ResultsTable from '@/components/ResultsTable.vue';
 
 const store = useExplorerStore();
-
 const cartridgeHeaders = [
-  { key: 'manufacturer', label: 'Manufacturer' },
-  { key: 'model', label: 'Model' },
-  { key: 'type', label: 'Type' },
-  { key: 'cu_dynamic_10hz', label: 'Compliance @ 10Hz' },
-  { key: 'weight_g', label: 'Weight (g)' },
-  { key: 'stylus_family', label: 'Stylus' }
+  { key: 'manufacturer', label: 'Manufacturer' }, { key: 'model', label: 'Model' }, { key: 'type', label: 'Type' },
+  { key: 'cu_dynamic_10hz', label: 'Compliance @ 10Hz' }, { key: 'weight_g', label: 'Weight (g)' }, { key: 'stylus_family', label: 'Stylus' }
 ];
-
 const tonearmHeaders = [
-  { key: 'manufacturer', label: 'Manufacturer' },
-  { key: 'model', label: 'Model' },
-  { key: 'effective_mass_g', label: 'Effective Mass (g)' },
-  { key: 'effective_length_mm', label: 'Length (mm)' },
-  { key: 'bearing_type', label: 'Bearing' },
-  { key: 'headshell_connector', label: 'Headshell' }
+  { key: 'manufacturer', label: 'Manufacturer' }, { key: 'model', label: 'Model' }, { key: 'effective_mass_g', label: 'Effective Mass (g)' },
+  { key: 'effective_length_mm', label: 'Length (mm)' }, { key: 'bearing_type', label: 'Bearing' }, { key: 'headshell_connector', label: 'Headshell' }
 ];
-
-const currentHeaders = computed(() => {
-  return store.dataType === 'cartridges' ? cartridgeHeaders : tonearmHeaders;
-});
+const currentHeaders = computed(() => store.dataType === 'cartridges' ? cartridgeHeaders : tonearmHeaders);
 </script>
 
 <style scoped>
-/* ... (all css från föregående steg är nästan identisk, här är hela blocket för säkerhets skull) ... */
 .tool-view { display: flex; flex-direction: column; }
 .tool-header { padding-bottom: 1rem; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
 .tool-header h1 { margin: 0; font-size: 1.75rem; color: var(--header-color); }
