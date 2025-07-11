@@ -15,7 +15,6 @@ export const useExplorerStore = defineStore('explorer', () => {
   const searchTerm = ref('');
   const currentPage = ref(1);
   const itemsPerPage = ref(25);
-  // NY STATE FÖR SORTERING
   const sortKey = ref('manufacturer');
   const sortOrder = ref('asc');
 
@@ -64,7 +63,6 @@ export const useExplorerStore = defineStore('explorer', () => {
     sortOrder.value = 'asc';
   }
 
-  // NY ACTION FÖR SORTERING
   function setSortKey(key) {
     if (sortKey.value === key) {
       sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
@@ -80,24 +78,48 @@ export const useExplorerStore = defineStore('explorer', () => {
 
   // --- COMPUTED ---
 
-  // KORRIGERAD LOGIK FÖR ATT HÄMTA BÅDE ID OCH NAMN
   const availableFilters = computed(() => {
     if (!dataType.value) return [];
-    let classifications = {};
-    if (dataType.value === 'cartridges') {
-      classifications = allData.value.cartridgeClassifications;
-    } else if (dataType.value === 'tonearms') {
-      classifications = allData.value.tonearmClassifications;
+    
+    if (dataType.value === 'tonearms') {
+      return Object.keys(allData.value.tonearmClassifications).map(key => ({
+        key: key,
+        name: allData.value.tonearmClassifications[key].name,
+        options: allData.value.tonearmClassifications[key].categories.map(cat => ({
+          id: cat.id,
+          name: cat.name
+        })).sort((a, b) => a.name.localeCompare(b.name))
+      }));
     }
 
-    return Object.keys(classifications).map(key => ({
-      key: key,
-      name: classifications[key].name,
-      options: classifications[key].categories.map(cat => ({
-        id: cat.id,
-        name: cat.name
-      })).sort((a, b) => a.name.localeCompare(b.name))
-    }));
+    if (dataType.value === 'cartridges') {
+      const { cartridges, cartridgeClassifications } = allData.value;
+      if (!cartridges.length || !cartridgeClassifications) return [];
+
+      const createFilterFromKey = (key, name) => {
+        const options = [...new Set(cartridges.map(item => item[key]).filter(Boolean))].sort();
+        return { key, name, options: options.map(opt => ({ id: opt, name: opt })) };
+      };
+      
+      const createFilterFromClassification = (key) => {
+          const classification = cartridgeClassifications[key];
+          if (!classification) return null;
+          return {
+              key: key,
+              name: classification.name,
+              options: classification.categories.map(cat => ({ id: cat.id, name: cat.name })).sort((a,b) => a.name.localeCompare(b.name))
+          }
+      };
+
+      return [
+        createFilterFromKey('type', 'Type'),
+        createFilterFromClassification('compliance_level'),
+        createFilterFromClassification('stylus_family'),
+        createFilterFromClassification('cantilever_class')
+      ].filter(Boolean); // Ta bort eventuella null-värden
+    }
+
+    return [];
   });
 
   const filteredResults = computed(() => {
@@ -106,16 +128,14 @@ export const useExplorerStore = defineStore('explorer', () => {
     if (noSearchTerm && noFilters) return [];
 
     if (!dataType.value) return [];
-    let sourceData = [...allData.value[dataType.value]]; // Skapa en kopia för att kunna sortera
+    let sourceData = [...allData.value[dataType.value]]; 
 
-    // Filtrering
     const results = sourceData.filter(item => {
       const termMatch = noSearchTerm ? true : (item.manufacturer?.toLowerCase().includes(searchTerm.value.toLowerCase()) || item.model?.toLowerCase().includes(searchTerm.value.toLowerCase()));
       const filterMatch = noFilters ? true : Object.entries(filters.value).every(([key, value]) => item[key] === value);
       return termMatch && filterMatch;
     });
 
-    // NY SORTERINGSLOGIK
     results.sort((a, b) => {
       let valA = a[sortKey.value];
       let valB = b[sortKey.value];
