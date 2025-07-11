@@ -1,0 +1,9 @@
+# netlify.toml
+
+# Detta är en "redirect rule". Den omdirigerar ALLA sökvägar som inte kan hittas
+# till /index.html och returnerar en HTTP 200 (OK) status.
+# Detta låter Vue Router ta över och hantera routingen.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
