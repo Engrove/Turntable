@@ -1,3 +1,4 @@
+<!-- src/components/EstimatorInputPanel.vue -->
 <script setup>
 import { useEstimatorStore } from '@/store/estimatorStore.js';
 
@@ -9,59 +10,76 @@ const store = useEstimatorStore();
     <h2>Cartridge Specifications</h2>
 
     <fieldset>
-      <legend>Compliance Data</legend>
+      <legend>Primary & Refinement Data</legend>
       <p class="fieldset-description">
-        Provide at least one compliance value. Dynamic @ 100Hz is preferred for higher accuracy.
+        Provide at least one compliance value and the pickup type. Fields marked with <span class="required">*</span> are required to generate a basic estimate.
       </p>
+
+      <!-- 1. Primär indata (delvis obligatorisk) -->
       <div class="input-group">
-        <label for="cu_dynamic_100hz">Dynamic Compliance @ 100Hz</label>
+        <label for="cu_dynamic_100hz">Dynamic Compliance @ 100Hz <span class="required">*</span></label>
         <input
           id="cu_dynamic_100hz"
           type="number"
           class="value-input"
-          placeholder="e.g., 10"
+          placeholder="Preferred value (e.g., 10)"
           min="1"
           step="0.1"
           v-model.number="store.userInput.cu_dynamic_100hz"
         >
       </div>
-      <div class="input-group">
-        <label for="cu_static">Static Compliance</label>
-        <input
-          id="cu_static"
-          type="number"
-          class="value-input"
-          placeholder="e.g., 25"
-          min="1"
-          step="0.1"
-          v-model.number="store.userInput.cu_static"
-        >
-      </div>
-    </fieldset>
 
-    <fieldset>
-      <legend>Physical Properties</legend>
-       <p class="fieldset-description">
-        Provide as many known properties as possible to improve the estimate's confidence.
-      </p>
+      <!-- 2. Primär kategori (obligatorisk) -->
       <div class="input-group">
-        <label for="type">Pickup Type (Required)</label>
-        <select id="type" v-model="store.userInput.type" class="value-select">
+        <label for="type">Pickup Type <span class="required">*</span></label>
+        <select id="type" v-model="store.userInput.type" class="value-select" required>
           <option :value="null" disabled>-- Select Type --</option>
           <option value="MM">MM (Moving Magnet)</option>
           <option value="MC">MC (Moving Coil)</option>
           <option value="MI">MI (Moving Iron)</option>
         </select>
       </div>
+      
+      <!-- 3. Sekundär kategori (för förfining) -->
       <div class="input-group">
         <label for="cantilever_class">Cantilever Class</label>
         <select id="cantilever_class" v-model="store.userInput.cantilever_class" class="value-select">
-          <option :value="null">-- Optional --</option>
+          <option :value="null">-- Optional for better accuracy --</option>
           <option v-for="cat in store.availableCantileverClasses" :key="cat" :value="cat">
             {{ cat }}
           </option>
         </select>
       </div>
+
+      <!-- 4. Sekundär indata (fallback, delvis obligatorisk) -->
+      <div class="input-group">
+        <label for="cu_static">Static Compliance (Fallback) <span class="required">*</span></label>
+        <input
+          id="cu_static"
+          type="number"
+          class="value-input"
+          placeholder="Used if 100Hz is empty"
+          min="1"
+          step="0.1"
+          v-model.number="store.userInput.cu_static"
+        >
+      </div>
+
+      <!-- 5 & 6. Framtida data -->
+      <div class="input-group">
+        <label for="weight_g">Cartridge Weight (g)</label>
+        <input
+          id="weight_g"
+          type="number"
+          class="value-input"
+          placeholder="Optional (e.g., 6.5)"
+          min="1"
+          max="35"
+          step="0.1"
+          v-model.number="store.userInput.weight_g"
+        >
+      </div>
+
       <div class="input-group">
         <label for="stylus_family">Stylus Family</label>
         <select id="stylus_family" v-model="store.userInput.stylus_family" class="value-select">
@@ -71,6 +89,7 @@ const store = useEstimatorStore();
           </option>
         </select>
       </div>
+
     </fieldset>
   </div>
 </template>
@@ -86,7 +105,7 @@ const store = useEstimatorStore();
   font-size: 0.875rem;
   color: var(--label-color);
   margin-top: -0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   font-style: italic;
 }
 
@@ -105,6 +124,12 @@ const store = useEstimatorStore();
     margin-bottom: 0.5rem;
 }
 
+.required {
+  color: #dc3545; /* Röd färg för att indikera obligatoriskt fält */
+  font-weight: bold;
+  margin-left: 2px;
+}
+
 .value-input, .value-select {
   width: 100%;
   padding: 0.5rem 0.75rem;
@@ -112,7 +137,7 @@ const store = useEstimatorStore();
   background-color: #fff;
   border: 1px solid #ced4da;
   border-radius: 4px;
-  box-sizing: border-box; /* Viktigt för att padding inte ska addera till bredden */
+  box-sizing: border-box;
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
