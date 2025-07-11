@@ -9,9 +9,7 @@ import EstimatorChart from '@/components/EstimatorChart.vue';
 
 const store = useEstimatorStore();
 
-// Återställ inputfälten när komponenten lämnas
 onUnmounted(() => {
-  // Extra säkerhetskoll för att undvika fel om storen inte laddats korrekt
   if (store && typeof store.resetInput === 'function') {
     store.resetInput();
   }
@@ -20,20 +18,24 @@ onUnmounted(() => {
 
 <template>
   <div>
-    <!-- 1. Visa ett laddningsmeddelande medan storen initieras -->
+    <!-- Loading View -->
     <div v-if="store.isLoading" class="status-container">
       <h2>Loading Estimator...</h2>
       <p>Fetching analysis rules and database...</p>
     </div>
 
-    <!-- 2. Visa ett felmeddelande om något gick fel under laddningen -->
+    <!-- Explicit Error View -->
     <div v-else-if="store.error" class="status-container error">
       <h2>Initialization Failed</h2>
-      <p>Could not load the necessary data for the estimator. Please try refreshing the page.</p>
-      <pre>{{ store.error }}</pre>
+      <p>Could not load the necessary data. Please see debug log below.</p>
+      <pre>Error Message: {{ store.error }}</pre>
+      <h4>Debug Progression:</h4>
+      <ol class="debug-log">
+        <li v-for="(entry, index) in store.debugLog" :key="index">{{ entry }}</li>
+      </ol>
     </div>
 
-    <!-- 3. Visa verktyget ENDAST när all data är bekräftat laddad och klar -->
+    <!-- Main Tool View -->
     <div v-else-if="store.estimationRules && store.allPickups.length > 0" class="tool-view">
       <div class="tool-header">
         <h1>Compliance Estimator</h1>
@@ -76,16 +78,32 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- 4. Fallback-vy om datan av någon anledning inte laddats korrekt men inget fel fångats -->
+    <!-- Fallback Error View -->
      <div v-else class="status-container error">
       <h2>An Unexpected Error Occurred</h2>
-      <p>Could not render the tool. Please try refreshing the page.</p>
+      <p>Could not render the tool. The state after loading was not as expected. Please see debug log below.</p>
+      <h4>Debug Progression:</h4>
+      <ol class="debug-log">
+        <li v-for="(entry, index) in store.debugLog" :key="index">{{ entry }}</li>
+      </ol>
     </div>
-
   </div>
 </template>
 
 <style scoped>
+.debug-log {
+  text-align: left;
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 1rem;
+  padding-left: 3rem; /* Utrymme för siffrorna */
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #333;
+  max-height: 300px;
+  overflow-y: auto;
+}
 .status-container {
   padding: 2rem;
   text-align: center;
@@ -106,106 +124,18 @@ onUnmounted(() => {
   padding: 1rem;
   border-radius: 4px;
 }
-
-.tool-view {
-  display: flex;
-  flex-direction: column;
-}
-
-.tool-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 1rem;
-  margin-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.tool-header h1 {
-  margin: 0;
-  font-size: 1.75rem;
-  color: var(--header-color);
-}
-
-.reset-button {
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--label-color);
-  background-color: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.reset-button:hover {
-  background-color: #f8f9fa;
-  border-color: #adb5bd;
-  color: var(--text-color);
-}
-
-.tool-description {
-  margin-top: 0;
-  margin-bottom: 2rem;
-  color: var(--label-color);
-  max-width: 80ch;
-}
-
-.estimator-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 2rem;
-  align-items: start;
-}
-
-.data-summary-panel {
-  margin-top: 2rem;
-  padding: 1rem 1.5rem;
-  background-color: #f8f9fa;
-  grid-column: 1 / -1;
-}
-
-.data-summary-panel h3 {
-  margin-top: 0;
-  margin-bottom: 1rem;
-  font-size: 1.1rem;
-  color: var(--header-color);
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0.5rem;
-}
-
-.summary-items {
-  display: flex;
-  gap: 2rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-}
-
-.summary-item {
-  display: flex;
-  flex-direction: column;
-}
-
-.summary-item .label {
-  font-size: 0.9rem;
-  color: var(--label-color);
-  margin-bottom: 0.25rem;
-}
-
-.summary-item .value {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--text-color);
-}
-
-.summary-note {
-  font-size: 0.85rem;
-  color: #6c757d;
-  font-style: italic;
-  margin: 0;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
-}
+.tool-view { display: flex; flex-direction: column; }
+.tool-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
+.tool-header h1 { margin: 0; font-size: 1.75rem; color: var(--header-color); }
+.reset-button { padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600; color: var(--label-color); background-color: transparent; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; transition: all 0.2s ease; }
+.reset-button:hover { background-color: #f8f9fa; border-color: #adb5bd; color: var(--text-color); }
+.tool-description { margin-top: 0; margin-bottom: 2rem; color: var(--label-color); max-width: 80ch; }
+.estimator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; align-items: start; }
+.data-summary-panel { margin-top: 2rem; padding: 1rem 1.5rem; background-color: #f8f9fa; grid-column: 1 / -1; }
+.data-summary-panel h3 { margin-top: 0; margin-bottom: 1rem; font-size: 1.1rem; color: var(--header-color); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
+.summary-items { display: flex; gap: 2rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.summary-item { display: flex; flex-direction: column; }
+.summary-item .label { font-size: 0.9rem; color: var(--label-color); margin-bottom: 0.25rem; }
+.summary-item .value { font-size: 1.1rem; font-weight: 600; color: var(--text-color); }
+.summary-note { font-size: 0.85rem; color: #6c757d; font-style: italic; margin: 0; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
 </style>
