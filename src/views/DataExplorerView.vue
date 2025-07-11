@@ -5,13 +5,14 @@
       <h1>Data Explorer</h1>
     </div>
     <p class="tool-description">
-      Search, filter, and explore the complete database of tonearms and cartridges. Select a data type to begin.
+      Search, filter, and explore the complete database of tonearms and cartridges. Use the controls to start a search.
     </p>
 
     <div v-if="store.isLoading" class="status-container">Loading databases...</div>
     <div v-else-if="store.error" class="status-container error">{{ store.error }}</div>
     
     <div v-else class="explorer-layout">
+      <!-- Filterpanel -->
       <aside class="filter-panel">
         <h3>Controls</h3>
         <div class="control-group">
@@ -21,10 +22,11 @@
             <button @click="store.setDataType('cartridges')" :class="{ active: store.dataType === 'cartridges' }">Cartridges</button>
           </div>
         </div>
+
         <div v-if="store.dataType" class="filter-controls">
           <label>2. Filter Results</label>
           <div class="control-group">
-            <input type="text" placeholder="Search by name..." v-model="store.searchTerm" class="search-input">
+            <input type="text" placeholder="Search by name..." v-model="store.searchTerm" @input="store.currentPage = 1" class="search-input">
           </div>
           <div v-for="filter in store.availableFilters" :key="filter.key" class="control-group">
             <label :for="filter.key">{{ filter.name }}</label>
@@ -37,14 +39,30 @@
         </div>
       </aside>
 
+      <!-- Resultatyta -->
       <main class="results-area">
-        <div v-if="!store.dataType" class="results-placeholder">
-          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <p>Please select a data type to start exploring.</p>
+        <!-- Instruktioner om inga filter är aktiva -->
+        <div v-if="store.totalResultsCount === 0 && store.searchTerm === '' && Object.keys(store.filters).length === 0" class="results-placeholder">
+          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 17.58A5 5 0 0 0 15 8l-6.4 6.4a5 5 0 1 0 7.8 7.8L20 17.58z"></path></svg>
+          <p>Use the filters to begin your search.</p>
         </div>
+
+        <!-- Resultat och tabell -->
         <div v-else>
-          <h3>Showing {{ store.filteredResults.length }} {{ store.dataType }}</h3>
-          <ResultsTable :items="store.filteredResults" :headers="currentHeaders" />
+          <div class="results-header">
+            <h3>Found {{ store.totalResultsCount }} {{ store.dataType }}</h3>
+            <div v-if="store.totalResultsCount > 0" class="pagination-info">
+              Page {{ store.currentPage }} of {{ Math.ceil(store.totalResultsCount / store.itemsPerPage) }}
+            </div>
+          </div>
+          
+          <ResultsTable :items="store.paginatedResults" :headers="currentHeaders" />
+
+          <!-- Paginering-kontroller -->
+          <div v-if="store.totalResultsCount > store.itemsPerPage" class="pagination-controls">
+            <button @click="store.prevPage()" :disabled="!store.canGoPrev">‹ Previous</button>
+            <button @click="store.nextPage()" :disabled="!store.canGoNext">Next ›</button>
+          </div>
         </div>
       </main>
     </div>
@@ -57,6 +75,7 @@ import { useExplorerStore } from '@/store/explorerStore.js';
 import ResultsTable from '@/components/ResultsTable.vue';
 
 const store = useExplorerStore();
+
 const cartridgeHeaders = [
   { key: 'manufacturer', label: 'Manufacturer' }, { key: 'model', label: 'Model' }, { key: 'type', label: 'Type' },
   { key: 'cu_dynamic_10hz', label: 'Compliance @ 10Hz' }, { key: 'weight_g', label: 'Weight (g)' }, { key: 'stylus_family', label: 'Stylus' }
@@ -65,10 +84,53 @@ const tonearmHeaders = [
   { key: 'manufacturer', label: 'Manufacturer' }, { key: 'model', label: 'Model' }, { key: 'effective_mass_g', label: 'Effective Mass (g)' },
   { key: 'effective_length_mm', label: 'Length (mm)' }, { key: 'bearing_type', label: 'Bearing' }, { key: 'headshell_connector', label: 'Headshell' }
 ];
-const currentHeaders = computed(() => store.dataType === 'cartridges' ? cartridgeHeaders : tonearmHeaders);
+
+const currentHeaders = computed(() => {
+  return store.dataType === 'cartridges' ? cartridgeHeaders : tonearmHeaders;
+});
 </script>
 
 <style scoped>
+/* ... (tidigare CSS är oförändrad, här är de nya reglerna) ... */
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1rem;
+}
+.results-header h3 {
+  margin: 0;
+}
+.pagination-info {
+  font-size: 0.9rem;
+  color: var(--label-color);
+  font-style: italic;
+}
+.pagination-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+  gap: 0.5rem;
+}
+.pagination-controls button {
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  background-color: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.pagination-controls button:hover:not(:disabled) {
+  background-color: var(--panel-bg);
+  color: var(--accent-color);
+}
+.pagination-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ... (resten av CSS-blocket är samma som förut) ... */
 .tool-view { display: flex; flex-direction: column; }
 .tool-header { padding-bottom: 1rem; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
 .tool-header h1 { margin: 0; font-size: 1.75rem; color: var(--header-color); }
@@ -87,7 +149,6 @@ const currentHeaders = computed(() => store.dataType === 'cartridges' ? cartridg
 .reset-filters-btn { width: 100%; padding: 0.6rem; font-size: 0.9rem; font-weight: 600; color: var(--danger-text); background-color: transparent; border: 1px solid #f5c6cb; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; margin-top: 1rem; }
 .reset-filters-btn:hover { background-color: var(--danger-color); color: white; border-color: var(--danger-text); }
 .results-area { min-height: 500px; }
-.results-area h3 { color: var(--header-color); }
 .results-placeholder { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 400px; border: 2px dashed var(--border-color); border-radius: 8px; color: var(--label-color); }
 .results-placeholder svg { color: #bdc3c7; margin-bottom: 1rem; }
 .results-placeholder p { font-size: 1.25rem; font-weight: 500; }
