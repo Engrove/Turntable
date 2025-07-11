@@ -26,19 +26,18 @@
         <div v-if="store.dataType" class="filter-controls">
           <label>2. Filter Results</label>
 
-          <!-- Text- och kategorifilter -->
           <div class="control-group">
             <input type="text" placeholder="Search by name..." v-model="store.searchTerm" @input="store.currentPage = 1" class="search-input">
           </div>
+          
           <div v-for="filter in store.availableFilters" :key="filter.key" class="control-group">
             <label :for="filter.key">{{ filter.name }}</label>
-            <select :id="filter.key" @change="store.updateFilter(filter.key, $event.target.value)" class="filter-select">
-              <option value="all">All</option>
+            <select :id="filter.key" v-model="store.filters[filter.key]" @change="store.currentPage = 1" class="filter-select">
+              <option :value="undefined">All</option>
               <option v-for="option in filter.options" :key="option.id" :value="option.id">{{ option.name }}</option>
             </select>
           </div>
 
-          <!-- NYTT: Numeriska intervallfilter -->
           <div v-for="filter in store.availableNumericFilters" :key="filter.key" class="control-group">
             <RangeFilter
               :label="filter.label"
@@ -78,6 +77,7 @@
             :sort-key="store.sortKey"
             :sort-order="store.sortOrder"
             @sort="store.setSortKey"
+            @row-click="showItemDetails"
           />
 
           <div v-if="store.totalResultsCount > store.itemsPerPage" class="pagination-controls pagination-bottom">
@@ -87,18 +87,33 @@
         </div>
       </main>
     </div>
+    
+    <ItemDetailModal 
+      :isOpen="isModalOpen" 
+      :item="selectedItem" 
+      :dataType="store.dataType"
+      @close="isModalOpen = false" 
+    />
   </div>
 </template>
 
 <script setup>
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useExplorerStore } from '@/store/explorerStore.js';
 import ResultsTable from '@/components/ResultsTable.vue';
-import RangeFilter from '@/components/RangeFilter.vue'; // Importera nya komponenten
+import RangeFilter from '@/components/RangeFilter.vue';
+import ItemDetailModal from '@/components/ItemDetailModal.vue';
 
 const store = useExplorerStore();
 
-// Säkerställ att numericFilters-objektet har nycklar redo att fyllas på
+const isModalOpen = ref(false);
+const selectedItem = ref(null);
+
+function showItemDetails(item) {
+  selectedItem.value = item;
+  isModalOpen.value = true;
+}
+
 watch(() => store.availableNumericFilters, (newFilters) => {
   newFilters.forEach(filter => {
     if (!store.numericFilters[filter.key]) {
@@ -119,7 +134,6 @@ const currentHeaders = computed(() => store.dataType === 'cartridges' ? cartridg
 </script>
 
 <style scoped>
-/* All CSS är oförändrad från tidigare steg */
 .tool-view { display: flex; flex-direction: column; }
 .tool-header { padding-bottom: 1rem; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
 .tool-header h1 { margin: 0; font-size: 1.75rem; color: var(--header-color); }
