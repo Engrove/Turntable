@@ -1,32 +1,29 @@
+<!-- src/components/EstimatorResultsPanel.vue -->
+
 <script setup>
 import { computed } from 'vue';
 
 const props = defineProps({
-  estimatedCompliance: {
-    type: Number,
-    default: null
-  },
-  confidence: {
-    type: Number,
-    required: true
-  },
-  sampleSize: {
-    type: Number,
-    required: true
-  },
-  description: {
-    type: String,
-    required: true
+  result: {
+    type: Object,
+    required: true,
+    default: () => ({
+      compliance: null,
+      confidence: 0,
+      sampleSize: 0,
+      description: 'Please enter data to begin.'
+    })
   }
 });
 
-// Bestämmer färg och text för konfidensnivån
+// Bestämmer färg och text för konfidensnivån baserat på procentvärdet.
 const confidenceDetails = computed(() => {
-  if (props.confidence >= 85) {
+  const conf = props.result.confidence;
+  if (conf >= 80) {
     return { level: 'High', class: 'high' };
-  } else if (props.confidence >= 70) {
+  } else if (conf >= 60) {
     return { level: 'Medium', class: 'medium' };
-  } else if (props.confidence > 0) {
+  } else if (conf > 0) {
     return { level: 'Low', class: 'low' };
   }
   return { level: 'N/A', class: 'none' };
@@ -39,8 +36,8 @@ const confidenceDetails = computed(() => {
 
     <div class="result-display">
       <div class="value-wrapper">
-        <span v-if="estimatedCompliance" class="result-value">
-          {{ estimatedCompliance.toFixed(1) }}
+        <span v-if="result.compliance !== null" class="result-value">
+          {{ result.compliance.toFixed(1) }}
         </span>
         <span v-else class="result-placeholder">--</span>
         <span class="result-unit">µm/mN @ 10Hz</span>
@@ -51,7 +48,7 @@ const confidenceDetails = computed(() => {
       <div class="confidence-header">
         <span class="confidence-label">Confidence Level</span>
         <span
-          v-if="confidence > 0"
+          v-if="result.confidence > 0"
           :class="['confidence-badge', confidenceDetails.class]"
         >
           {{ confidenceDetails.level }}
@@ -61,19 +58,16 @@ const confidenceDetails = computed(() => {
         <div
           class="confidence-bar"
           :class="confidenceDetails.class"
-          :style="{ width: confidence + '%' }"
+          :style="{ width: result.confidence + '%' }"
         ></div>
       </div>
-      <span v-if="confidence > 0" class="confidence-percent">{{ confidence }}%</span>
+      <span v-if="result.confidence > 0" class="confidence-percent">{{ result.confidence }}%</span>
     </div>
 
     <div class="description-box">
-      <p v-if="confidence > 0">
-        Estimate based on a comparison with
-        <strong>{{ sampleSize }}</strong> similar cartridge(s) in our database.
-      </p>
-      <p v-else>
-        Please provide more data, including 'Pickup Type' and at least one compliance value, to get an estimate.
+      <p class="methodology-text">{{ result.description }}</p>
+      <p v-if="result.sampleSize > 0" class="sample-size-text">
+        (This rule is based on a sample of <strong>{{ result.sampleSize }}</strong> cartridges from the database.)
       </p>
     </div>
   </div>
@@ -177,7 +171,6 @@ const confidenceDetails = computed(() => {
   color: var(--text-color);
 }
 
-
 /* Description Box */
 .description-box {
   background-color: var(--panel-bg);
@@ -191,5 +184,13 @@ const confidenceDetails = computed(() => {
 
 .description-box p {
   margin: 0.5rem 0;
+}
+
+.sample-size-text {
+  font-style: italic;
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+  border-top: 1px dashed #ced4da;
+  padding-top: 0.75rem;
 }
 </style>
