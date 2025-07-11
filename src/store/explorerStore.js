@@ -1,37 +1,31 @@
 // src/store/explorerStore.js
-
 import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
 
 export const useExplorerStore = defineStore('explorer', () => {
   // --- STATE ---
   const allData = ref({
-    cartridges: [],
-    tonearms: [],
-    cartridgeClassifications: {},
-    tonearmClassifications: {}
+    cartridges: [], tonearms: [],
+    cartridgeClassifications: {}, tonearmClassifications: {}
   });
-
   const isLoading = ref(true);
   const error = ref(null);
-
-  // Sök, filter och paginerings-state
   const dataType = ref(null);
   const filters = ref({});
   const searchTerm = ref('');
   const currentPage = ref(1);
   const itemsPerPage = ref(25);
+  // NY STATE FÖR SORTERING
+  const sortKey = ref('manufacturer');
+  const sortOrder = ref('asc');
 
   // --- ACTIONS ---
   async function initialize() {
-    // ... (oförändrad från tidigare)
     isLoading.value = true;
     try {
       const [cartridgesRes, tonearmsRes, cartClassRes, tonearmClassRes] = await Promise.all([
-        fetch('/data/pickup_data.json'),
-        fetch('/data/tonearm_data.json'),
-        fetch('/data/classifications.json'),
-        fetch('/data/tonearm_classifications.json')
+        fetch('/data/pickup_data.json'), fetch('/data/tonearm_data.json'),
+        fetch('/data/classifications.json'), fetch('/data/tonearm_classifications.json')
       ]);
       if (!cartridgesRes.ok) throw new Error('Failed to load cartridge data');
       if (!tonearmsRes.ok) throw new Error('Failed to load tonearm data');
@@ -50,89 +44,103 @@ export const useExplorerStore = defineStore('explorer', () => {
 
   function setDataType(type) {
     dataType.value = type;
-    resetFilters(); // Återställ allt vid byte av datatyp
+    resetFilters();
   }
 
   function updateFilter(filterKey, value) {
-    currentPage.value = 1; // Återställ till första sidan vid varje filterändring
+    currentPage.value = 1;
     if (value === 'all' || !value) {
       delete filters.value[filterKey];
     } else {
       filters.value[filterKey] = value;
     }
   }
-
+  
   function resetFilters() {
     filters.value = {};
     searchTerm.value = '';
     currentPage.value = 1;
-  }
-  
-  function nextPage() {
-    if (currentPage.value * itemsPerPage.value < filteredResults.value.length) {
-      currentPage.value++;
-    }
+    sortKey.value = 'manufacturer';
+    sortOrder.value = 'asc';
   }
 
-  function prevPage() {
-    if (currentPage.value > 1) {
-      currentPage.value--;
+  // NY ACTION FÖR SORTERING
+  function setSortKey(key) {
+    if (sortKey.value === key) {
+      sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortKey.value = key;
+      sortOrder.value = 'asc';
     }
+    currentPage.value = 1;
   }
+
+  function nextPage() { if (canGoNext.value) currentPage.value++; }
+  function prevPage() { if (canGoPrev.value) currentPage.value--; }
 
   // --- COMPUTED ---
 
+  // KORRIGERAD LOGIK FÖR ATT HÄMTA BÅDE ID OCH NAMN
   const availableFilters = computed(() => {
-    // ... (oförändrad från tidigare) ...
     if (!dataType.value) return [];
+    let classifications = {};
     if (dataType.value === 'cartridges') {
-      const classificationKeys = ['type', 'compliance_level', 'stylus_family', 'cantilever_class'];
-      return classificationKeys.map(key => ({
-            key: key,
-            name: allData.value.cartridgeClassifications[key]?.name || key.replace('_', ' '),
-            options: [...new Set(allData.value.cartridges.map(item => item[key]).filter(Boolean))].sort()
-        }));
+      classifications = allData.value.cartridgeClassifications;
+    } else if (dataType.value === 'tonearms') {
+      classifications = allData.value.tonearmClassifications;
     }
-    if (dataType.value === 'tonearms') {
-      return Object.keys(allData.value.tonearmClassifications).map(key => ({
-        key: key,
-        name: allData.value.tonearmClassifications[key].name,
-        options: allData.value.tonearmClassifications[key].categories.map(cat => cat.id).sort()
-      }));
-    }
-    return [];
+
+    return Object.keys(classifications).map(key => ({
+      key: key,
+      name: classifications[key].name,
+      options: classifications[key].categories.map(cat => ({
+        id: cat.id,
+        name: cat.name
+      })).sort((a, b) => a.name.localeCompare(b.name))
+    }));
   });
 
-  // Returnerar ALLA resultat som matchar filter, o-paginerat
   const filteredResults = computed(() => {
-    // NY VILLKORLIG LOGIK
     const noSearchTerm = searchTerm.value.trim() === '';
     const noFilters = Object.keys(filters.value).length === 0;
-    if (noSearchTerm && noFilters) {
-      return []; // Returnera tomt om inga filter är aktiva
-    }
+    if (noSearchTerm && noFilters) return [];
 
     if (!dataType.value) return [];
-    const sourceData = allData.value[dataType.value];
-    
-    const searchedData = sourceData.filter(item => {
-      const term = searchTerm.value.toLowerCase();
-      if (!term) return true;
-      return (item.manufacturer?.toLowerCase().includes(term) || item.model?.toLowerCase().includes(term));
+    let sourceData = [...allData.value[dataType.value]]; // Skapa en kopia för att kunna sortera
+
+    // Filtrering
+    const results = sourceData.filter(item => {
+      const termMatch = noSearchTerm ? true : (item.manufacturer?.toLowerCase().includes(searchTerm.value.toLowerCase()) || item.model?.toLowerCase().includes(searchTerm.value.toLowerCase()));
+      const filterMatch = noFilters ? true : Object.entries(filters.value).every(([key, value]) => item[key] === value);
+      return termMatch && filterMatch;
     });
 
-    return searchedData.filter(item => {
-      return Object.entries(filters.value).every(([key, value]) => item[key] === value);
+    // NY SORTERINGSLOGIK
+    results.sort((a, b) => {
+      let valA = a[sortKey.value];
+      let valB = b[sortKey.value];
+      
+      if (valA === null || valA === undefined) valA = sortOrder.value === 'asc' ? Infinity : -Infinity;
+      if (valB === null || valB === undefined) valB = sortOrder.value === 'asc' ? Infinity : -Infinity;
+
+      if (typeof valA === 'number' && typeof valB === 'number') {
+        return sortOrder.value === 'asc' ? valA - valB : valB - valA;
+      } else {
+        return sortOrder.value === 'asc' 
+          ? String(valA).localeCompare(String(valB))
+          : String(valB).localeCompare(String(valA));
+      }
     });
+
+    return results;
   });
 
-  // NY COMPUTED PROPERTY FÖR PAGINERING
   const paginatedResults = computed(() => {
     const start = (currentPage.value - 1) * itemsPerPage.value;
     const end = start + itemsPerPage.value;
     return filteredResults.value.slice(start, end);
   });
-
+  
   const totalResultsCount = computed(() => filteredResults.value.length);
   const canGoNext = computed(() => currentPage.value * itemsPerPage.value < totalResultsCount.value);
   const canGoPrev = computed(() => currentPage.value > 1);
@@ -141,8 +149,8 @@ export const useExplorerStore = defineStore('explorer', () => {
 
   return {
     isLoading, error, dataType, filters, searchTerm,
-    currentPage, itemsPerPage,
-    setDataType, updateFilter, resetFilters, nextPage, prevPage,
+    currentPage, itemsPerPage, sortKey, sortOrder,
+    setDataType, updateFilter, resetFilters, setSortKey, nextPage, prevPage,
     availableFilters, paginatedResults, totalResultsCount,
     canGoNext, canGoPrev
   };
