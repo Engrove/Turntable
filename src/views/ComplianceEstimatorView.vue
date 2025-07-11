@@ -1,14 +1,17 @@
 <!-- src/views/ComplianceEstimatorView.vue -->
 
 <script setup>
-import { onUnmounted } from 'vue';
+import { ref, onUnmounted } from 'vue';
 import { useEstimatorStore } from '@/store/estimatorStore.js';
 import EstimatorInputPanel from '@/components/EstimatorInputPanel.vue';
 import EstimatorResultsPanel from '@/components/EstimatorResultsPanel.vue';
 import EstimatorChart from '@/components/EstimatorChart.vue';
+import HelpModal from '@/components/HelpModal.vue'; // Importera HelpModal
 
 const store = useEstimatorStore();
+const showHelp = ref(false); // State för att visa/dölja modalen
 
+// Återställ inputfälten när komponenten lämnas
 onUnmounted(() => {
   if (store && typeof store.resetInput === 'function') {
     store.resetInput();
@@ -18,11 +21,13 @@ onUnmounted(() => {
 
 <template>
   <div>
+    <!-- 1. Laddningsvy -->
     <div v-if="store.isLoading" class="status-container">
       <h2>Loading Estimator...</h2>
       <p>Fetching analysis rules and database...</p>
     </div>
 
+    <!-- 2. Felvy -->
     <div v-else-if="store.error" class="status-container error">
       <h2>Initialization Failed</h2>
       <p>Could not load the necessary data. Please see debug log below.</p>
@@ -33,12 +38,16 @@ onUnmounted(() => {
       </ol>
     </div>
 
+    <!-- 3. Huvudvy för verktyget -->
     <div v-else-if="store.estimationRules && store.allPickups.length > 0" class="tool-view">
       <div class="tool-header">
         <h1>Compliance Estimator</h1>
-        <button @click="store.resetInput()" class="reset-button">
-          Reset Fields
-        </button>
+        <div class="header-buttons">
+          <button @click="store.resetInput()" class="reset-button">Reset Fields</button>
+          <button @click="showHelp = true" class="icon-help-button" title="Help & Methodology">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          </button>
+        </div>
       </div>
       <p class="tool-description">
         Estimate a cartridge's dynamic compliance at 10Hz based on other known specifications.
@@ -63,10 +72,9 @@ onUnmounted(() => {
             <span class="label">Total Cartridges in Database:</span>
             <span class="value">{{ store.allPickups.length }}</span>
           </div>
-          <!-- HÄR ÄR ÄNDRINGEN -->
-          <div v-if="store.databaseLastModified" class="summary-item">
-            <span class="label">Database Last Updated:</span>
-            <span class="value">{{ new Date(store.databaseLastModified).toLocaleDateString() }}</span>
+          <div v-if="store.estimationRules.timestamp" class="summary-item">
+            <span class="label">Analysis Last Updated:</span>
+            <span class="value">{{ new Date(store.estimationRules.timestamp).toLocaleDateString() }}</span>
           </div>
         </div>
         <p class="summary-note">
@@ -74,7 +82,34 @@ onUnmounted(() => {
           The analysis is periodically updated by running a machine learning script on the available data.
         </p>
       </div>
+      
+      <!-- Hjälp-modalen -->
+      <HelpModal :isOpen="showHelp" @close="showHelp = false">
+        <template #header>
+          <h2>Estimator Methodology</h2>
+        </template>
+        <template #default>
+          <h4>How It Works</h4>
+          <p>This tool estimates a cartridge's dynamic compliance at 10Hz, which is the standard frequency for matching with a tonearm's effective mass. Many manufacturers, especially from Japan, only provide a measurement at 100Hz.</p>
+          <p>Historically, a simple multiplier (e.g., 1.5x to 2x) was used to convert the 100Hz value. This tool improves upon that by using a data-driven, hierarchical approach.</p>
+          <hr>
+          <h4>The Hierarchical Rule System</h4>
+          <p>The estimator uses a pre-calculated set of rules generated from a database of over 300 cartridges. It attempts to find the most specific rule that matches your input, in the following order of priority:</p>
+          <ol>
+              <li><strong>Priority 1 (Most Specific):</strong> Looks for a rule matching the cartridge's <strong>Type, Cantilever Class, and Stylus Family</strong>.</li>
+              <li><strong>Priority 2:</strong> If no match is found, it looks for a rule matching just the <strong>Type and Cantilever Class</strong>.</li>
+              <li><strong>Priority 3:</strong> If still no match, it looks for a rule matching only the <strong>Type</strong>.</li>
+              <li><strong>Global Fallback:</strong> If no specific rule can be found, it uses a general conversion factor calculated from all relevant cartridges in the database.</li>
+          </ol>
+          <p>The confidence level and the description text in the results panel will tell you exactly which level of rule was used for your estimate.</p>
+          <hr>
+          <h4>Why Data Matters</h4>
+          <p>The accuracy of this tool is directly proportional to the quality and quantity of data in the underlying `pickup_data.json` file. The more cartridges with known 10Hz and 100Hz values we have, the more precise and reliable the generated rules become. The statistical analysis only creates rules for combinations with a sufficient number of data points to be considered meaningful.</p>
+        </template>
+      </HelpModal>
     </div>
+
+    <!-- 4. Fallback-vy -->
      <div v-else class="status-container error">
       <h2>An Unexpected Error Occurred</h2>
       <p>Could not render the tool. The state after loading was not as expected. Please see debug log below.</p>
@@ -87,16 +122,18 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* ... (all css is unchanged) ... */
 .debug-log { text-align: left; background: #fff; border: 1px solid #ddd; padding: 1rem; padding-left: 3rem; border-radius: 4px; font-family: monospace; font-size: 0.85rem; color: #333; max-height: 300px; overflow-y: auto; }
 .status-container { padding: 2rem; text-align: center; background-color: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 6px; }
 .status-container.error { background-color: var(--danger-color); color: var(--danger-text); border-color: #f5c6cb; }
 .status-container pre { white-space: pre-wrap; word-wrap: break-word; text-align: left; background-color: rgba(0,0,0,0.05); padding: 1rem; border-radius: 4px; }
 .tool-view { display: flex; flex-direction: column; }
-.tool-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
+.tool-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding-bottom: 1rem; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
 .tool-header h1 { margin: 0; font-size: 1.75rem; color: var(--header-color); }
+.header-buttons { display: flex; align-items: center; gap: 0.5rem; }
 .reset-button { padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600; color: var(--label-color); background-color: transparent; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; transition: all 0.2s ease; }
 .reset-button:hover { background-color: #f8f9fa; border-color: #adb5bd; color: var(--text-color); }
+.icon-help-button { background: none; border: 1px solid transparent; border-radius: 50%; cursor: pointer; color: var(--label-color); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; transition: all 0.2s ease; padding: 0; }
+.icon-help-button:hover { background-color: #e9ecef; border-color: var(--border-color); color: var(--text-color); }
 .tool-description { margin-top: 0; margin-bottom: 2rem; color: var(--label-color); max-width: 80ch; }
 .estimator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; align-items: start; }
 .data-summary-panel { margin-top: 2rem; padding: 1rem 1.5rem; background-color: #f8f9fa; grid-column: 1 / -1; }
