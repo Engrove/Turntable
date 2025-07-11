@@ -103,4 +103,24 @@ const showHelp = ref(false);
 <style scoped>
 /* ... (samma CSS som tidigare) ... */
 .tool-view{display:flex;flex-direction:column}.tool-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:1.5rem;margin-bottom:2rem;border-bottom:1px solid var(--border-color)}.tool-header h1{margin:0;font-size:1.75rem;color:var(--header-color)}.help-button{padding:.5rem 1rem;font-size:.9rem;font-weight:600;background-color:#f8f9fa;border:1px solid var(--border-color);border-radius:6px;cursor:pointer;transition:all .2s ease}.help-button:hover{background-color:#e9ecef;border-color:#adb5bd}.main-content{display:flex;flex-direction:column;gap:2rem}.calculator-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:2rem}
+/* Lägg till denna CSS i <style scoped> */
+.icon-help-button {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--label-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  transition: all 0.2s ease;
+}
+
+.icon-help-button:hover {
+  background-color: #e9ecef;
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
 </style>
