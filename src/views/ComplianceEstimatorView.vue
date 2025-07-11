@@ -11,7 +11,8 @@ const store = useEstimatorStore();
 
 // Återställ inputfälten när komponenten lämnas
 onUnmounted(() => {
-  if (store.result) { // Säkerhetskoll
+  // Extra säkerhetskoll för att undvika fel om storen inte laddats korrekt
+  if (store && typeof store.resetInput === 'function') {
     store.resetInput();
   }
 });
@@ -25,15 +26,15 @@ onUnmounted(() => {
       <p>Fetching analysis rules and database...</p>
     </div>
 
-    <!-- 2. Visa ett felmeddelande om något gick fel -->
+    <!-- 2. Visa ett felmeddelande om något gick fel under laddningen -->
     <div v-else-if="store.error" class="status-container error">
       <h2>Initialization Failed</h2>
-      <p>Could not load the necessary data for the estimator.</p>
+      <p>Could not load the necessary data for the estimator. Please try refreshing the page.</p>
       <pre>{{ store.error }}</pre>
     </div>
 
-    <!-- 3. Visa verktyget när all data är laddad och klar -->
-    <div v-else class="tool-view">
+    <!-- 3. Visa verktyget ENDAST när all data är bekräftat laddad och klar -->
+    <div v-else-if="store.estimationRules && store.allPickups.length > 0" class="tool-view">
       <div class="tool-header">
         <h1>Compliance Estimator</h1>
         <button @click="store.resetInput()" class="reset-button">
@@ -63,7 +64,7 @@ onUnmounted(() => {
             <span class="label">Total Cartridges in Database:</span>
             <span class="value">{{ store.allPickups.length }}</span>
           </div>
-          <div v-if="store.estimationRules" class="summary-item">
+          <div v-if="store.estimationRules.timestamp" class="summary-item">
             <span class="label">Analysis Last Updated:</span>
             <span class="value">{{ new Date(store.estimationRules.timestamp).toLocaleDateString() }}</span>
           </div>
@@ -74,6 +75,13 @@ onUnmounted(() => {
         </p>
       </div>
     </div>
+
+    <!-- 4. Fallback-vy om datan av någon anledning inte laddats korrekt men inget fel fångats -->
+     <div v-else class="status-container error">
+      <h2>An Unexpected Error Occurred</h2>
+      <p>Could not render the tool. Please try refreshing the page.</p>
+    </div>
+
   </div>
 </template>
 
@@ -92,6 +100,7 @@ onUnmounted(() => {
 }
 .status-container pre {
   white-space: pre-wrap;
+  word-wrap: break-word;
   text-align: left;
   background-color: rgba(0,0,0,0.05);
   padding: 1rem;
