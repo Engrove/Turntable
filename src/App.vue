@@ -1,26 +1,22 @@
+<!-- src/App.vue -->
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { RouterLink, RouterView, useRouter } from 'vue-router';
 
 const router = useRouter();
-// 'isMenuExpanded' styr nu både desktop-expansion och mobil-synlighet
 const isMenuExpanded = ref(false);
 const isMobile = ref(false);
 
-// Funktion för att växla menyns tillstånd
 const toggleMenu = () => {
   isMenuExpanded.value = !isMenuExpanded.value;
 };
 
-// Funktion för att stänga menyn (används främst på mobil)
 const closeMenu = () => {
   isMenuExpanded.value = false;
 };
 
-// Funktioner för att hantera fönsterstorlek och byta till mobilläge
 const checkScreenSize = () => {
   isMobile.value = window.innerWidth < 768;
-  // Stäng menyn om vi går från desktop till mobil för att undvika konstiga tillstånd
   if (isMobile.value) {
     isMenuExpanded.value = false;
   }
@@ -36,6 +32,7 @@ onUnmounted(() => {
 });
 
 const routeIcons = {
+  'home': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`,
   'tonearm-calculator': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="2"></circle><line x1="12" y1="3" x2="12" y2="1"></line><line x1="19" y1="12" x2="21" y2="12"></line><path d="M16 8L12 12 8 8"></path></svg>`,
   'compliance-estimator': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20V16"></path></svg>`
 };
@@ -94,18 +91,27 @@ const routeIcons = {
   --text-light: #ecf0f1;
   --text-muted: #bdc3c7;
   --bg-hover: #34495e;
+  --panel-bg: #f8f9fa;
+  --border-color: #dee2e6;
+  --text-color: #212529;
+  --label-color: #495057;
+  --ideal-color: #d4edda;
+  --warning-color: #fff3cd;
+  --danger-color: #f8d7da;
+  --ideal-text: #155724;
+  --warning-text: #856404;
+  --danger-text: #721c24;
 }
 
 /* --- VIKTIG FIX: Korrekt scroll-beteende --- */
-/* Tar bort de gamla reglerna som låste scrollningen */
 html {
   scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
-  font-family: sans-serif;
-  background-color: #f4f7f9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: #e9ecef;
 }
 
 #app {
@@ -120,7 +126,6 @@ body {
 .content-area {
   padding: 2rem;
   transition: margin-left 0.3s ease;
-  /* Skapa utrymme för den kollapsade menyn på desktop */
   margin-left: var(--sidebar-width-collapsed);
 }
 
@@ -128,8 +133,8 @@ body {
 .sidebar {
   background-color: var(--header-color);
   color: var(--text-light);
-  height: 100vh; /* Tar hela höjden */
-  position: fixed; /* Fäster menyn */
+  height: 100vh;
+  position: fixed;
   top: 0;
   left: 0;
   z-index: 1000;
@@ -258,37 +263,30 @@ body {
 /* --- Mobil-läge (Media Query) --- */
 @media (max-width: 767px) {
   .content-area {
-    /* Ta bort marginalen på mobil, menyn ligger över */
     margin-left: 0;
     padding: 1rem;
-    padding-top: 5rem; /* Utrymme för hamburgermenyn */
+    padding-top: 5rem;
   }
 
   .sidebar {
-    /* Dölj menyn utanför skärmen som standard */
     width: var(--sidebar-width-expanded);
     transform: translateX(-100%);
     transition: transform 0.3s ease;
   }
 
   .sidebar.is-expanded {
-    /* Visa menyn när den är expanderad */
     transform: translateX(0);
   }
 
-  .sidebar-header h3 {
-    opacity: 1; /* Texten är alltid synlig i mobilmenyn */
-  }
-
-  .nav-text {
-    opacity: 1; /* Texten är alltid synlig i mobilmenyn */
+  .sidebar-header h3, .nav-text {
+    opacity: 1;
   }
 
   .mobile-menu-trigger {
     position: fixed;
     top: 1rem;
     left: 1rem;
-    z-index: 1001; /* Ovanpå allt utom menyn */
+    z-index: 1001;
     background-color: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(5px);
     border: 1px solid var(--border-color);
@@ -305,7 +303,24 @@ body {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    z-index: 999; /* Under menyn men över innehållet */
+    z-index: 999;
   }
+}
+
+/* Paneler och generisk styling för vyer */
+.panel {
+    background-color: var(--panel-bg);
+    padding: 1.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.panel h2 {
+    margin-top: 0;
+    color: var(--header-color);
+    font-size: 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
 }
 </style>
