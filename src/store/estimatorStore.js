@@ -1,156 +1,192 @@
 // src/store/estimatorStore.js
 
-import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
 
 export const useEstimatorStore = defineStore('estimator', () => {
-  // --- STATE ---
-  const userInput = ref({
-    cu_dynamic_100hz: null, cu_static: null, type: null,
-    cantilever_class: null, stylus_family: null, weight_g: null,
-  });
-
-  const estimationRules = ref(null);
-  const allPickups = ref([]);
   const isLoading = ref(true);
   const error = ref(null);
   const debugLog = ref([]);
 
-  // --- ACTIONS ---
+  const userInput = ref({
+    cu_dynamic_100hz: null,
+    cu_static: null,
+    type: null,
+    cantilever_class: null,
+    stylus_family: null,
+    weight_g: null,
+  });
 
-  async function initializeStore() {
-    debugLog.value.push('1. Initializing store...');
-    isLoading.value = true;
-    error.value = null;
-    try {
-      debugLog.value.push('2. Fetching estimation_rules.json from /data/estimation_rules.json...');
-      const rulesResponse = await fetch('/data/estimation_rules.json');
-      debugLog.value.push(`3. Rules fetch status: ${rulesResponse.status} ${rulesResponse.statusText}`);
-      if (!rulesResponse.ok) throw new Error(`Failed to load estimation_rules.json`);
-      
-      const rulesData = await rulesResponse.json();
-      // Pre-sortera reglerna en gång vid laddning
-      rulesData.segmented_rules.sort((a, b) => a.priority - b.priority);
-      estimationRules.value = rulesData;
-      debugLog.value.push(`5. Rules parsed and sorted. Found ${estimationRules.value.segmented_rules.length} rules.`);
+  const estimationRules = ref(null);
+  const allPickups = ref([]);
 
-      debugLog.value.push('6. Fetching pickup_data.json...');
-      const pickupsResponse = await fetch('/data/pickup_data.json');
-      debugLog.value.push(`7. Pickups fetch status: ${pickupsResponse.status} ${pickupsResponse.statusText}`);
-      if (!pickupsResponse.ok) throw new Error(`Failed to load pickup_data.json`);
+  const availableCantileverClasses = computed(() => {
+    if (!allPickups.value.length) return [];
+    return [...new Set(allPickups.value.map(p => p.cantilever_class).filter(Boolean))].sort();
+  });
 
-      allPickups.value = await pickupsResponse.json();
-      debugLog.value.push(`9. Pickups parsed. Loaded ${allPickups.value.length} items.`);
-      
-    } catch (e) {
-      debugLog.value.push(`---!! ERROR CAUGHT !!---`);
-      debugLog.value.push(e.message);
-      error.value = e.message;
-    } finally {
-      isLoading.value = false;
-      debugLog.value.push('11. Initialization process finished.');
-    }
-  }
-
-  function resetInput() {
-    userInput.value = {
-      cu_dynamic_100hz: null, cu_static: null, type: null,
-      cantilever_class: null, stylus_family: null, weight_g: null,
-    };
-  }
-
-  // --- COMPUTED PROPERTIES ---
-  const availableCantileverClasses = computed(() => ["Standard", "Aluminum", "Exotic/High-Performance"]);
-  const availableStylusFamilies = computed(() => ["Conical", "Elliptical", "Nude Elliptical", "Line-Contact", "Advanced Line-Contact"]);
+  const availableStylusFamilies = computed(() => {
+    if (!allPickups.value.length) return [];
+    return [...new Set(allPickups.value.map(p => p.stylus_family).filter(Boolean))].sort();
+  });
 
   const result = computed(() => {
-    const defaultResult = {
-      compliance: null, confidence: 0, sampleSize: 0,
-      description: "Enter data to begin.",
-      chartData: { dataPoints: [], medianRatio: 1 }
+    if (!userInput.value.type || (!userInput.value.cu_dynamic_100hz && !userInput.value.cu_static)) {
+      return { compliance: null, confidence: 0, description: 'Please provide Pickup Type and at least one compliance value.', sampleSize: 0, chartConfig: null };
+    }
+    if (!estimationRules.value) {
+      return { compliance: null, confidence: 0, description: 'Estimation rules not loaded.', sampleSize: 0, chartConfig: null };
+    }
+
+    const findRule = () => {
+      const u = userInput.value;
+      const rules = estimationRules.value.segmented_rules;
+      
+      let match = rules.find(r => r.conditions.type === u.type && r.conditions.cantilever_class === u.cantilever_class && r.conditions.stylus_family === u.stylus_family);
+      if (match) return { ...match, priority: 1, description: `Based on a high-precision rule (3 variables matched: type, cantilever, stylus).` };
+
+      match = rules.find(r => r.conditions.type === u.type && r.conditions.cantilever_class === u.cantilever_class);
+      if (match) return { ...match, priority: 2, description: `Based on a strong rule (2 variables matched: type, cantilever).` };
+      
+      match = rules.find(r => r.conditions.type === u.type);
+      if (match) return { ...match, priority: 3, description: `Based on a general rule (1 variable matched: type).` };
+      
+      return { ...estimationRules.value.global_fallback, description: 'Based on the global fallback rule (all available data).' };
     };
-    if (isLoading.value || error.value || !estimationRules.value) return defaultResult;
-    
-    const { cu_dynamic_100hz, cu_static, type } = userInput.value;
-    if (!type || (!cu_dynamic_100hz && !cu_static)) return defaultResult;
-    
-    // --- NY HIERARKISK SÖKLOGIK ---
-    let matchedRule = null;
-    for (const rule of estimationRules.value.segmented_rules) {
-      const conditions = rule.conditions;
-      let isMatch = true;
-      // Loopa igenom alla villkor i regeln
-      for (const key in conditions) {
-        if (userInput.value[key] !== conditions[key]) {
-          isMatch = false;
-          break; // Om ett villkor inte matchar, gå till nästa regel
-        }
-      }
-      if (isMatch) {
-        matchedRule = rule;
-        break; // Hitta första (mest specifika) matchningen och sluta leta
-      }
-    }
-    // --- SLUT PÅ HIERARKISK SÖKLOGIK ---
 
-    const appliedRule = matchedRule || estimationRules.value.global_fallback;
-    
-    const baseValue = cu_dynamic_100hz || cu_static;
-    const estimatedCompliance = baseValue * appliedRule.median_ratio;
+    const matchedRule = findRule();
+    let baseCompliance = userInput.value.cu_dynamic_100hz;
+    let conversionRatio = matchedRule.median_ratio;
+    let source = 'dynamic';
 
-    // Bygg en dynamisk beskrivning baserad på vilken regel som träffades
-    let description;
-    if (matchedRule) {
-      const numConditions = Object.keys(matchedRule.conditions).length;
-      const conditionsText = Object.entries(matchedRule.conditions).map(([key, value]) => `${key.replace('_', ' ')}: ${value}`).join(', ');
-      description = `Based on a high-precision rule (${numConditions} variables matched: ${conditionsText}).`;
-    } else {
-      description = `No specific rule matched. Using a general fallback rule based on the entire dataset.`;
-    }
-    
-    // Konfidensberäkning
-    let confidenceValue = 0;
-    if (matchedRule) {
-        const priorityPenalty = (matchedRule.priority - 1) * 15; // Straff för mindre specifika regler
-        const baseConfidence = 95 - priorityPenalty;
-        confidenceValue = Math.round(baseConfidence * (1 - 1 / (1 + appliedRule.sample_size))); // Skalar med sample size
-    } else {
-        confidenceValue = 40; // Lägre fast konfidens för global fallback
-    }
-    if (userInput.value.cu_static && !userInput.value.cu_dynamic_100hz) {
-        confidenceValue = Math.round(confidenceValue * 0.8); // 20% straff för statisk compliance
+    if (!baseCompliance) {
+      baseCompliance = userInput.value.cu_static;
+      conversionRatio = 0.5;
+      source = 'static';
+      // Överskriv regelbeskrivningen när vi använder statisk compliance
+      matchedRule.description = 'Based on the standard static-to-dynamic conversion rule (ratio ≈ 0.5).';
     }
 
-    // Grafdata
-    let chartDataPoints = [];
-    if (matchedRule) {
-      chartDataPoints = allPickups.value
-        .filter(p => {
-            let matchesAll = true;
-            for(const key in matchedRule.conditions) {
-                if(p[key] !== matchedRule.conditions[key]) {
-                    matchesAll = false;
-                    break;
+    if (!baseCompliance) {
+      return { compliance: null, confidence: 0, description: 'Input value is missing.', sampleSize: 0, chartConfig: null };
+    }
+
+    const estimatedCompliance = baseCompliance * conversionRatio;
+    
+    const calculateConfidence = () => {
+        let score = 0;
+        if (source === 'static') return 50; 
+        if (matchedRule.priority === 1) score += 60;
+        else if (matchedRule.priority === 2) score += 45;
+        else if (matchedRule.priority === 3) score += 30;
+        else score += 10;
+
+        if (matchedRule.sample_size >= 20) score += 30;
+        else if (matchedRule.sample_size >= 10) score += 20;
+        else if (matchedRule.sample_size >= 5) score += 10;
+        return Math.min(100, score);
+    };
+
+    const confidence = calculateConfidence();
+
+    // Dynamisk funktion för att skapa grafkonfiguration
+    const getChartConfig = (rule, sourceType) => {
+        if (sourceType === 'dynamic') {
+            // Filtrera för att endast visa data relevant för den matchade regeln (efter typ)
+            const dataPoints = allPickups.value
+                .filter(p => p.cu_dynamic_100hz && p.cu_dynamic_10hz && p.type === rule.conditions?.type)
+                .map(p => ({ x: p.cu_dynamic_100hz, y: p.cu_dynamic_10hz, model: p.model }));
+            
+            return {
+                dataPoints,
+                medianRatio: rule.median_ratio,
+                labels: {
+                    x: 'Dynamic Compliance @ 100Hz',
+                    y: 'Dynamic Compliance @ 10Hz',
+                    title: `Underlying Data for '${rule.conditions?.type || 'Global'}' 100Hz Conversion Rule`,
+                    lineLabel: `Median Ratio: ${rule.median_ratio.toFixed(2)}`
+                },
+                scales: {
+                    suggestedMax: { x: 25, y: 45 }
                 }
-            }
-            return matchesAll && p.cu_dynamic_100hz && p.cu_dynamic_10hz;
-        })
-        .map(p => ({ x: p.cu_dynamic_100hz, y: p.cu_dynamic_10hz, model: p.model }));
-    }
+            };
+        } else if (sourceType === 'static') {
+            // Visa ALLA pickuper med statisk och 10Hz-data som referens
+            const dataPoints = allPickups.value
+                .filter(p => p.cu_static && p.cu_dynamic_10hz)
+                .map(p => ({ x: p.cu_static, y: p.cu_dynamic_10hz, model: p.model }));
+            
+            return {
+                dataPoints,
+                medianRatio: 0.5,
+                labels: {
+                    x: 'Static Compliance (cu)',
+                    y: 'Dynamic Compliance @ 10Hz (cu)',
+                    title: 'Reference Data for Static to Dynamic Conversion',
+                    lineLabel: 'General Conversion Ratio: 0.50'
+                },
+                scales: {
+                    suggestedMax: { x: 60, y: 45 }
+                }
+            };
+        }
+        return null;
+    };
     
+    const chartConfig = getChartConfig(matchedRule, source);
+
     return {
-      compliance: estimatedCompliance, confidence: confidenceValue, sampleSize: appliedRule.sample_size,
-      description: description,
-      chartData: { dataPoints: chartDataPoints, medianRatio: appliedRule.median_ratio }
+      compliance: estimatedCompliance,
+      confidence: confidence,
+      description: matchedRule.description,
+      sampleSize: matchedRule.sample_size,
+      chartConfig: chartConfig,
     };
   });
 
-  initializeStore();
+  const initialize = async () => {
+    debugLog.value.push("Store initialization started.");
+    try {
+      isLoading.value = true;
+      error.value = null;
+
+      const [rulesResponse, pickupsResponse] = await Promise.all([
+        fetch('/data/estimation_rules.json'),
+        fetch('/data/pickup_data.json')
+      ]);
+
+      if (!rulesResponse.ok) throw new Error(`Failed to fetch estimation_rules.json: ${rulesResponse.statusText}`);
+      estimationRules.value = await rulesResponse.json();
+      debugLog.value.push("Estimation rules loaded.");
+
+      if (!pickupsResponse.ok) throw new Error(`Failed to fetch pickup_data.json: ${pickupsResponse.statusText}`);
+      allPickups.value = await pickupsResponse.json();
+      debugLog.value.push("Pickup database loaded.");
+      
+      debugLog.value.push("Initialization successful.");
+    } catch (e) {
+      error.value = e.message;
+      debugLog.value.push(`Error during initialization: ${e.message}`);
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const resetInput = () => {
+    userInput.value = {
+      cu_dynamic_100hz: null,
+      cu_static: null,
+      type: null,
+      cantilever_class: null,
+      stylus_family: null,
+      weight_g: null,
+    };
+  };
+
+  initialize();
 
   return {
-    userInput, isLoading, error, result,
-    allPickups, estimationRules, debugLog,
-    availableCantileverClasses, availableStylusFamilies,
-    resetInput
+    isLoading, error, debugLog, userInput, estimationRules, allPickups,
+    availableCantileverClasses, availableStylusFamilies, result, resetInput,
   };
 });
