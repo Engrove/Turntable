@@ -68,6 +68,47 @@
         "id": "wood",
         "name": "Wood",
         "description": "Used for its unique resonance characteristics and natural damping. Can provide a warm, organic sound."
+      },
+      {
+        "id": "glass",
+        "name": "Glass / Quartz",
+        "description": "Used in some specific designs for its stiffness and stability, like the Souther linear tracking arm."
+      },
+      {
+        "id": "resin",
+        "name": "Resin / 3D-Printed",
+        "description": "Used in modern designs, often 3D-printed, to create complex shapes and control resonances."
+      },
+      {
+        "id": "kevlar",
+        "name": "Kevlar Composite",
+        "description": "An advanced composite material known for its high strength-to-weight ratio and damping properties."
+      },
+      {
+        "id": "acrylic",
+        "name": "Acrylic",
+        "description": "Used for its specific resonance characteristics and often for aesthetic reasons."
+      }
+    ]
+  },
+  "arm_shape": {
+    "name": "Armtube Shape",
+    "description": "The general shape of the tonearm tube, which affects resonance, rigidity, and aesthetics.",
+    "categories": [
+      {
+        "id": "straight",
+        "name": "Straight",
+        "description": "A direct, straight tube from pivot to headshell. The most common modern design, often offering the highest rigidity for its mass."
+      },
+      {
+        "id": "s_shape",
+        "name": "S-Shape",
+        "description": "A classic design with a gentle 'S' curve. Popular on many vintage Japanese tonearms and still used today, often with removable headshells."
+      },
+      {
+        "id": "j_shape",
+        "name": "J-Shape",
+        "description": "Similar to an S-shape but with a more pronounced final curve towards the headshell. A classic aesthetic."
       }
     ]
   },
