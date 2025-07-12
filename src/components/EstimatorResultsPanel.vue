@@ -44,16 +44,19 @@ const showRange = computed(() => {
 
     <div class="result-display">
       <div class="value-wrapper">
-        <!-- NY LOGIK FÖR ATT VISA INTERVALLET -->
-        <h2 v-if="result.compliance_median" class="result-value-main">
+        <!-- FÖRENKLAD OCH KORRIGERAD LOGIK HÄR -->
+        <template v-if="result.compliance_median !== null">
+          <h2 class="result-value-main">
             <template v-if="showRange">
-                {{ result.compliance_min.toFixed(1) }} – {{ result.compliance_max.toFixed(1) }}
+              {{ result.compliance_min.toFixed(1) }} – {{ result.compliance_max.toFixed(1) }}
             </template>
             <template v-else>
-                {{ result.compliance_median.toFixed(1) }}
+              {{ result.compliance_median.toFixed(1) }}
             </template>
-        </h2>
+          </h2>
+        </template>
         <span v-else class="result-placeholder">--</span>
+        
         <span class="result-unit">µm/mN @ 10Hz</span>
       </div>
       <p v-if="showRange" class="median-note">
@@ -95,9 +98,8 @@ const showRange = computed(() => {
 .result-display { background-color: var(--header-color); color: #fff; padding: 1.5rem 1rem; border-radius: 6px; margin-bottom: 2rem; }
 .value-wrapper { display: flex; justify-content: center; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
 
-/* NY STYLING för H2 */
 .result-value-main {
-  font-size: 3.5rem; /* Något mindre för att få plats med intervallet */
+  font-size: 3.5rem;
   font-weight: 700;
   line-height: 1;
   margin: 0;
