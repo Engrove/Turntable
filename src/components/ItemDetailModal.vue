@@ -21,16 +21,19 @@
             <p>{{ item.review_summary_en }}</p>
           </div>
 
-          <div v-if="item.notes" class="notes-section">
+          <div v-if="item.notes_en" class="notes-section">
             <h4>Notes</h4>
-            <p>{{ item.notes }}</p>
+            <p>{{ item.notes_en }}</p>
           </div>
           
+          <!-- NYTT (1d): Använder den nya 'filteredSources'-beräkningen -->
           <div v-if="filteredSources.length > 0" class="notes-section">
             <h4>Sources</h4>
             <ul>
               <li v-for="(source, index) in filteredSources" :key="index">
-                <a :href="source.url" target="_blank" rel="noopener noreferrer">{{ source.name }}</a>
+                <!-- Hanterar källor utan URL -->
+                <a v-if="source.url" :href="source.url" target="_blank" rel="noopener noreferrer">{{ source.name }}</a>
+                <span v-else>{{ source.name }}</span>
               </li>
             </ul>
           </div>
@@ -77,28 +80,43 @@ const visibleFields = computed(() => {
   return allFields[props.dataType].filter(field => props.item[field.key] !== null && props.item[field.key] !== undefined);
 });
 
-// Filtrerar källor enligt din önskan
+// NYTT (1d): Helt ny logik för att filtrera och gruppera källor
 const filteredSources = computed(() => {
   if (!props.item?.sources) return [];
-  const allowedKeywords = ['official', 'hifi-wiki', 'labs', 'research', 'audio', 'products', 'inc', 'co.', 'engineering'];
-  return props.item.sources.filter(source => {
-    const name = source.name.toLowerCase();
-    // Tillåt om URL finns ELLER om namnet innehåller ett nyckelord
-    return source.url || allowedKeywords.some(keyword => name.includes(keyword));
-  }).map(source => {
-    // Generalisera vaga källor
-    if (!source.url && !allowedKeywords.some(keyword => source.name.toLowerCase().includes(keyword))) {
-        return { name: 'Community Data', url: '#' };
+  
+  const highQualitySources = [];
+  let hasCommunityData = false;
+  
+  // Nyckelord som indikerar en mer pålitlig källa
+  const trustedKeywords = ['official', 'labs', 'hifi-wiki', 'manual'];
+
+  props.item.sources.forEach(source => {
+    // Trimma och kontrollera om URL är giltig
+    const hasValidUrl = source.url && source.url.trim().startsWith('http');
+    const nameLower = source.name ? source.name.toLowerCase() : '';
+
+    // Kontrollera om namnet innehåller något av de betrodda nyckelorden
+    const hasTrustedKeyword = trustedKeywords.some(keyword => nameLower.includes(keyword));
+
+    if (hasValidUrl || hasTrustedKeyword) {
+      highQualitySources.push(source);
+    } else {
+      hasCommunityData = true; // Markera att det finns minst en "svag" källa
     }
-    return source;
   });
+
+  const finalSources = [...highQualitySources];
+  
+  // Om det fanns några "svaga" källor, lägg till en enskild post för "Community Data"
+  if (hasCommunityData) {
+    finalSources.push({ name: 'Community Data', url: null });
+  }
+
+  return finalSources;
 });
 </script>
 
 <style scoped>
-.modal-overlay { /* ... existerande CSS ... */ }
-.modal-content { /* ... existerande CSS ... */ }
-/* ... (kopiera modal-css från HelpModal.vue eller använd denna nya) ... */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
@@ -109,7 +127,6 @@ const filteredSources = computed(() => {
 .close-btn:hover { color: #333; }
 .modal-body { overflow-y: auto; line-height: 1.6; }
 
-/* Ny CSS för detaljerna */
 .details-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -133,6 +150,7 @@ const filteredSources = computed(() => {
 .detail-item .value {
   font-size: 1.1rem;
   color: var(--text-color);
+  text-transform: capitalize;
 }
 .notes-section {
   margin-top: 1.5rem;
@@ -147,6 +165,9 @@ const filteredSources = computed(() => {
 .notes-section p, .notes-section ul {
   margin: 0;
   color: var(--label-color);
+}
+.notes-section ul {
+  padding-left: 1.25rem;
 }
 .notes-section a {
   color: var(--accent-color);
