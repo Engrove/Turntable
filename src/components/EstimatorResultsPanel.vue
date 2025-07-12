@@ -25,11 +25,9 @@ const confidenceDetails = computed(() => {
   return { level: 'N/A', class: 'none' };
 });
 
-// NYTT (1c): Beräknar om ett intervall ska visas.
 const showRange = computed(() => {
     return props.result.compliance_min !== null &&
            props.result.compliance_max !== null &&
-           // Visa även om intervallet är litet, men inte exakt samma
            props.result.compliance_min.toFixed(2) !== props.result.compliance_max.toFixed(2);
 });
 </script>
@@ -41,7 +39,6 @@ const showRange = computed(() => {
     <div class="result-display">
       <div class="value-wrapper">
         <template v-if="result.compliance_median !== null">
-          <!-- NYTT (1c): Mallen använder nu <h2> för att visa intervallet eller medianen -->
           <h2 class="result-value-main">
             <template v-if="showRange">
               {{ result.compliance_min.toFixed(1) }} – {{ result.compliance_max.toFixed(1) }}
@@ -55,7 +52,6 @@ const showRange = computed(() => {
         
         <span class="result-unit">µm/mN @ 10Hz</span>
       </div>
-      <!-- NYTT (1c): Visar medianen som en notis under om ett intervall visas -->
       <p v-if="showRange" class="median-note">
           (Median Estimate: {{ result.compliance_median.toFixed(1) }})
       </p>
@@ -86,13 +82,13 @@ const showRange = computed(() => {
 .result-display { background-color: var(--header-color); color: #fff; padding: 1.5rem 1rem; border-radius: 6px; margin-bottom: 2rem; }
 .value-wrapper { display: flex; justify-content: center; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
 
-/* NYTT (1c): Styling för H2 och median-notis */
 .result-value-main {
-  font-size: 3.5rem; /* Något mindre för att få plats med intervallet */
+  font-size: 3.5rem;
   font-weight: 700;
   line-height: 1;
   margin: 0;
   white-space: nowrap;
+  color: #fff; /* <-- KORRIGERING: Sätt vit textfärg explicit */
 }
 .result-placeholder { font-size: 4.5rem; font-weight: 700; line-height: 1; color: #6c757d; }
 .result-unit { font-size: 1.25rem; font-weight: 300; }
