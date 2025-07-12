@@ -30,11 +30,13 @@ const updateChart = () => {
   // Uppdatera scatter-data
   chartInstance.data.datasets[0].data = config.dataPoints;
 
-  // Uppdatera linjen baserat på den nya konfigurationen
-  const chartMaxX = chartInstance.scales.x.max;
-  const lineEndX = chartMaxX;
-  const lineEndY = chartMaxX * config.medianRatio;
+  // --- KORRIGERING AV LINJEN ---
+  // Hitta det högsta x-värdet i den nya datamängden för att rita linjen realistiskt
+  const maxXValue = config.dataPoints.reduce((max, p) => p.x > max ? p.x : max, 0);
+  const lineEndX = Math.max(maxXValue, 1); // Se till att den är minst 1 för att undvika noll-längd
+  const lineEndY = lineEndX * config.medianRatio;
 
+  // Uppdatera annotations-pluginet med de nya korrekta värdena
   chartInstance.options.plugins.annotation.annotations.medianLine = {
     type: 'line',
     xMin: 0,
@@ -54,13 +56,16 @@ const updateChart = () => {
       yAdjust: -10
     }
   };
+  // --- SLUT PÅ KORRIGERING ---
 
   // Uppdatera dynamiska texter och skalor
   chartInstance.options.plugins.title.text = config.labels.title;
   chartInstance.options.scales.x.title.text = config.labels.x;
   chartInstance.options.scales.y.title.text = config.labels.y;
-  chartInstance.options.scales.x.suggestedMax = config.scales.suggestedMax.x;
-  chartInstance.options.scales.y.suggestedMax = config.scales.suggestedMax.y;
+  
+  // Justera skalans maxvärde för att ge lite marginal
+  chartInstance.options.scales.x.max = Math.ceil(lineEndX * 1.1); 
+  chartInstance.options.scales.y.max = Math.ceil(config.dataPoints.reduce((max, p) => p.y > max ? p.y : max, 0) * 1.1);
 
   chartInstance.update();
 };
