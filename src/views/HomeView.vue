@@ -34,131 +34,47 @@
       </div>
     </section>
 
+    <!-- UPPDATERAD SEKTION HÄR -->
     <footer class="home-footer">
       <h3>Disclaimer</h3>
       <p>
-        This toolkit is provided as a design aid for theoretical exploration and educational purposes. The calculations are based on established physics, but are a product of a hobbyist project. There is no guarantee of the absolute accuracy of the calculations. Users are encouraged to cross-reference the results with their own measurements and practical experience. The ultimate responsibility for any physical build rests with the user.
+        This toolkit is provided as a design aid for theoretical exploration and educational purposes only. The calculations are based on established physical principles but are the product of a hobbyist project. Data is compiled from publicly available sources, including manufacturer specifications and community-driven databases.
+      </p>
+      <p>
+        While every effort is made to verify accuracy, there is no guarantee of the absolute correctness of the data or calculations. Users are encouraged to cross-reference the results with their own measurements and practical experience. The ultimate responsibility for any physical build or component matching rests with the user.
       </p>
     </footer>
+    <!-- SLUT PÅ UPPDATERAD SEKTION -->
   </div>
 </template>
 
 <script setup>
 import { RouterLink } from 'vue-router';
 
-// Länk till ditt GitHub-repo
 const githubUrl = 'https://github.com/Engrove/Turntable';
 </script>
 
 <style scoped>
+/* Befintlig CSS förblir oförändrad */
 .home-view {
   max-width: 900px;
   margin: 0 auto;
   padding: 1rem 2rem 2rem;
   text-align: center;
 }
-
-.home-header {
-  margin-bottom: 3rem;
-}
-
-.main-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: var(--header-color);
-  margin-bottom: 0.5rem;
-}
-
-.subtitle {
-  font-size: 1.25rem;
-  color: var(--label-color);
-  font-style: italic;
-}
-
-.intro-section {
-  font-size: 1.1rem;
-  line-height: 1.7;
-  color: var(--text-color);
-  margin-bottom: 3rem;
-  text-align: left;
-  background-color: var(--panel-bg);
-  padding: 1.5rem 2rem;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-}
-
-.intro-section a {
-  color: var(--accent-color);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.intro-section a:hover {
-  text-decoration: underline;
-}
-
-p.note {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px dashed var(--border-color);
-    font-size: 0.95rem;
-    font-style: italic;
-    color: var(--label-color);
-}
-
-.tools-section h2 {
-  font-size: 1.75rem;
-  color: var(--header-color);
-  border-bottom: 2px solid var(--accent-color);
-  display: inline-block;
-  padding-bottom: 0.5rem;
-  margin-bottom: 2rem;
-}
-
-.tools-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  text-align: left;
-}
-
-.tool-card {
-  display: block;
-  background-color: #fff;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1.5rem;
-  text-decoration: none;
-  color: inherit;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.tool-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-}
-
-.tool-card h3 {
-  margin-top: 0;
-  color: var(--accent-color);
-}
-
-.tool-card p {
-  color: var(--label-color);
-  line-height: 1.6;
-}
-
-.home-footer {
-  margin-top: 4rem;
-  padding-top: 2rem;
-  border-top: 1px solid var(--border-color);
-  color: var(--label-color);
-  font-size: 0.9rem;
-  text-align: left;
-}
-
-.home-footer h3 {
-    text-align: center;
-    color: var(--header-color);
-}
+.home-header { margin-bottom: 3rem; }
+.main-title { font-size: 2.5rem; font-weight: 700; color: var(--header-color); margin-bottom: 0.5rem; }
+.subtitle { font-size: 1.25rem; color: var(--label-color); font-style: italic; }
+.intro-section { font-size: 1.1rem; line-height: 1.7; color: var(--text-color); margin-bottom: 3rem; text-align: left; background-color: var(--panel-bg); padding: 1.5rem 2rem; border-radius: 8px; border: 1px solid var(--border-color); }
+.intro-section a { color: var(--accent-color); font-weight: 600; text-decoration: none; }
+.intro-section a:hover { text-decoration: underline; }
+p.note { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--border-color); font-size: 0.95rem; font-style: italic; color: var(--label-color); }
+.tools-section h2 { font-size: 1.75rem; color: var(--header-color); border-bottom: 2px solid var(--accent-color); display: inline-block; padding-bottom: 0.5rem; margin-bottom: 2rem; }
+.tools-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; text-align: left; }
+.tool-card { display: block; background-color: #fff; border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; text-decoration: none; color: inherit; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.tool-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+.tool-card h3 { margin-top: 0; color: var(--accent-color); }
+.tool-card p { color: var(--label-color); line-height: 1.6; }
+.home-footer { margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--border-color); color: var(--label-color); font-size: 0.9rem; text-align: left; }
+.home-footer h3 { text-align: center; color: var(--header-color); }
 </style>
