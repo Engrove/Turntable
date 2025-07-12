@@ -7,7 +7,7 @@
       <button @click="printReport" class="print-button">Print or Save as PDF</button>
     </header>
 
-    <main class="report-content">
+    <main class="report-content" v-if="reportData && !reportData.error">
       <!-- Sektion för Tonarmskalkylatorn -->
       <section v-if="reportData.type === 'tonearm'" class="report-section">
         <h2>Tonearm Resonance Calculation</h2>
@@ -15,7 +15,11 @@
           <div class="data-group">
             <h3>Input Parameters</h3>
             <ul>
-              <li v-for="param in tonearmParams" :key="param.key">
+              <li v-if="reportData.params.calculationMode === 'detailed'" v-for="param in tonearmParamsDetailed" :key="param.key">
+                <strong>{{ param.label }}:</strong>
+                <span>{{ reportData.params[param.key] }} {{ param.unit }}</span>
+              </li>
+              <li v-if="reportData.params.calculationMode === 'direct'" v-for="param in tonearmParamsDirect" :key="param.key">
                 <strong>{{ param.label }}:</strong>
                 <span>{{ reportData.params[param.key] }} {{ param.unit }}</span>
               </li>
@@ -24,11 +28,11 @@
           <div class="data-group">
             <h3>Calculated Results</h3>
             <ul>
-              <li v-if="reportData.results.isUnbalanced"><strong>Status:</strong> <span class="danger-text">Unbalanced</span></li>
-              <li v-if="!reportData.results.isUnbalanced"><strong>Effective Mass:</strong> <span>{{ reportData.results.M_eff.toFixed(1) }} g</span></li>
-              <li v-if="!reportData.results.isUnbalanced"><strong>Resonance Frequency:</strong> <span class="final-result">{{ reportData.results.F.toFixed(1) }} Hz</span></li>
+              <li v-if="reportData.results.isUnbalanced && reportData.params.calculationMode === 'detailed'"><strong>Status:</strong> <span class="danger-text">Unbalanced</span></li>
+              <li v-if="!reportData.results.isUnbalanced || reportData.params.calculationMode === 'direct'"><strong>Effective Mass:</strong> <span>{{ reportData.results.M_eff.toFixed(1) }} g</span></li>
+              <li v-if="!reportData.results.isUnbalanced || reportData.params.calculationMode === 'direct'"><strong>Resonance Frequency:</strong> <span class="final-result">{{ reportData.results.F.toFixed(1) }} Hz</span></li>
             </ul>
-            <div v-if="!reportData.results.isUnbalanced" class="diagnosis-box" :class="reportData.diagnosis.status">
+            <div v-if="!reportData.results.isUnbalanced || reportData.params.calculationMode === 'direct'" class="diagnosis-box" :class="reportData.diagnosis.status">
               <h4>{{ reportData.diagnosis.title }}</h4>
               <p>{{ reportData.diagnosis.recommendations.join(' ') }}</p>
             </div>
@@ -43,9 +47,9 @@
           <div class="data-group">
             <h3>Input Specifications</h3>
             <ul>
-               <li v-for="param in estimatorParams" :key="param.key">
-                <strong v-if="reportData.userInput[param.key]">{{ param.label }}:</strong>
-                <span v-if="reportData.userInput[param.key]">{{ reportData.userInput[param.key] }}</span>
+               <li v-for="param in estimatorParams.filter(p => reportData.userInput[p.key])" :key="param.key">
+                <strong>{{ param.label }}:</strong>
+                <span>{{ reportData.userInput[param.key] }}</span>
               </li>
             </ul>
           </div>
@@ -66,6 +70,11 @@
         </div>
       </section>
     </main>
+    <main v-else class="report-content">
+        <h2>Error</h2>
+        <p>Could not load report data. Please return to the previous page and try again.</p>
+    </main>
+
     <footer class="report-footer">
       <p><strong>Disclaimer:</strong> This report is a theoretical calculation for educational and hobbyist purposes. Always verify with real-world measurements. Engrove Audio Toolkit assumes no liability for its use.</p>
     </footer>
@@ -91,17 +100,24 @@ onMounted(() => {
   } catch (e) {
     console.error("Failed to parse report data:", e);
     reportData.value = { error: "Invalid data provided." };
+    reportTitle.value = "Error";
   }
 });
 
 // Tonearm-specifik data
-const tonearmParams = ref([
+const tonearmParamsDetailed = ref([
   { key: 'm_headshell', label: 'Headshell Mass', unit: 'g' },
   { key: 'm_pickup', label: 'Cartridge Mass', unit: 'g' },
   { key: 'm_screws', label: 'Screws Mass', unit: 'g' },
   { key: 'compliance', label: 'Compliance @ 10Hz', unit: 'cu' },
   { key: 'vtf', label: 'Tracking Force', unit: 'g' },
-  { key: 'directEffectiveMass', label: 'Direct Effective Mass', unit: 'g' }
+  { key: 'L1', label: 'Effective Length', unit: 'mm' },
+  { key: 'm4_adj_cw', label: 'Adjustable CW Mass', unit: 'g' },
+]);
+const tonearmParamsDirect = ref([
+  { key: 'm_pickup', label: 'Cartridge Mass', unit: 'g' },
+  { key: 'compliance', label: 'Compliance @ 10Hz', unit: 'cu' },
+  { key: 'directEffectiveMass', label: 'Tonearm Effective Mass', unit: 'g' }
 ]);
 
 // Estimator-specifik data
@@ -114,18 +130,18 @@ const estimatorParams = ref([
 ]);
 
 const resultRange = computed(() => {
-    if (!reportData.value || reportData.value.type !== 'estimator') return '--';
+    if (!reportData.value || reportData.value.type !== 'estimator' || !reportData.value.result.compliance_median) return '--';
     const { compliance_min, compliance_median, compliance_max } = reportData.value.result;
-    if (compliance_min.toFixed(1) !== compliance_max.toFixed(1)) {
+    if (compliance_min && compliance_max && compliance_min.toFixed(1) !== compliance_max.toFixed(1)) {
         return `${compliance_min.toFixed(1)} – ${compliance_max.toFixed(1)}`;
     }
     return compliance_median.toFixed(1);
 });
 
 const showMedianNote = computed(() => {
-    if (!reportData.value || reportData.value.type !== 'estimator') return false;
+    if (!reportData.value || reportData.value.type !== 'estimator' || !reportData.value.result.compliance_median) return false;
     const { compliance_min, compliance_max } = reportData.value.result;
-    return compliance_min.toFixed(1) !== compliance_max.toFixed(1);
+    return compliance_min && compliance_max && compliance_min.toFixed(1) !== compliance_max.toFixed(1);
 });
 
 const confidenceLevel = computed(() => {
@@ -145,18 +161,6 @@ const confidenceClass = computed(() => {
 });
 
 </script>
-
-<style>
-/* Global styles for the report view */
-body {
-  background-color: #f0f2f5; /* Grå bakgrund för kontrast */
-}
-#app {
-  max-width: none;
-  width: 100%;
-  padding: 0;
-}
-</style>
 
 <style scoped>
 .report-wrapper {
@@ -192,6 +196,7 @@ body {
 .data-grid {
   display: flex;
   gap: 2rem;
+  align-items: flex-start;
 }
 .data-group {
   flex: 1;
@@ -213,9 +218,11 @@ body {
 }
 .data-group li strong {
   color: #333;
+  padding-right: 1rem;
 }
 .data-group li span {
   color: #555;
+  text-align: right;
 }
 .final-result {
   font-weight: bold;
@@ -264,30 +271,6 @@ body {
   color: #777;
 }
 
-/* Print-specific styles */
-@media print {
-  body {
-    background-color: white; /* Ta bort bakgrund för utskrift */
-  }
-  .report-wrapper {
-    margin: 0;
-    padding: 0;
-    box-shadow: none;
-    border: none;
-  }
-  .print-button, .sidebar, .mobile-menu-trigger, .header-buttons {
-    display: none !important; /* Göm knappar och sidomeny */
-  }
-  .report-header {
-      padding-bottom: 0.5rem;
-      margin-bottom: 1.5rem;
-  }
-  @page {
-    size: A4;
-    margin: 2cm;
-  }
-}
-
 .print-button {
   display: block;
   width: 200px;
@@ -303,5 +286,25 @@ body {
 }
 .print-button:hover {
   background-color: #2980b9;
+}
+
+/* Print-specific styles */
+@media print {
+  html, body {
+    background-color: white !important; /* Säkerställ vit bakgrund */
+  }
+  .report-wrapper {
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    border: none;
+  }
+  .print-button, .sidebar, .mobile-menu-trigger, .header-buttons {
+    display: none !important;
+  }
+  @page {
+    size: A4;
+    margin: 2cm;
+  }
 }
 </style>
