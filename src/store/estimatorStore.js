@@ -43,13 +43,13 @@ export const useEstimatorStore = defineStore('estimator', () => {
       const rules = estimationRules.value.segmented_rules;
       
       let match = rules.find(r => r.conditions.type === u.type && r.conditions.cantilever_class === u.cantilever_class && r.conditions.stylus_family === u.stylus_family);
-      if (match) return { ...match, priority: 1, description: `Based on a high-precision rule (3 variables matched: type, cantilever, stylus).` };
+      if (match) return { ...match, priority: 1, description: `Based on a high-precision rule (3 variables matched).` };
 
       match = rules.find(r => r.conditions.type === u.type && r.conditions.cantilever_class === u.cantilever_class);
-      if (match) return { ...match, priority: 2, description: `Based on a strong rule (2 variables matched: type, cantilever).` };
+      if (match) return { ...match, priority: 2, description: `Based on a strong rule (2 variables matched).` };
       
       match = rules.find(r => r.conditions.type === u.type);
-      if (match) return { ...match, priority: 3, description: `Based on a general rule (1 variable matched: type).` };
+      if (match) return { ...match, priority: 3, description: `Based on a general rule (1 variable matched).` };
       
       return { ...estimationRules.value.global_fallback, description: 'Based on the global fallback rule (all available data).' };
     };
@@ -63,7 +63,6 @@ export const useEstimatorStore = defineStore('estimator', () => {
       baseCompliance = userInput.value.cu_static;
       conversionRatio = 0.5;
       source = 'static';
-      // Överskriv regelbeskrivningen när vi använder statisk compliance
       matchedRule.description = 'Based on the standard static-to-dynamic conversion rule (ratio ≈ 0.5).';
     }
 
@@ -89,12 +88,25 @@ export const useEstimatorStore = defineStore('estimator', () => {
 
     const confidence = calculateConfidence();
 
-    // Dynamisk funktion för att skapa grafkonfiguration
+    // --- KORRIGERAD FUNKTION FÖR ATT SKAPA GRAFKONFIGURATION ---
     const getChartConfig = (rule, sourceType) => {
         if (sourceType === 'dynamic') {
-            // Filtrera för att endast visa data relevant för den matchade regeln (efter typ)
+            // Filtrera databasen exakt enligt villkoren i den matchade regeln.
             const dataPoints = allPickups.value
-                .filter(p => p.cu_dynamic_100hz && p.cu_dynamic_10hz && p.type === rule.conditions?.type)
+                .filter(p => {
+                    // Grundkrav: måste ha data att plotta
+                    if (!p.cu_dynamic_100hz || !p.cu_dynamic_10hz) return false;
+
+                    // Om regeln har villkor, måste alla uppfyllas
+                    const conditions = rule.conditions;
+                    if (!conditions) return true; // För global fallback
+
+                    const typeMatch = !conditions.type || p.type === conditions.type;
+                    const cantileverMatch = !conditions.cantilever_class || p.cantilever_class === conditions.cantilever_class;
+                    const stylusMatch = !conditions.stylus_family || p.stylus_family === conditions.stylus_family;
+
+                    return typeMatch && cantileverMatch && stylusMatch;
+                })
                 .map(p => ({ x: p.cu_dynamic_100hz, y: p.cu_dynamic_10hz, model: p.model }));
             
             return {
@@ -103,7 +115,7 @@ export const useEstimatorStore = defineStore('estimator', () => {
                 labels: {
                     x: 'Dynamic Compliance @ 100Hz',
                     y: 'Dynamic Compliance @ 10Hz',
-                    title: `Underlying Data for '${rule.conditions?.type || 'Global'}' 100Hz Conversion Rule`,
+                    title: `Underlying Data for Matched Rule`,
                     lineLabel: `Median Ratio: ${rule.median_ratio.toFixed(2)}`
                 },
                 scales: {
@@ -111,7 +123,6 @@ export const useEstimatorStore = defineStore('estimator', () => {
                 }
             };
         } else if (sourceType === 'static') {
-            // Visa ALLA pickuper med statisk och 10Hz-data som referens
             const dataPoints = allPickups.value
                 .filter(p => p.cu_static && p.cu_dynamic_10hz)
                 .map(p => ({ x: p.cu_static, y: p.cu_dynamic_10hz, model: p.model }));
