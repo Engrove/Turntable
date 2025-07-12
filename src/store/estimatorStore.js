@@ -18,45 +18,41 @@ export const useEstimatorStore = defineStore('estimator', () => {
         weight_g: null,
     });
 
-    // Hjälpfunktion för att beräkna percentiler på ett korrekt sätt
     const getPercentile = (data, percentile) => {
         if (!data || data.length === 0) return null;
         const sortedData = [...data].sort((a, b) => a - b);
         const index = (percentile / 100) * (sortedData.length - 1);
+        if (index < 0) return sortedData[0];
+        if (index >= sortedData.length - 1) return sortedData[sortedData.length - 1];
+        
         const lower = Math.floor(index);
-        const upper = Math.ceil(index);
+        const upper = lower + 1;
         const weight = index - lower;
-        if (upper === lower) return sortedData[lower];
+        
         return sortedData[lower] * (1 - weight) + sortedData[upper] * weight;
     };
 
     const initialize = async () => {
-        // ... (Inga ändringar i denna funktion) ...
         isLoading.value = true;
         error.value = null;
         debugLog.value = [];
         try {
-            debugLog.value.push("Startar initialisering...");
             const [rulesRes, pickupsRes] = await Promise.all([
-                fetch('/data/estimation_rules.json').catch(e => { throw new Error(`Regler: ${e.message}`); }),
-                fetch('/data/pickup_data.json').catch(e => { throw new Error(`Pickups: ${e.message}`); })
+                fetch('/data/estimation_rules.json'),
+                fetch('/data/pickup_data.json')
             ]);
-            debugLog.value.push("Fetch-anrop slutförda.");
-            if (!rulesRes.ok) throw new Error(`Kunde inte ladda regler (${rulesRes.status})`);
-            if (!pickupsRes.ok) throw new Error(`Kunde inte ladda pickup-data (${pickupsRes.status})`);
+            if (!rulesRes.ok) throw new Error(`Could not load rules (${rulesRes.status})`);
+            if (!pickupsRes.ok) throw new Error(`Could not load pickup data (${pickupsRes.status})`);
             estimationRules.value = await rulesRes.json();
-            debugLog.value.push("Regler laddade.");
             allPickups.value = await pickupsRes.json();
-            debugLog.value.push("Pickup-data laddad.");
         } catch (e) {
-            console.error("Fel vid initiering av estimator store:", e);
+            console.error("Error initializing estimator store:", e);
             error.value = e.message;
         } finally {
             isLoading.value = false;
-            debugLog.value.push("Initialisering klar.");
         }
     };
-    
+
     const resetInput = () => {
         userInput.value = {
             cu_dynamic_100hz: null, cu_static: null, type: null,
@@ -64,9 +60,8 @@ export const useEstimatorStore = defineStore('estimator', () => {
         };
     };
 
-    // --- HELT OMARBETAD BERÄKNINGSLOGIK ---
     const result = computed(() => {
-        const { cu_dynamic_100hz, cu_static, type } = userInput.value;
+        const { cu_dynamic_100hz, cu_static, type, cantilever_class, stylus_family } = userInput.value;
         const usingStatic = !cu_dynamic_100hz && cu_static;
         const baseValue = cu_dynamic_100hz || (usingStatic ? cu_static : null);
 
@@ -77,8 +72,7 @@ export const useEstimatorStore = defineStore('estimator', () => {
                 sampleSize: 0, chartConfig: null
             };
         }
-        
-        // Om vi använder statisk compliance, applicera en enkel, fast regel.
+
         if (usingStatic) {
             const staticResult = baseValue * 0.5;
             return {
@@ -89,63 +83,65 @@ export const useEstimatorStore = defineStore('estimator', () => {
             };
         }
 
-        // --- KORREKT HIERARKISK REGELMATCHNING ---
+        // --- Korrekt Hierarkisk Regelmatchning ---
         let matchedRule = null;
-        let confidence = 0;
         let description = "";
 
-        const findRule = (conditions) => {
-            const numConditions = Object.keys(conditions).length;
-            if (numConditions === 0) return null;
-            return estimationRules.value.segmented_rules.find(r => 
-                Object.keys(r.conditions).length === numConditions &&
-                Object.entries(conditions).every(([key, value]) => r.conditions[key] === value)
+        // Prio 1: Matcha Type, Cantilever, Stylus
+        if (type && cantilever_class && stylus_family) {
+            matchedRule = estimationRules.value.segmented_rules.find(r => 
+                r.conditions.type === type &&
+                r.conditions.cantilever_class === cantilever_class &&
+                r.conditions.stylus_family === stylus_family
             );
-        };
+            if(matchedRule) description = "Using a highly specific rule (Type, Cantilever, Stylus).";
+        }
+
+        // Prio 2: Matcha Type, Cantilever
+        if (!matchedRule && type && cantilever_class) {
+            matchedRule = estimationRules.value.segmented_rules.find(r => 
+                r.conditions.type === type &&
+                r.conditions.cantilever_class === cantilever_class &&
+                Object.keys(r.conditions).length === 2
+            );
+            if(matchedRule) description = "Using a specific rule (Type, Cantilever).";
+        }
         
-        const inputs = userInput.value;
-        if (inputs.type && inputs.cantilever_class && inputs.stylus_family) {
-            matchedRule = findRule({ type: inputs.type, cantilever_class: inputs.cantilever_class, stylus_family: inputs.stylus_family });
-            if (matchedRule) { confidence = 80; description = "Using a highly specific rule (Type, Cantilever, Stylus)."; }
+        // Prio 3: Matcha Type
+        if (!matchedRule && type) {
+            matchedRule = estimationRules.value.segmented_rules.find(r => 
+                r.conditions.type === type &&
+                Object.keys(r.conditions).length === 1
+            );
+            if(matchedRule) description = "Using a general rule (Type only).";
         }
-        if (!matchedRule && inputs.type && inputs.cantilever_class) {
-            matchedRule = findRule({ type: inputs.type, cantilever_class: inputs.cantilever_class });
-            if (matchedRule) { confidence = 70; description = "Using a specific rule (Type, Cantilever)."; }
-        }
-        if (!matchedRule && inputs.type) {
-            matchedRule = findRule({ type: inputs.type });
-            if (matchedRule) { confidence = 60; description = "Using a general rule (Type only)."; }
-        }
+
+        // Prio 4: Global Fallback
         if (!matchedRule) {
             matchedRule = estimationRules.value.global_fallback;
-            confidence = 40; description = "Using Global Fallback rule (no specific match found).";
+            description = "Using Global Fallback rule (no specific match found).";
         }
-        
-        // --- KORREKT BERÄKNING AV RATIOS OCH PERCENTILER ---
+
         const ruleDataSource = allPickups.value.filter(p => {
             if (!p.cu_dynamic_100hz || !p.cu_dynamic_10hz) return false;
+            if (!matchedRule.conditions || Object.keys(matchedRule.conditions).length === 0) return true;
             return Object.entries(matchedRule.conditions).every(([key, value]) => p[key] === value);
         });
 
-        // KORRIGERING: Beräkna ratios från datakällan för den matchade regeln.
-        const ratios = ruleDataSource.length > 0
-            ? ruleDataSource.map(p => p.cu_dynamic_10hz / p.cu_dynamic_100hz)
-            : [];
-
-        const medianRatio = getPercentile(ratios, 50) || matchedRule.median_ratio;
-        const minRatio = getPercentile(ratios, 25) || medianRatio * 0.9;
-        const maxRatio = getPercentile(ratios, 75) || medianRatio * 1.1;
+        const ratios = ruleDataSource.length > 1 ? ruleDataSource.map(p => p.cu_dynamic_10hz / p.cu_dynamic_100hz) : [];
+        
+        const medianRatio = getPercentile(ratios, 50) ?? matchedRule.median_ratio;
+        const minRatio = getPercentile(ratios, 25) ?? medianRatio * 0.9;
+        const maxRatio = getPercentile(ratios, 75) ?? medianRatio * 1.1;
 
         const compliance_median = baseValue * medianRatio;
         const compliance_min = baseValue * minRatio;
         const compliance_max = baseValue * maxRatio;
         
-        confidence = Math.min(100, confidence + Math.floor(Math.sqrt(matchedRule.sample_size) * 2.5));
+        const confidence = Math.round(matchedRule.priority * 10 + Math.min(60, matchedRule.sample_size * 2));
 
         const chartConfig = {
-            dataPoints: ruleDataSource.map(p => ({
-                x: p.cu_dynamic_100hz, y: p.cu_dynamic_10hz, model: p.model
-            })).slice(0, 100),
+            dataPoints: ruleDataSource.map(p => ({ x: p.cu_dynamic_100hz, y: p.cu_dynamic_10hz, model: p.model })).slice(0, 100),
             medianRatio: medianRatio,
             labels: {
                 x: 'Compliance @ 100Hz', y: 'Compliance @ 10Hz',
@@ -161,16 +157,9 @@ export const useEstimatorStore = defineStore('estimator', () => {
             sampleSize: matchedRule.sample_size, chartConfig
         };
     });
-    
-    const availableCantileverClasses = computed(() => {
-      if (!allPickups.value) return [];
-      return [...new Set(allPickups.value.map(p => p.cantilever_class).filter(Boolean))].sort();
-    });
 
-    const availableStylusFamilies = computed(() => {
-        if (!allPickups.value) return [];
-        return [...new Set(allPickups.value.map(p => p.stylus_family).filter(Boolean))].sort();
-    });
+    const availableCantileverClasses = computed(() => [...new Set(allPickups.value.map(p => p.cantilever_class).filter(Boolean))].sort());
+    const availableStylusFamilies = computed(() => [...new Set(allPickups.value.map(p => p.stylus_family).filter(Boolean))].sort());
     
     initialize();
 
