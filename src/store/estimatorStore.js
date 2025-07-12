@@ -83,11 +83,10 @@ export const useEstimatorStore = defineStore('estimator', () => {
             };
         }
 
-        // --- Korrekt Hierarkisk Regelmatchning ---
+        // --- Robust Regelmatchning ---
         let matchedRule = null;
         let description = "";
 
-        // Prio 1: Matcha Type, Cantilever, Stylus
         if (type && cantilever_class && stylus_family) {
             matchedRule = estimationRules.value.segmented_rules.find(r => 
                 r.conditions.type === type &&
@@ -96,8 +95,6 @@ export const useEstimatorStore = defineStore('estimator', () => {
             );
             if(matchedRule) description = "Using a highly specific rule (Type, Cantilever, Stylus).";
         }
-
-        // Prio 2: Matcha Type, Cantilever
         if (!matchedRule && type && cantilever_class) {
             matchedRule = estimationRules.value.segmented_rules.find(r => 
                 r.conditions.type === type &&
@@ -106,8 +103,6 @@ export const useEstimatorStore = defineStore('estimator', () => {
             );
             if(matchedRule) description = "Using a specific rule (Type, Cantilever).";
         }
-        
-        // Prio 3: Matcha Type
         if (!matchedRule && type) {
             matchedRule = estimationRules.value.segmented_rules.find(r => 
                 r.conditions.type === type &&
@@ -115,8 +110,6 @@ export const useEstimatorStore = defineStore('estimator', () => {
             );
             if(matchedRule) description = "Using a general rule (Type only).";
         }
-
-        // Prio 4: Global Fallback
         if (!matchedRule) {
             matchedRule = estimationRules.value.global_fallback;
             description = "Using Global Fallback rule (no specific match found).";
@@ -127,10 +120,12 @@ export const useEstimatorStore = defineStore('estimator', () => {
             if (!matchedRule.conditions || Object.keys(matchedRule.conditions).length === 0) return true;
             return Object.entries(matchedRule.conditions).every(([key, value]) => p[key] === value);
         });
-
+        
+        // --- KORREKT BERÄKNING AV RATIOS OCH PERCENTILER (PUNKT 1c) ---
         const ratios = ruleDataSource.length > 1 ? ruleDataSource.map(p => p.cu_dynamic_10hz / p.cu_dynamic_100hz) : [];
         
         const medianRatio = getPercentile(ratios, 50) ?? matchedRule.median_ratio;
+        // Beräkna 25:e och 75:e percentilen. Använd ett litet spann runt medianen som fallback.
         const minRatio = getPercentile(ratios, 25) ?? medianRatio * 0.9;
         const maxRatio = getPercentile(ratios, 75) ?? medianRatio * 1.1;
 
@@ -138,7 +133,7 @@ export const useEstimatorStore = defineStore('estimator', () => {
         const compliance_min = baseValue * minRatio;
         const compliance_max = baseValue * maxRatio;
         
-        const confidence = Math.round(matchedRule.priority * 10 + Math.min(60, matchedRule.sample_size * 2));
+        const confidence = Math.min(100, Math.round(matchedRule.priority * 10 + Math.min(60, matchedRule.sample_size * 2.5)));
 
         const chartConfig = {
             dataPoints: ruleDataSource.map(p => ({ x: p.cu_dynamic_100hz, y: p.cu_dynamic_10hz, model: p.model })).slice(0, 100),
@@ -161,6 +156,7 @@ export const useEstimatorStore = defineStore('estimator', () => {
     const availableCantileverClasses = computed(() => [...new Set(allPickups.value.map(p => p.cantilever_class).filter(Boolean))].sort());
     const availableStylusFamilies = computed(() => [...new Set(allPickups.value.map(p => p.stylus_family).filter(Boolean))].sort());
     
+    // Initialisera vid start
     initialize();
 
     return {
