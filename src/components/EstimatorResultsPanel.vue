@@ -1,5 +1,4 @@
 <!-- src/components/EstimatorResultsPanel.vue -->
-
 <script setup>
 import { computed } from 'vue';
 
@@ -20,22 +19,19 @@ const props = defineProps({
 
 const confidenceDetails = computed(() => {
   const conf = props.result.confidence;
-  if (conf >= 80) {
-    return { level: 'High', class: 'high' };
-  } else if (conf >= 60) {
-    return { level: 'Medium', class: 'medium' };
-  } else if (conf > 0) {
-    return { level: 'Low', class: 'low' };
-  }
+  if (conf >= 80) return { level: 'High', class: 'high' };
+  if (conf >= 60) return { level: 'Medium', class: 'medium' };
+  if (conf > 0) return { level: 'Low', class: 'low' };
   return { level: 'N/A', class: 'none' };
 });
 
+// NYTT (1c): Beräknar om ett intervall ska visas.
 const showRange = computed(() => {
     return props.result.compliance_min !== null &&
            props.result.compliance_max !== null &&
-           props.result.compliance_min.toFixed(1) !== props.result.compliance_max.toFixed(1);
+           // Visa även om intervallet är litet, men inte exakt samma
+           props.result.compliance_min.toFixed(2) !== props.result.compliance_max.toFixed(2);
 });
-
 </script>
 
 <template>
@@ -44,8 +40,8 @@ const showRange = computed(() => {
 
     <div class="result-display">
       <div class="value-wrapper">
-        <!-- FÖRENKLAD OCH KORRIGERAD LOGIK HÄR -->
         <template v-if="result.compliance_median !== null">
+          <!-- NYTT (1c): Mallen använder nu <h2> för att visa intervallet eller medianen -->
           <h2 class="result-value-main">
             <template v-if="showRange">
               {{ result.compliance_min.toFixed(1) }} – {{ result.compliance_max.toFixed(1) }}
@@ -59,6 +55,7 @@ const showRange = computed(() => {
         
         <span class="result-unit">µm/mN @ 10Hz</span>
       </div>
+      <!-- NYTT (1c): Visar medianen som en notis under om ett intervall visas -->
       <p v-if="showRange" class="median-note">
           (Median Estimate: {{ result.compliance_median.toFixed(1) }})
       </p>
@@ -67,19 +64,10 @@ const showRange = computed(() => {
     <div class="confidence-display">
       <div class="confidence-header">
         <span class="confidence-label">Confidence Level</span>
-        <span
-          v-if="result.confidence > 0"
-          :class="['confidence-badge', confidenceDetails.class]"
-        >
-          {{ confidenceDetails.level }}
-        </span>
+        <span v-if="result.confidence > 0" :class="['confidence-badge', confidenceDetails.class]">{{ confidenceDetails.level }}</span>
       </div>
       <div class="confidence-bar-container">
-        <div
-          class="confidence-bar"
-          :class="confidenceDetails.class"
-          :style="{ width: result.confidence + '%' }"
-        ></div>
+        <div class="confidence-bar" :class="confidenceDetails.class" :style="{ width: result.confidence + '%' }"></div>
       </div>
       <span v-if="result.confidence > 0" class="confidence-percent">{{ result.confidence }}%</span>
     </div>
@@ -98,24 +86,22 @@ const showRange = computed(() => {
 .result-display { background-color: var(--header-color); color: #fff; padding: 1.5rem 1rem; border-radius: 6px; margin-bottom: 2rem; }
 .value-wrapper { display: flex; justify-content: center; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
 
+/* NYTT (1c): Styling för H2 och median-notis */
 .result-value-main {
-  font-size: 3.5rem;
+  font-size: 3.5rem; /* Något mindre för att få plats med intervallet */
   font-weight: 700;
   line-height: 1;
   margin: 0;
   white-space: nowrap;
 }
-
 .result-placeholder { font-size: 4.5rem; font-weight: 700; line-height: 1; color: #6c757d; }
 .result-unit { font-size: 1.25rem; font-weight: 300; }
-
 .median-note {
     font-size: 0.9rem;
     font-style: italic;
     color: var(--text-muted);
     margin: 0.5rem 0 0 0;
 }
-
 .confidence-display { margin-bottom: 1.5rem; }
 .confidence-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
 .confidence-label { font-weight: 600; color: var(--header-color); font-size: 1.1rem; }
