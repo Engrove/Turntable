@@ -18,6 +18,7 @@ export const useEstimatorStore = defineStore('estimator', () => {
         weight_g: null,
     });
 
+    // Hjälpfunktion för att beräkna percentiler på ett korrekt sätt
     const getPercentile = (data, percentile) => {
         if (!data || data.length === 0) return null;
         const sortedData = [...data].sort((a, b) => a - b);
@@ -30,6 +31,7 @@ export const useEstimatorStore = defineStore('estimator', () => {
     };
 
     const initialize = async () => {
+        // ... (Inga ändringar i denna funktion) ...
         isLoading.value = true;
         error.value = null;
         debugLog.value = [];
@@ -54,7 +56,7 @@ export const useEstimatorStore = defineStore('estimator', () => {
             debugLog.value.push("Initialisering klar.");
         }
     };
-
+    
     const resetInput = () => {
         userInput.value = {
             cu_dynamic_100hz: null, cu_static: null, type: null,
@@ -62,10 +64,11 @@ export const useEstimatorStore = defineStore('estimator', () => {
         };
     };
 
+    // --- HELT OMARBETAD BERÄKNINGSLOGIK ---
     const result = computed(() => {
-        const { cu_dynamic_100hz, cu_static, type, cantilever_class, stylus_family } = userInput.value;
-        const baseValue = cu_dynamic_100hz || (cu_static ? cu_static * 0.5 : null);
+        const { cu_dynamic_100hz, cu_static, type } = userInput.value;
         const usingStatic = !cu_dynamic_100hz && cu_static;
+        const baseValue = cu_dynamic_100hz || (usingStatic ? cu_static : null);
 
         if (!baseValue || !type) {
             return {
@@ -74,9 +77,10 @@ export const useEstimatorStore = defineStore('estimator', () => {
                 sampleSize: 0, chartConfig: null
             };
         }
-
+        
+        // Om vi använder statisk compliance, applicera en enkel, fast regel.
         if (usingStatic) {
-            const staticResult = baseValue; // baseValue är redan * 0.5
+            const staticResult = baseValue * 0.5;
             return {
                 compliance_min: staticResult, compliance_median: staticResult, compliance_max: staticResult,
                 confidence: 50,
@@ -84,48 +88,49 @@ export const useEstimatorStore = defineStore('estimator', () => {
                 sampleSize: 0, chartConfig: null
             };
         }
-        
-        const conditions = { type };
-        if (cantilever_class) conditions.cantilever_class = cantilever_class;
-        if (stylus_family) conditions.stylus_family = stylus_family;
-        
-        let priority = 0;
+
+        // --- KORREKT HIERARKISK REGELMATCHNING ---
         let matchedRule = null;
+        let confidence = 0;
+        let description = "";
+
+        const findRule = (conditions) => {
+            const numConditions = Object.keys(conditions).length;
+            if (numConditions === 0) return null;
+            return estimationRules.value.segmented_rules.find(r => 
+                Object.keys(r.conditions).length === numConditions &&
+                Object.entries(conditions).every(([key, value]) => r.conditions[key] === value)
+            );
+        };
         
-        for (let p = 1; p <= 3 && !matchedRule; p++) {
-          const rule = estimationRules.value.segmented_rules.find(r => 
-            r.priority === p && Object.keys(conditions).every(key => r.conditions[key] === conditions[key] && Object.keys(r.conditions).length === Object.keys(conditions).length)
-          );
-          if (rule) {
-            matchedRule = rule;
-            priority = p;
-          }
+        const inputs = userInput.value;
+        if (inputs.type && inputs.cantilever_class && inputs.stylus_family) {
+            matchedRule = findRule({ type: inputs.type, cantilever_class: inputs.cantilever_class, stylus_family: inputs.stylus_family });
+            if (matchedRule) { confidence = 80; description = "Using a highly specific rule (Type, Cantilever, Stylus)."; }
         }
-        
-        if (!matchedRule) {
-            for (let p = 1; p <= 3 && !matchedRule; p++) {
-              const rule = estimationRules.value.segmented_rules.find(r => 
-                r.priority === p && r.conditions.type === type && Object.keys(r.conditions).length === 1
-              );
-              if (rule) {
-                matchedRule = rule;
-                priority = 4; // Lower internal priority
-              }
-            }
+        if (!matchedRule && inputs.type && inputs.cantilever_class) {
+            matchedRule = findRule({ type: inputs.type, cantilever_class: inputs.cantilever_class });
+            if (matchedRule) { confidence = 70; description = "Using a specific rule (Type, Cantilever)."; }
         }
-        
+        if (!matchedRule && inputs.type) {
+            matchedRule = findRule({ type: inputs.type });
+            if (matchedRule) { confidence = 60; description = "Using a general rule (Type only)."; }
+        }
         if (!matchedRule) {
             matchedRule = estimationRules.value.global_fallback;
-            priority = 5;
+            confidence = 40; description = "Using Global Fallback rule (no specific match found).";
         }
-
+        
+        // --- KORREKT BERÄKNING AV RATIOS OCH PERCENTILER ---
         const ruleDataSource = allPickups.value.filter(p => {
             if (!p.cu_dynamic_100hz || !p.cu_dynamic_10hz) return false;
             return Object.entries(matchedRule.conditions).every(([key, value]) => p[key] === value);
         });
 
-        // KORRIGERING HÄR: Beräkna ratios från datakällan för den matchade regeln.
-        const ratios = ruleDataSource.map(p => p.cu_dynamic_10hz / p.cu_dynamic_100hz);
+        // KORRIGERING: Beräkna ratios från datakällan för den matchade regeln.
+        const ratios = ruleDataSource.length > 0
+            ? ruleDataSource.map(p => p.cu_dynamic_10hz / p.cu_dynamic_100hz)
+            : [];
 
         const medianRatio = getPercentile(ratios, 50) || matchedRule.median_ratio;
         const minRatio = getPercentile(ratios, 25) || medianRatio * 0.9;
@@ -135,10 +140,8 @@ export const useEstimatorStore = defineStore('estimator', () => {
         const compliance_min = baseValue * minRatio;
         const compliance_max = baseValue * maxRatio;
         
-        const confidence = Math.round(Math.max(10, 100 - (priority * 15) - (50 / (matchedRule.sample_size + 1))));
+        confidence = Math.min(100, confidence + Math.floor(Math.sqrt(matchedRule.sample_size) * 2.5));
 
-        const ruleDescription = `Using rule for: ${Object.keys(matchedRule.conditions).map(k => `${k}: ${matchedRule.conditions[k]}`).join(', ') || 'Global Fallback'}.`;
-        
         const chartConfig = {
             dataPoints: ruleDataSource.map(p => ({
                 x: p.cu_dynamic_100hz, y: p.cu_dynamic_10hz, model: p.model
@@ -154,7 +157,7 @@ export const useEstimatorStore = defineStore('estimator', () => {
 
         return {
             compliance_min, compliance_median, compliance_max,
-            confidence, description: ruleDescription,
+            confidence, description,
             sampleSize: matchedRule.sample_size, chartConfig
         };
     });
