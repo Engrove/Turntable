@@ -26,6 +26,7 @@ function resetPickupSelection() {
   store.loadCartridgePreset(null);
 }
 
+// --- KORRIGERAD LOGIK FÖR INAKTIVERING ---
 const isTonearmSelected = computed(() => store.selectedTonearmId !== null);
 const isPickupSelected = computed(() => store.selectedPickupId !== null);
 const isHeadshellIntegrated = computed(() => store.currentTonearm?.has_integrated_headshell === true);
@@ -36,7 +37,7 @@ const parameterDefinitions = {
     m_screws:          { label: 'Mounting Screws Mass (g)',            min: 0,   max: 5,    step: 0.1,  disabled: ref(false) },
     m_rear_assembly:   { label: 'Armwand + Fixed CW Mass (g)',       min: 10,  max: 200,  step: 0.5,  disabled: isTonearmSelected },
     m_tube_percentage: { label: 'Armwand % of Rear Mass',            min: 0,   max: 100,  step: 1,    disabled: isTonearmSelected },
-    m4_adj_cw:         { label: 'Adjustable CW Mass (g)',              min: 40,  max: 200,  step: 1,    disabled: ref(false) },
+    m4_adj_cw:         { label: 'Adjustable CW Mass (g)',              min: 40,  max: 200,  step: 1,    disabled: ref(false) }, // Låt denna vara justerbar
     L1:                { label: 'Effective Length (mm)',               min: 200, max: 350,  step: 0.5,  disabled: isTonearmSelected },
     L2:                { label: 'Armwand CoG Distance (mm)',           min: 0,   max: 50,   step: 0.5,  disabled: isTonearmSelected },
     L3_fixed_cw:       { label: 'Fixed CW CoG Distance (mm)',          min: 0,   max: 50,   step: 0.5,  disabled: isTonearmSelected },
@@ -52,6 +53,7 @@ const parameterDefinitions = {
 
     <fieldset>
       <legend>Load Presets</legend>
+      <!-- ... (resten av template-koden är oförändrad) ... -->
        <div class="preset-group">
         <label>Load Tonearm Preset</label>
         <div class="preset-selectors">
