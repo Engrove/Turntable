@@ -1,7 +1,6 @@
 // src/store/tonearmStore.js
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-// INGA IMPORTER AV JSON-FILER HÄR LÄNGRE
 
 export const useTonearmStore = defineStore('tonearm', () => {
     // --- STATE ---
@@ -17,23 +16,21 @@ export const useTonearmStore = defineStore('tonearm', () => {
         L3_fixed_cw: 22.0,
         vtf: 1.75,
         compliance: 12,
+        // NYTT (1b): State för direct mode
         calculationMode: 'detailed',
         directEffectiveMass: 10,
     });
 
-    // Initiera som tomma arrayer
     const availableTonearms = ref([]);
     const availablePickups = ref([]);
     const selectedTonearmId = ref(null);
     const selectedPickupId = ref(null);
 
-    // State för laddning och fel
     const isLoading = ref(true);
     const error = ref(null);
 
     // --- ACTIONS ---
-
-    // NY ASYNKRON INITIALISERINGSFUNKTION
+    // NYTT (1b): Asynkron funktion för att ladda data korrekt
     async function initialize() {
         try {
             isLoading.value = true;
@@ -78,6 +75,7 @@ export const useTonearmStore = defineStore('tonearm', () => {
         }
     }
     
+    // NYTT (1b): Action för att byta läge
     function setCalculationMode(mode) {
         params.value.calculationMode = mode;
     }
@@ -85,10 +83,8 @@ export const useTonearmStore = defineStore('tonearm', () => {
     // --- GETTERS ---
     const m1 = computed(() => params.value.m_headshell + params.value.m_pickup + params.value.m_screws);
     
+    // NYTT (1b): Uppdaterad beräkningslogik för att hantera båda lägena
     const calculatedResults = computed(() => {
-        if (availablePickups.value.length === 0) { // Skyddsnät om data inte laddats
-            return { M_eff: 0, F: 0, isUnbalanced: true };
-        }
         if (params.value.calculationMode === 'direct') {
             const M_eff = params.value.directEffectiveMass;
             const F = 1000 / (2 * Math.PI * Math.sqrt(Math.max(1, M_eff * params.value.compliance)));
@@ -97,10 +93,10 @@ export const useTonearmStore = defineStore('tonearm', () => {
                 F,
                 isUnbalanced: false,
                 L4_adj_cw: NaN,
-                calculationMode: 'direct'
             };
         }
 
+        // Detailed mode calculation
         const m2_tube = params.value.m_rear_assembly * (params.value.m_tube_percentage / 100.0);
         const m3_fixed_cw = params.value.m_rear_assembly - m2_tube;
         const numerator = (m1.value * params.value.L1) + (m2_tube * params.value.L2) - (m3_fixed_cw * params.value.L3_fixed_cw) - (params.value.vtf * params.value.L1);
@@ -109,7 +105,7 @@ export const useTonearmStore = defineStore('tonearm', () => {
         const L4_adj_cw = isUnbalanced ? 0 : numerator / params.value.m4_adj_cw;
 
         if (isUnbalanced) {
-            return { M_eff: 0, F: 0, L4_adj_cw, isUnbalanced, calculationMode: 'detailed' };
+            return { M_eff: 0, F: 0, L4_adj_cw, isUnbalanced };
         }
 
         const I1 = m1.value * (params.value.L1 ** 2);
@@ -120,7 +116,7 @@ export const useTonearmStore = defineStore('tonearm', () => {
         const M_eff = Itot / (params.value.L1 ** 2);
         const F = 1000 / (2 * Math.PI * Math.sqrt(Math.max(1, M_eff * params.value.compliance)));
 
-        return { M_eff, F, L4_adj_cw, isUnbalanced, calculationMode: 'detailed' };
+        return { M_eff, F, L4_adj_cw, isUnbalanced };
     });
 
     const diagnosis = computed(() => {
@@ -157,7 +153,7 @@ export const useTonearmStore = defineStore('tonearm', () => {
         selectedPickupId,
         isLoading,
         error,
-        initialize, // Exportera den nya funktionen
+        initialize,
         loadTonearmPreset,
         loadCartridgePreset,
         setCalculationMode,
