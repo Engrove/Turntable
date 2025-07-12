@@ -1,8 +1,7 @@
 // src/store/tonearmStore.js
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import allTonearms from '/data/tonearm_data.json';
-import allPickups from '/data/pickup_data.json';
+// INGA IMPORTER AV JSON-FILER HÄR LÄNGRE
 
 export const useTonearmStore = defineStore('tonearm', () => {
     // --- STATE ---
@@ -18,17 +17,46 @@ export const useTonearmStore = defineStore('tonearm', () => {
         L3_fixed_cw: 22.0,
         vtf: 1.75,
         compliance: 12,
-        // NYTT: State för direct mode
         calculationMode: 'detailed',
         directEffectiveMass: 10,
     });
 
-    const availableTonearms = ref(allTonearms);
-    const availablePickups = ref(allPickups);
+    // Initiera som tomma arrayer
+    const availableTonearms = ref([]);
+    const availablePickups = ref([]);
     const selectedTonearmId = ref(null);
     const selectedPickupId = ref(null);
 
+    // State för laddning och fel
+    const isLoading = ref(true);
+    const error = ref(null);
+
     // --- ACTIONS ---
+
+    // NY ASYNKRON INITIALISERINGSFUNKTION
+    async function initialize() {
+        try {
+            isLoading.value = true;
+            error.value = null;
+            const [tonearmsRes, pickupsRes] = await Promise.all([
+                fetch('/data/tonearm_data.json'),
+                fetch('/data/pickup_data.json')
+            ]);
+
+            if (!tonearmsRes.ok) throw new Error(`Failed to fetch tonearms: ${tonearmsRes.statusText}`);
+            if (!pickupsRes.ok) throw new Error(`Failed to fetch pickups: ${pickupsRes.statusText}`);
+
+            availableTonearms.value = await tonearmsRes.json();
+            availablePickups.value = await pickupsRes.json();
+
+        } catch (e) {
+            console.error("Failed to initialize tonearm store:", e);
+            error.value = e.message;
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
     function loadTonearmPreset(id) {
         selectedTonearmId.value = id;
         if (!id) return;
@@ -50,7 +78,6 @@ export const useTonearmStore = defineStore('tonearm', () => {
         }
     }
     
-    // NYTT: Action för att byta läge
     function setCalculationMode(mode) {
         params.value.calculationMode = mode;
     }
@@ -58,8 +85,10 @@ export const useTonearmStore = defineStore('tonearm', () => {
     // --- GETTERS ---
     const m1 = computed(() => params.value.m_headshell + params.value.m_pickup + params.value.m_screws);
     
-    // NYTT: Uppdaterad beräkningslogik
     const calculatedResults = computed(() => {
+        if (availablePickups.value.length === 0) { // Skyddsnät om data inte laddats
+            return { M_eff: 0, F: 0, isUnbalanced: true };
+        }
         if (params.value.calculationMode === 'direct') {
             const M_eff = params.value.directEffectiveMass;
             const F = 1000 / (2 * Math.PI * Math.sqrt(Math.max(1, M_eff * params.value.compliance)));
@@ -67,12 +96,11 @@ export const useTonearmStore = defineStore('tonearm', () => {
                 M_eff,
                 F,
                 isUnbalanced: false,
-                L4_adj_cw: NaN, // Not applicable in direct mode
+                L4_adj_cw: NaN,
                 calculationMode: 'direct'
             };
         }
 
-        // Detailed mode calculation
         const m2_tube = params.value.m_rear_assembly * (params.value.m_tube_percentage / 100.0);
         const m3_fixed_cw = params.value.m_rear_assembly - m2_tube;
         const numerator = (m1.value * params.value.L1) + (m2_tube * params.value.L2) - (m3_fixed_cw * params.value.L3_fixed_cw) - (params.value.vtf * params.value.L1);
@@ -127,6 +155,9 @@ export const useTonearmStore = defineStore('tonearm', () => {
         availablePickups,
         selectedTonearmId,
         selectedPickupId,
+        isLoading,
+        error,
+        initialize, // Exportera den nya funktionen
         loadTonearmPreset,
         loadCartridgePreset,
         setCalculationMode,
