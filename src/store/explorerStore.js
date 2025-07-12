@@ -1,183 +1,192 @@
 // src/store/explorerStore.js
-import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
 
 export const useExplorerStore = defineStore('explorer', () => {
-  // --- STATE ---
-  const allData = ref({ cartridges: [], tonearms: [], cartridgeClassifications: {}, tonearmClassifications: {} });
-  const isLoading = ref(true);
-  const error = ref(null);
-  
-  // Filter-state
-  const dataType = ref(null);
-  const filters = ref({}); // För kategorier
-  const numericFilters = ref({}); // NYTT: För numeriska intervall
-  const searchTerm = ref('');
-  
-  // Paginering & Sortering
-  const currentPage = ref(1);
-  const itemsPerPage = ref(25);
-  const sortKey = ref('manufacturer');
-  const sortOrder = ref('asc');
+    // --- STATE ---
+    const allData = ref({ tonearms: [], cartridges: [] });
+    const classifications = ref({});
+    const isLoading = ref(true);
+    const error = ref(null);
 
-  // --- ACTIONS ---
-  async function initialize() { /* ... oförändrad ... */
-    isLoading.value = true;
-    try {
-      const [cartridgesRes, tonearmsRes, cartClassRes, tonearmClassRes] = await Promise.all([
-        fetch('/data/pickup_data.json'), fetch('/data/tonearm_data.json'),
-        fetch('/data/classifications.json'), fetch('/data/tonearm_classifications.json')
-      ]);
-      if (!cartridgesRes.ok) throw new Error('Failed to load cartridge data');
-      if (!tonearmsRes.ok) throw new Error('Failed to load tonearm data');
-      if (!cartClassRes.ok) throw new Error('Failed to load cartridge classifications');
-      if (!tonearmClassRes.ok) throw new Error('Failed to load tonearm classifications');
-      allData.value.cartridges = await cartridgesRes.json();
-      allData.value.tonearms = await tonearmsRes.json();
-      allData.value.cartridgeClassifications = await cartClassRes.json();
-      allData.value.tonearmClassifications = await tonearmClassRes.json();
-    } catch (e) { error.value = e.message; } finally { isLoading.value = false; }
-  }
+    const dataType = ref(null);
+    const searchTerm = ref('');
+    const filters = ref({});
+    // NYTT (1e): State för numeriska filter
+    const numericFilters = ref({});
 
-  function setDataType(type) {
-    dataType.value = type;
-    resetFilters();
-  }
+    const currentPage = ref(1);
+    const itemsPerPage = 15;
+    const sortKey = ref('');
+    const sortOrder = ref('asc');
 
-  function updateFilter(filterKey, value) {
-    currentPage.value = 1;
-    if (value === 'all' || !value) delete filters.value[filterKey];
-    else filters.value[filterKey] = value;
-  }
+    // --- ACTIONS ---
+    async function initialize() {
+        isLoading.value = true;
+        error.value = null;
+        try {
+            const [tonearmsRes, cartridgesRes, classificationsRes] = await Promise.all([
+                fetch('/data/tonearm_data.json'),
+                fetch('/data/pickup_data.json'),
+                fetch('/data/classifications.json')
+            ]);
+            if (!tonearmsRes.ok) throw new Error('Failed to load tonearm data');
+            if (!cartridgesRes.ok) throw new Error('Failed to load cartridge data');
+            if (!classificationsRes.ok) throw new Error('Failed to load classification data');
 
-  // NY ACTION för numeriska filter
-  function updateNumericFilter(filterKey, range) {
-    currentPage.value = 1;
-    if ((range.min === null || range.min === '') && (range.max === null || range.max === '')) {
-      delete numericFilters.value[filterKey];
-    } else {
-      numericFilters.value[filterKey] = range;
+            allData.value.tonearms = await tonearmsRes.json();
+            allData.value.cartridges = await cartridgesRes.json();
+            classifications.value = await classificationsRes.json();
+        } catch (e) {
+            error.value = e.message;
+        } finally {
+            isLoading.value = false;
+        }
     }
-  }
 
-  function resetFilters() {
-    filters.value = {};
-    numericFilters.value = {}; // Återställ även numeriska filter
-    searchTerm.value = '';
-    currentPage.value = 1;
-    sortKey.value = 'manufacturer';
-    sortOrder.value = 'asc';
-  }
-
-  function setSortKey(key) { /* ... oförändrad ... */
-    if (sortKey.value === key) { sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
-    } else { sortKey.value = key; sortOrder.value = 'asc'; }
-    currentPage.value = 1;
-  }
-
-  function nextPage() { if (canGoNext.value) currentPage.value++; }
-  function prevPage() { if (canGoPrev.value) currentPage.value--; }
-
-  // --- COMPUTED ---
-
-  const availableFilters = computed(() => { /* ... oförändrad ... */
-    if (!dataType.value) return [];
-    if (dataType.value === 'tonearms') {
-      return Object.keys(allData.value.tonearmClassifications).map(key => ({
-        key: key, name: allData.value.tonearmClassifications[key].name,
-        options: allData.value.tonearmClassifications[key].categories.map(cat => ({ id: cat.id, name: cat.name })).sort((a, b) => a.name.localeCompare(b.name))
-      }));
+    function setDataType(type) {
+        if (dataType.value !== type) {
+            dataType.value = type;
+            resetFilters();
+        }
     }
-    if (dataType.value === 'cartridges') {
-      const { cartridges, cartridgeClassifications } = allData.value;
-      if (!cartridges.length || !cartridgeClassifications) return [];
-      const createFilterFromKey = (key, name) => ({ key, name, options: [...new Set(cartridges.map(item => item[key]).filter(Boolean))].sort().map(opt => ({ id: opt, name: opt })) });
-      const createFilterFromClassification = (key) => {
-        const classification = cartridgeClassifications[key];
-        if (!classification) return null;
-        return { key: key, name: classification.name, options: classification.categories.map(cat => ({ id: cat.id, name: cat.name })).sort((a,b) => a.name.localeCompare(b.name)) };
-      };
-      return [ createFilterFromKey('type', 'Type'), createFilterFromClassification('compliance_level'), createFilterFromClassification('stylus_family'), createFilterFromClassification('cantilever_class') ].filter(Boolean);
-    }
-    return [];
-  });
-
-  // NY COMPUTED för numeriska filter
-  const availableNumericFilters = computed(() => {
-    if (!dataType.value) return [];
-    if (dataType.value === 'cartridges') {
-      return [
-        { key: 'weight_g', label: 'Weight', unit: 'g' },
-        { key: 'cu_dynamic_10hz', label: 'Compliance @ 10Hz', unit: 'cu' }
-      ];
-    }
-    if (dataType.value === 'tonearms') {
-      return [
-        { key: 'effective_mass_g', label: 'Effective Mass', unit: 'g' },
-        { key: 'effective_length_mm', label: 'Effective Length', unit: 'mm' }
-      ];
-    }
-    return [];
-  });
-
-  const filteredResults = computed(() => {
-    const noSearch = !searchTerm.value.trim();
-    const noCatFilters = Object.keys(filters.value).length === 0;
-    const noNumFilters = Object.keys(numericFilters.value).length === 0;
-
-    if (noSearch && noCatFilters && noNumFilters) return [];
-    if (!dataType.value) return [];
-
-    let sourceData = [...allData.value[dataType.value]];
     
-    // UTÖKAD FILTRERINGSLOGIK
-    const results = sourceData.filter(item => {
-      // 1. Fritextsökning
-      const termMatch = noSearch ? true : (item.manufacturer?.toLowerCase().includes(searchTerm.value.toLowerCase()) || item.model?.toLowerCase().includes(searchTerm.value.toLowerCase()));
-      // 2. Kategorifilter
-      const catMatch = noCatFilters ? true : Object.entries(filters.value).every(([key, value]) => item[key] === value);
-      // 3. Numeriska intervallfilter
-      const numMatch = noNumFilters ? true : Object.entries(numericFilters.value).every(([key, range]) => {
-        const itemValue = item[key];
-        if (itemValue === null || itemValue === undefined) return false; // Exkludera om värde saknas
-        const minOk = (range.min === null || range.min === '') ? true : itemValue >= range.min;
-        const maxOk = (range.max === null || range.max === '') ? true : itemValue <= range.max;
-        return minOk && maxOk;
-      });
-      return termMatch && catMatch && numMatch;
+    // NYTT (1e): Action för att uppdatera ett numeriskt filter
+    function updateNumericFilter(key, newRange) {
+        numericFilters.value[key] = newRange;
+        currentPage.value = 1;
+    }
+
+    function resetFilters() {
+        searchTerm.value = '';
+        filters.value = {};
+        numericFilters.value = {};
+        currentPage.value = 1;
+        sortKey.value = '';
+        sortOrder.value = 'asc';
+    }
+
+    function setSortKey(key) {
+        if (sortKey.value === key) {
+            sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortKey.value = key;
+            sortOrder.value = 'asc';
+        }
+    }
+
+    function nextPage() { if (canGoNext.value) currentPage.value++; }
+    function prevPage() { if (canGoPrev.value) currentPage.value--; }
+
+    // --- GETTERS ---
+    const availableFilters = computed(() => {
+        if (!dataType.value || !classifications.value[dataType.value === 'cartridges' ? 'compliance_level' : 'bearing_type']) return [];
+        if (dataType.value === 'cartridges') {
+            return [
+                { key: 'compliance_level', name: 'Compliance Level', options: classifications.value.compliance_level.categories },
+                { key: 'stylus_family', name: 'Stylus Family', options: classifications.value.stylus_family.categories },
+                { key: 'cantilever_class', name: 'Cantilever Class', options: classifications.value.cantilever_class.categories }
+            ];
+        } else { // tonearms
+            return [
+                { key: 'bearing_type', name: 'Bearing Type', options: classifications.value[dataType.value === 'cartridges' ? 'compliance_level' : 'bearing_type'].categories },
+                { key: 'headshell_connector', name: 'Headshell Type', options: classifications.value.headshell_connector.categories }
+            ];
+        }
+    });
+    
+    // NYTT (1e): Definitioner för numeriska filter
+    const availableNumericFilters = computed(() => {
+        if (!dataType.value) return [];
+        if (dataType.value === 'cartridges') {
+            return [
+                { key: 'weight_g', label: 'Cartridge Weight', unit: 'g' },
+                { key: 'cu_dynamic_10hz', label: 'Compliance @ 10Hz', unit: 'cu' }
+            ];
+        } else { // tonearms
+            return [
+                { key: 'effective_mass_g', label: 'Effective Mass', unit: 'g' },
+                { key: 'effective_length_mm', label: 'Effective Length', unit: 'mm' }
+            ];
+        }
     });
 
-    // Sortering (oförändrad)
-    results.sort((a, b) => {
-      let valA = a[sortKey.value]; let valB = b[sortKey.value];
-      if (valA == null) valA = sortOrder.value === 'asc' ? Infinity : -Infinity;
-      if (valB == null) valB = sortOrder.value === 'asc' ? Infinity : -Infinity;
-      if (typeof valA === 'number' && typeof valB === 'number') return sortOrder.value === 'asc' ? valA - valB : valB - valA;
-      return sortOrder.value === 'asc' ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
+    const filteredResults = computed(() => {
+        if (!dataType.value) return [];
+
+        let items = [...allData.value[dataType.value]];
+
+        // 1. Text Search
+        if (searchTerm.value) {
+            const lowerCaseSearch = searchTerm.value.toLowerCase();
+            items = items.filter(item =>
+                (item.manufacturer?.toLowerCase().includes(lowerCaseSearch)) ||
+                (item.model?.toLowerCase().includes(lowerCaseSearch))
+            );
+        }
+
+        // 2. Categorical Filters
+        for (const key in filters.value) {
+            const value = filters.value[key];
+            if (value) {
+                items = items.filter(item => item[key] === value);
+            }
+        }
+
+        // NYTT (1e): 3. Numeric Range Filters
+        for (const key in numericFilters.value) {
+            const range = numericFilters.value[key];
+            const { min, max } = range;
+
+            if (min !== null || max !== null) {
+                items = items.filter(item => {
+                    const itemValue = item[key];
+                    if (itemValue === null || itemValue === undefined) return false;
+
+                    const passesMin = (min === null) || (itemValue >= min);
+                    const passesMax = (max === null) || (itemValue <= max);
+                    
+                    return passesMin && passesMax;
+                });
+            }
+        }
+
+        // 4. Sorting
+        if (sortKey.value) {
+            items.sort((a, b) => {
+                let valA = a[sortKey.value];
+                let valB = b[sortKey.value];
+                
+                if (typeof valA === 'string') valA = valA.toLowerCase();
+                if (typeof valB === 'string') valB = valB.toLowerCase();
+                
+                if (valA === null || valA === undefined) return 1;
+                if (valB === null || valB === undefined) return -1;
+                
+                if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1;
+                if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        
+        return items;
     });
 
-    return results;
-  });
+    const totalResultsCount = computed(() => filteredResults.value.length);
+    const paginatedResults = computed(() => {
+        const start = (currentPage.value - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        return filteredResults.value.slice(start, end);
+    });
+    const canGoNext = computed(() => currentPage.value * itemsPerPage < totalResultsCount.value);
+    const canGoPrev = computed(() => currentPage.value > 1);
 
-  const paginatedResults = computed(() => { /* ... oförändrad ... */
-    const start = (currentPage.value - 1) * itemsPerPage.value;
-    const end = start + itemsPerPage.value;
-    return filteredResults.value.slice(start, end);
-  });
-  
-  const totalResultsCount = computed(() => filteredResults.value.length);
-  const canGoNext = computed(() => currentPage.value * itemsPerPage.value < totalResultsCount.value);
-  const canGoPrev = computed(() => currentPage.value > 1);
-  
-  initialize();
+    initialize();
 
-  return {
-    isLoading, error, dataType, filters, searchTerm, currentPage, itemsPerPage, sortKey, sortOrder,
-    numericFilters, // Exportera nya state
-    setDataType, updateFilter, resetFilters, setSortKey, nextPage, prevPage,
-    updateNumericFilter, // Exportera nya action
-    availableFilters, availableNumericFilters, // Exportera nya computed
-    paginatedResults, totalResultsCount,
-    canGoNext, canGoPrev
-  };
+    return {
+        isLoading, error, dataType, searchTerm, filters, numericFilters, currentPage, itemsPerPage, sortKey, sortOrder,
+        initialize, setDataType, resetFilters, setSortKey, nextPage, prevPage, updateNumericFilter,
+        availableFilters, availableNumericFilters,
+        filteredResults, totalResultsCount, paginatedResults, canGoNext, canGoPrev
+    };
 });
