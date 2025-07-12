@@ -1,17 +1,15 @@
 <!-- src/views/ComplianceEstimatorView.vue -->
-
 <script setup>
 import { ref, onUnmounted } from 'vue';
 import { useEstimatorStore } from '@/store/estimatorStore.js';
 import EstimatorInputPanel from '@/components/EstimatorInputPanel.vue';
 import EstimatorResultsPanel from '@/components/EstimatorResultsPanel.vue';
 import EstimatorChart from '@/components/EstimatorChart.vue';
-import HelpModal from '@/components/HelpModal.vue'; // Importera HelpModal
+import HelpModal from '@/components/HelpModal.vue';
 
 const store = useEstimatorStore();
-const showHelp = ref(false); // State för att visa/dölja modalen
+const showHelp = ref(false);
 
-// Återställ inputfälten när komponenten lämnas
 onUnmounted(() => {
   if (store && typeof store.resetInput === 'function') {
     store.resetInput();
@@ -21,13 +19,11 @@ onUnmounted(() => {
 
 <template>
   <div>
-    <!-- 1. Laddningsvy -->
     <div v-if="store.isLoading" class="status-container">
       <h2>Loading Estimator...</h2>
       <p>Fetching analysis rules and database...</p>
     </div>
 
-    <!-- 2. Felvy -->
     <div v-else-if="store.error" class="status-container error">
       <h2>Initialization Failed</h2>
       <p>Could not load the necessary data. Please see debug log below.</p>
@@ -38,7 +34,6 @@ onUnmounted(() => {
       </ol>
     </div>
 
-    <!-- 3. Huvudvy för verktyget -->
     <div v-else-if="store.estimationRules && store.allPickups.length > 0" class="tool-view">
       <div class="tool-header">
         <h1>Compliance Estimator</h1>
@@ -58,10 +53,10 @@ onUnmounted(() => {
         <EstimatorInputPanel />
         <EstimatorResultsPanel :result="store.result" />
 
+        <!-- Den uppdaterade komponenten med den nya propen -->
         <EstimatorChart 
-          v-if="store.result.chartData && store.result.chartData.dataPoints.length > 0"
-          :data-points="store.result.chartData.dataPoints"
-          :median-ratio="store.result.chartData.medianRatio"
+          v-if="store.result.chartConfig && store.result.chartConfig.dataPoints.length > 0"
+          :chart-config="store.result.chartConfig"
         />
       </div>
 
@@ -83,7 +78,6 @@ onUnmounted(() => {
         </p>
       </div>
       
-      <!-- Hjälp-modalen -->
       <HelpModal :isOpen="showHelp" @close="showHelp = false">
         <template #header>
           <h2>Estimator Methodology</h2>
@@ -109,7 +103,6 @@ onUnmounted(() => {
       </HelpModal>
     </div>
 
-    <!-- 4. Fallback-vy -->
      <div v-else class="status-container error">
       <h2>An Unexpected Error Occurred</h2>
       <p>Could not render the tool. The state after loading was not as expected. Please see debug log below.</p>
@@ -120,6 +113,7 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
+
 
 <style scoped>
 .debug-log { text-align: left; background: #fff; border: 1px solid #ddd; padding: 1rem; padding-left: 3rem; border-radius: 4px; font-family: monospace; font-size: 0.85rem; color: #333; max-height: 300px; overflow-y: auto; }
