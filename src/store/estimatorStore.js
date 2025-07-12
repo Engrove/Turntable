@@ -86,7 +86,7 @@ export const useEstimatorStore = defineStore('estimator', () => {
         let matchedRule = null;
         let description = "";
         let confidenceBase = 0;
-
+        
         const inputs = userInput.value;
         if (inputs.type && inputs.cantilever_class && inputs.stylus_family) {
             matchedRule = estimationRules.value.segmented_rules.find(r => 
@@ -133,7 +133,8 @@ export const useEstimatorStore = defineStore('estimator', () => {
             return Object.entries(matchedRule.conditions).every(([key, value]) => p[key] === value);
         });
         
-        const ratios = ruleDataSource.length > 1 ? ruleDataSource.map(p => p.cu_dynamic_100hz / p.cu_dynamic_10hz) : [];
+        // KORRIGERING AV RATIO-BERÄKNING
+        const ratios = ruleDataSource.length > 1 ? ruleDataSource.map(p => p.cu_dynamic_10hz / p.cu_dynamic_100hz) : [];
         
         const medianRatio = getPercentile(ratios, 50) ?? matchedRule.median_ratio;
         const minRatio = getPercentile(ratios, 25) ?? medianRatio * 0.9;
@@ -143,7 +144,6 @@ export const useEstimatorStore = defineStore('estimator', () => {
         const compliance_min = baseValue * minRatio;
         const compliance_max = baseValue * maxRatio;
         
-        // NYTT (1i): Ny, mer logisk konfidensberäkning
         const sampleBonus = Math.min(14, Math.floor(Math.sqrt(matchedRule.sample_size) * 2));
         const confidence = Math.min(99, confidenceBase + sampleBonus);
 
