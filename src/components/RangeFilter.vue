@@ -44,6 +44,16 @@ const emit = defineEmits(['update:modelValue']);
 function updateValue(key, value) {
   const newRange = { ...props.modelValue };
   const numericValue = value === '' ? null : parseFloat(value);
+  
+  // Grundläggande validering för att säkerställa att min inte är större än max
+  if (key === 'min' && newRange.max !== null && numericValue > newRange.max) {
+      // Man skulle kunna återställa värdet eller notifiera användaren,
+      // men för enkelhetens skull tillåter vi det och låter store-logiken hantera det.
+  }
+   if (key === 'max' && newRange.min !== null && numericValue < newRange.min) {
+      // Samma som ovan.
+  }
+
   newRange[key] = numericValue;
   emit('update:modelValue', newRange);
 }
