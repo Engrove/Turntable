@@ -26,7 +26,6 @@ function resetPickupSelection() {
   store.loadCartridgePreset(null);
 }
 
-// --- KORRIGERAD LOGIK FÖR INAKTIVERING ---
 const isTonearmSelected = computed(() => store.selectedTonearmId !== null);
 const isPickupSelected = computed(() => store.selectedPickupId !== null);
 const isHeadshellIntegrated = computed(() => store.currentTonearm?.has_integrated_headshell === true);
@@ -37,12 +36,13 @@ const parameterDefinitions = {
     m_screws:          { label: 'Mounting Screws Mass (g)',            min: 0,   max: 5,    step: 0.1,  disabled: ref(false) },
     m_rear_assembly:   { label: 'Armwand + Fixed CW Mass (g)',       min: 10,  max: 200,  step: 0.5,  disabled: isTonearmSelected },
     m_tube_percentage: { label: 'Armwand % of Rear Mass',            min: 0,   max: 100,  step: 1,    disabled: isTonearmSelected },
-    m4_adj_cw:         { label: 'Adjustable CW Mass (g)',              min: 40,  max: 200,  step: 1,    disabled: ref(false) }, // Låt denna vara justerbar
+    m4_adj_cw:         { label: 'Adjustable CW Mass (g)',              min: 40,  max: 200,  step: 1,    disabled: ref(false) },
     L1:                { label: 'Effective Length (mm)',               min: 200, max: 350,  step: 0.5,  disabled: isTonearmSelected },
     L2:                { label: 'Armwand CoG Distance (mm)',           min: 0,   max: 50,   step: 0.5,  disabled: isTonearmSelected },
     L3_fixed_cw:       { label: 'Fixed CW CoG Distance (mm)',          min: 0,   max: 50,   step: 0.5,  disabled: isTonearmSelected },
     vtf:               { label: 'Vertical Tracking Force (g)',         min: 0.5, max: 5,    step: 0.05, disabled: isPickupSelected },
-    compliance:        { label: 'Cartridge Compliance (µm/mN)',        min: 5,   max: 40,   step: 0.5,  disabled: isPickupSelected },
+    // NYTT: Ändrad label för tydlighet
+    compliance:        { label: 'Cartridge Compliance @ 10Hz',        min: 5,   max: 40,   step: 0.5,  disabled: isPickupSelected },
 };
 </script>
 
@@ -52,7 +52,6 @@ const parameterDefinitions = {
 
     <fieldset>
       <legend>Load Presets</legend>
-      <!-- ... (resten av template-koden är oförändrad) ... -->
        <div class="preset-group">
         <label>Load Tonearm Preset</label>
         <div class="preset-selectors">
@@ -105,16 +104,19 @@ const parameterDefinitions = {
             :disabled="param.disabled.value"
           >
         </div>
-         <small v-if="param.disabled.value" class="disabled-note">
+        <!-- NYTT: Hjälptext för compliance -->
+        <small v-if="key === 'compliance'" class="help-text">
+          Note: This calculation requires the 10Hz dynamic compliance value. Use the Compliance Estimator tool if you only have a 100Hz or static value.
+        </small>
+        <small v-if="param.disabled.value" class="disabled-note">
             This value is controlled by the selected preset.
-          </small>
+        </small>
       </div>
     </fieldset>
   </div>
 </template>
 
 <style scoped>
-/* ... (all css är oförändrad) ... */
 fieldset { border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem 1.5rem 0.5rem; margin-bottom: 2rem; }
 legend { font-weight: 600; color: var(--header-color); padding: 0 0.5rem; }
 .preset-group { margin-bottom: 1.5rem; }
@@ -130,6 +132,17 @@ legend { font-weight: 600; color: var(--header-color); padding: 0 0.5rem; }
 .value-select { width: 100%; padding: 0.5rem 0.75rem; font-size: 1rem; background-color: #fff; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; cursor: pointer;}
 .value-select:disabled { background-color: #e9ecef; cursor: not-allowed; }
 .disabled-note { font-size: 0.8rem; font-style: italic; color: var(--label-color); display: block; margin-top: 0.25rem; }
+/* NYTT: Styling för hjälptexten */
+.help-text {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--label-color);
+  display: block;
+  margin-top: 0.35rem;
+  background-color: #e9ecef;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+}
 input[type="range"]:disabled { background-color: #e9ecef; cursor: not-allowed; }
 input[type="number"]:disabled { background-color: #e9ecef; }
 </style>
