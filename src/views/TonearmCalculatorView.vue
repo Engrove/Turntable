@@ -1,7 +1,7 @@
 <!-- src/views/TonearmCalculatorView.vue -->
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router'; // NYTT (1g): Importera useRouter
+import { useRouter } from 'vue-router';
 import { useTonearmStore } from '@/store/tonearmStore.js';
 import InputPanel from '@/components/InputPanel.vue';
 import ResultsPanel from '@/components/ResultsPanel.vue';
@@ -12,11 +12,10 @@ import HelpModal from '@/components/HelpModal.vue';
 
 const store = useTonearmStore();
 const showHelp = ref(false);
-const router = useRouter(); // NYTT (1g): Initiera routern
+const router = useRouter();
 
 // NYTT (1g): Funktion för att skapa och öppna rapporten
 function openReport() {
-  // Samla all relevant data som rapporten behöver
   const reportPayload = {
     type: 'tonearm',
     params: store.params,
@@ -24,17 +23,17 @@ function openReport() {
     diagnosis: store.diagnosis,
   };
   
-  // Konvertera data till en Base64-sträng för att skicka via URL
   const dataString = JSON.stringify(reportPayload);
   const encodedData = btoa(dataString);
 
-  // Använd routern för att få den korrekta URL:en och öppna i en ny flik
   const url = router.resolve({ name: 'report', query: { data: encodedData } }).href;
   window.open(url, '_blank');
 }
 
 onMounted(() => {
-  store.initialize();
+  if (!store.availableTonearms.length) {
+    store.initialize();
+  }
 });
 </script>
 
@@ -104,7 +103,6 @@ onMounted(() => {
 .main-content { display: flex; flex-direction: column; gap: 2rem; }
 .calculator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; }
 .header-buttons { display: flex; align-items: center; gap: 0.5rem; }
-/* NYTT (1g): Styling för Print-knappen */
 .print-report-btn {
     background: none; border: 1px solid var(--border-color); border-radius: 50%; cursor: pointer; color: var(--label-color); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; transition: all 0.2s ease; padding: 0;
 }
