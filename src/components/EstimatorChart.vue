@@ -7,15 +7,15 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 Chart.register(annotationPlugin);
 
 const props = defineProps({
-  dataPoints: {
-    type: Array,
+  chartConfig: {
+    type: Object,
     required: true,
-    default: () => []
-  },
-  medianRatio: {
-    type: Number,
-    required: true,
-    default: 1
+    default: () => ({
+      dataPoints: [],
+      medianRatio: 1,
+      labels: { x: 'X-Axis', y: 'Y-Axis', title: 'Chart', lineLabel: 'Ratio' },
+      scales: { suggestedMax: { x: 20, y: 40 } }
+    })
   }
 });
 
@@ -23,33 +23,29 @@ const chartCanvas = ref(null);
 let chartInstance = null;
 
 const updateChart = () => {
-  if (!chartInstance) return;
+  if (!chartInstance || !props.chartConfig) return;
+
+  const config = props.chartConfig;
 
   // Uppdatera scatter-data
-  chartInstance.data.datasets[0].data = props.dataPoints;
+  chartInstance.data.datasets[0].data = config.dataPoints;
 
-  // **KORRIGERAD LOGIK FÖR LINJEN**
-  // Vi definierar en linje som går genom (0,0) med lutningen = medianRatio.
-  // Chart.js' annotation plugin ritar en linje mellan (xMin, yMin) och (xMax, yMax).
-  // Vi sätter (xMin, yMin) till (0, 0) och räknar ut en rimlig slutpunkt.
+  // Uppdatera linjen baserat på den nya konfigurationen
   const chartMaxX = chartInstance.scales.x.max;
   const lineEndX = chartMaxX;
-  const lineEndY = chartMaxX * props.medianRatio;
+  const lineEndY = chartMaxX * config.medianRatio;
 
   chartInstance.options.plugins.annotation.annotations.medianLine = {
     type: 'line',
-    // Startpunkt
     xMin: 0,
     yMin: 0,
-    // Slutpunkt
     xMax: lineEndX,
     yMax: lineEndY,
-    // Styling
     borderColor: 'rgba(231, 76, 60, 0.8)',
     borderWidth: 2,
     borderDash: [6, 6],
     label: {
-      content: `Median Ratio: ${props.medianRatio.toFixed(2)}`,
+      content: config.labels.lineLabel,
       display: true,
       position: 'end',
       backgroundColor: 'rgba(231, 76, 60, 0.8)',
@@ -58,6 +54,13 @@ const updateChart = () => {
       yAdjust: -10
     }
   };
+
+  // Uppdatera dynamiska texter och skalor
+  chartInstance.options.plugins.title.text = config.labels.title;
+  chartInstance.options.scales.x.title.text = config.labels.x;
+  chartInstance.options.scales.y.title.text = config.labels.y;
+  chartInstance.options.scales.x.suggestedMax = config.scales.suggestedMax.x;
+  chartInstance.options.scales.y.suggestedMax = config.scales.suggestedMax.y;
 
   chartInstance.update();
 };
@@ -71,7 +74,7 @@ onMounted(() => {
     data: {
       datasets: [
         {
-          label: 'Individual Pickups in Matched Rule',
+          label: 'Reference Data Points',
           data: [],
           backgroundColor: 'rgba(52, 152, 219, 0.7)',
           borderColor: 'rgba(52, 152, 219, 1)',
@@ -85,23 +88,25 @@ onMounted(() => {
       plugins: {
         title: {
           display: true,
-          text: 'Underlying Data for Matched Rule',
+          text: '', // Blir dynamisk
           font: { size: 16 }
         },
         tooltip: {
             callbacks: {
                 label: function(context) {
                     const dataPoint = context.raw;
+                    const xLabel = context.chart.options.scales.x.title.text || 'x';
+                    const yLabel = context.chart.options.scales.y.title.text || 'y';
                     if (dataPoint && dataPoint.model) {
-                        return `${dataPoint.model}: (100Hz: ${dataPoint.x}, 10Hz: ${dataPoint.y.toFixed(1)})`;
+                        return `${dataPoint.model}: (${xLabel}: ${dataPoint.x}, ${yLabel}: ${dataPoint.y.toFixed(1)})`;
                     }
-                    return `(x: ${context.parsed.x}, y: ${context.parsed.y.toFixed(1)})`;
+                    return `(${xLabel}: ${context.parsed.x}, ${yLabel}: ${context.parsed.y.toFixed(1)})`;
                 }
             }
         },
         annotation: {
           annotations: {
-            medianLine: {} // Definieras dynamiskt i updateChart
+            medianLine: {} // Definieras dynamiskt
           }
         }
       },
@@ -109,16 +114,14 @@ onMounted(() => {
         x: {
           type: 'linear',
           position: 'bottom',
-          title: { display: true, text: 'Dynamic Compliance @ 100Hz' },
+          title: { display: true, text: '' }, // Blir dynamisk
           min: 0,
-          suggestedMax: 20
         },
         y: {
           type: 'linear',
           position: 'left',
-          title: { display: true, text: 'Dynamic Compliance @ 10Hz' },
+          title: { display: true, text: '' }, // Blir dynamisk
           min: 0,
-          suggestedMax: 40
         }
       }
     }
@@ -127,7 +130,7 @@ onMounted(() => {
   updateChart();
 });
 
-watch(props, updateChart, { deep: true });
+watch(() => props.chartConfig, updateChart, { deep: true });
 </script>
 
 <template>
