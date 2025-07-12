@@ -54,7 +54,7 @@ const routeIcons = {
       </div>
       <nav class="main-nav">
         <RouterLink
-          v-for="route in router.options.routes"
+          v-for="route in router.options.routes.filter(r => r.meta && r.meta.title)"
           :key="route.name"
           :to="route.path"
           class="nav-link"
@@ -78,6 +78,7 @@ const routeIcons = {
   </div>
 </template>
 
+<!-- Huvud-CSS förblir oförändrad -->
 <style>
 :root {
   --sidebar-width-expanded: 250px;
@@ -135,4 +136,44 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 }
 .panel { background-color: var(--panel-bg); padding: 1.5rem; border-radius: 6px; border: 1px solid var(--border-color); }
 .panel h2 { margin-top: 0; color: var(--header-color); font-size: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1.5rem; }
+
+/* NYTT (1g): Globala utskriftsstilar */
+@media print {
+  /* Göm allt som inte ska skrivas ut */
+  .sidebar,
+  .mobile-menu-trigger,
+  .tool-header .header-buttons {
+    display: none !important;
+  }
+
+  /* Återställ layouten för att bara visa innehållet */
+  body {
+    background-color: #fff !important;
+  }
+  .app-layout {
+    display: block;
+  }
+  .content-area {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+  .panel {
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+
+  /* Ta bort onödiga marginaler */
+  .tool-view, .tool-header {
+    margin: 0;
+    padding: 0;
+    border: none;
+  }
+  .tool-header h1 {
+    font-size: 18pt;
+    margin-bottom: 2rem;
+  }
+  .tool-description {
+      display: none;
+  }
+}
 </style>
