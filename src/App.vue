@@ -49,14 +49,8 @@ const routeIcons = {
     </template>
 
     <aside class="sidebar" :class="{ 'is-expanded': isMenuExpanded }">
-      <!-- NY PLACERING AV KNAPPEN -->
       <div class="sidebar-header">
         <h3 v-show="isMenuExpanded || !isMobile">Engrove Toolkit</h3>
-        <div v-if="!isMobile" class="menu-toggle-wrap">
-          <button @click="toggleMenu" class="menu-toggle" title="Toggle Menu">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-          </button>
-        </div>
       </div>
       <nav class="main-nav">
         <RouterLink
@@ -71,7 +65,12 @@ const routeIcons = {
           <span class="nav-text">{{ route.meta.title }}</span>
         </RouterLink>
       </nav>
-      <!-- Knappen är borttagen från botten -->
+      <!-- Knappen flyttas till botten igen för enklare hantering -->
+      <div v-if="!isMobile" class="menu-toggle-wrap">
+        <button @click="toggleMenu" class="menu-toggle" title="Toggle Menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+      </div>
     </aside>
 
     <main class="content-area">
@@ -108,32 +107,31 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .sidebar { background-color: var(--header-color); color: var(--text-light); height: 100vh; position: fixed; top: 0; left: 0; z-index: 1000; display: flex; flex-direction: column; width: var(--sidebar-width-collapsed); overflow: hidden; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .sidebar.is-expanded { width: var(--sidebar-width-expanded); }
 
-/* NY CSS FÖR HEADER OCH KNAPP */
+/* Återställd CSS, knappen tillbaka i botten */
 .sidebar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 1rem;
+  padding: 0 1.25rem;
   margin-top: 1rem;
   margin-bottom: 2rem;
+  font-size: 1.2rem;
+  white-space: nowrap;
   height: 36px;
-  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sidebar.is-expanded .sidebar-header {
+  justify-content: flex-start;
 }
 .sidebar-header h3 {
   margin: 0;
-  font-size: 1.2rem;
-  white-space: nowrap;
   opacity: 0;
-  transition: opacity 0.2s ease-in-out;
+  transition: opacity 0.3s ease;
 }
 .sidebar.is-expanded .sidebar-header h3 {
   opacity: 1;
 }
-.menu-toggle-wrap {
-  /* Ingen specifik styling behövs här längre */
-}
 
-.main-nav { flex-grow: 1; overflow-y: auto; overflow-x: hidden;}
+.main-nav { flex-grow: 1; overflow-y: auto; overflow-x: hidden; }
 .nav-link { display: flex; align-items: center; gap: 1.25rem; padding: 1rem; margin: 0.5rem; border-radius: 8px; color: var(--text-muted); text-decoration: none; transition: background-color 0.2s ease, color 0.2s ease; white-space: nowrap; }
 .sidebar.is-expanded .nav-link { padding-left: 1.5rem; }
 .nav-link:hover { background-color: var(--bg-hover); color: #fff; }
@@ -143,9 +141,22 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .sidebar.is-expanded .nav-icon { margin-left: 0; }
 .nav-text { opacity: 0; transition: opacity 0.2s ease; }
 .sidebar.is-expanded .nav-text { opacity: 1; }
+
+.menu-toggle-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0;
+  flex-shrink: 0; /* Förhindrar att den trycks ihop */
+}
+.sidebar.is-expanded .menu-toggle-wrap {
+  justify-content: flex-end;
+  padding-right: 1rem;
+}
+
 .menu-toggle { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0.5rem; border-radius: 50%; transition: background-color 0.2s ease, transform 0.3s ease-in-out; }
 .menu-toggle:hover { background-color: var(--bg-hover); color: #fff; }
 .sidebar.is-expanded .menu-toggle { transform: rotate(180deg); }
+
 @media (max-width: 767px) {
   .content-area { margin-left: 0; padding: 1rem; padding-top: 5rem; }
   .sidebar { width: var(--sidebar-width-expanded); transform: translateX(-100%); transition: transform 0.3s ease; }
@@ -158,36 +169,13 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .panel h2 { margin-top: 0; color: var(--header-color); font-size: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1.5rem; }
 
 @media print {
-  .sidebar,
-  .mobile-menu-trigger,
-  .tool-header .header-buttons {
-    display: none !important;
-  }
-  body {
-    background-color: #fff !important;
-  }
-  .app-layout {
-    display: block;
-  }
-  .content-area {
-    margin-left: 0 !important;
-    padding: 0 !important;
-  }
-  .panel {
-    box-shadow: none;
-    border: 1px solid #ccc;
-  }
-  .tool-view, .tool-header {
-    margin: 0;
-    padding: 0;
-    border: none;
-  }
-  .tool-header h1 {
-    font-size: 18pt;
-    margin-bottom: 2rem;
-  }
-  .tool-description {
-      display: none;
-  }
+  .sidebar, .mobile-menu-trigger, .tool-header .header-buttons { display: none !important; }
+  body { background-color: #fff !important; }
+  .app-layout { display: block; }
+  .content-area { margin-left: 0 !important; padding: 0 !important; }
+  .panel { box-shadow: none; border: 1px solid #ccc; }
+  .tool-view, .tool-header { margin: 0; padding: 0; border: none; }
+  .tool-header h1 { font-size: 18pt; margin-bottom: 2rem; }
+  .tool-description { display: none; }
 }
 </style>
