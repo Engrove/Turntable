@@ -49,8 +49,14 @@ const routeIcons = {
     </template>
 
     <aside class="sidebar" :class="{ 'is-expanded': isMenuExpanded }">
+      <!-- NY PLACERING AV KNAPPEN -->
       <div class="sidebar-header">
         <h3 v-show="isMenuExpanded || !isMobile">Engrove Toolkit</h3>
+        <div v-if="!isMobile" class="menu-toggle-wrap">
+          <button @click="toggleMenu" class="menu-toggle" title="Toggle Menu">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+        </div>
       </div>
       <nav class="main-nav">
         <RouterLink
@@ -65,11 +71,7 @@ const routeIcons = {
           <span class="nav-text">{{ route.meta.title }}</span>
         </RouterLink>
       </nav>
-      <div v-if="!isMobile" class="menu-toggle-wrap">
-        <button @click="toggleMenu" class="menu-toggle" title="Toggle Menu">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-        </button>
-      </div>
+      <!-- Knappen är borttagen från botten -->
     </aside>
 
     <main class="content-area">
@@ -78,7 +80,6 @@ const routeIcons = {
   </div>
 </template>
 
-<!-- Huvud-CSS förblir oförändrad -->
 <style>
 :root {
   --sidebar-width-expanded: 250px;
@@ -99,7 +100,6 @@ const routeIcons = {
   --warning-text: #856404;
   --danger-text: #721c24;
 }
-
 html { scroll-behavior: smooth; }
 body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #e9ecef; }
 #app { width: 100%; }
@@ -107,11 +107,33 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .content-area { padding: 2rem; transition: margin-left 0.3s ease; margin-left: var(--sidebar-width-collapsed); }
 .sidebar { background-color: var(--header-color); color: var(--text-light); height: 100vh; position: fixed; top: 0; left: 0; z-index: 1000; display: flex; flex-direction: column; width: var(--sidebar-width-collapsed); overflow: hidden; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .sidebar.is-expanded { width: var(--sidebar-width-expanded); }
-.sidebar-header { padding: 0 1.25rem; margin-top: 1rem; margin-bottom: 2rem; font-size: 1.2rem; white-space: nowrap; height: 36px; display: flex; align-items: center; justify-content: center; }
-.sidebar.is-expanded .sidebar-header { justify-content: flex-start; }
-.sidebar-header h3 { margin: 0; opacity: 0; transition: opacity 0.3s ease; }
-.sidebar.is-expanded .sidebar-header h3 { opacity: 1; }
-.main-nav { flex-grow: 1; }
+
+/* NY CSS FÖR HEADER OCH KNAPP */
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 1rem;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+  height: 36px;
+  flex-shrink: 0;
+}
+.sidebar-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+.sidebar.is-expanded .sidebar-header h3 {
+  opacity: 1;
+}
+.menu-toggle-wrap {
+  /* Ingen specifik styling behövs här längre */
+}
+
+.main-nav { flex-grow: 1; overflow-y: auto; overflow-x: hidden;}
 .nav-link { display: flex; align-items: center; gap: 1.25rem; padding: 1rem; margin: 0.5rem; border-radius: 8px; color: var(--text-muted); text-decoration: none; transition: background-color 0.2s ease, color 0.2s ease; white-space: nowrap; }
 .sidebar.is-expanded .nav-link { padding-left: 1.5rem; }
 .nav-link:hover { background-color: var(--bg-hover); color: #fff; }
@@ -121,8 +143,6 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .sidebar.is-expanded .nav-icon { margin-left: 0; }
 .nav-text { opacity: 0; transition: opacity 0.2s ease; }
 .sidebar.is-expanded .nav-text { opacity: 1; }
-.menu-toggle-wrap { display: flex; justify-content: center; padding: 1rem 0; }
-.sidebar.is-expanded .menu-toggle-wrap { justify-content: flex-end; padding-right: 1rem; }
 .menu-toggle { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0.5rem; border-radius: 50%; transition: background-color 0.2s ease, transform 0.3s ease-in-out; }
 .menu-toggle:hover { background-color: var(--bg-hover); color: #fff; }
 .sidebar.is-expanded .menu-toggle { transform: rotate(180deg); }
@@ -137,16 +157,12 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .panel { background-color: var(--panel-bg); padding: 1.5rem; border-radius: 6px; border: 1px solid var(--border-color); }
 .panel h2 { margin-top: 0; color: var(--header-color); font-size: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1.5rem; }
 
-/* NYTT (1g): Globala utskriftsstilar */
 @media print {
-  /* Göm allt som inte ska skrivas ut */
   .sidebar,
   .mobile-menu-trigger,
   .tool-header .header-buttons {
     display: none !important;
   }
-
-  /* Återställ layouten för att bara visa innehållet */
   body {
     background-color: #fff !important;
   }
@@ -161,8 +177,6 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
     box-shadow: none;
     border: 1px solid #ccc;
   }
-
-  /* Ta bort onödiga marginaler */
   .tool-view, .tool-header {
     margin: 0;
     padding: 0;
