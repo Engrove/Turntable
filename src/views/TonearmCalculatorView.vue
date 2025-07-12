@@ -1,6 +1,7 @@
 <!-- src/views/TonearmCalculatorView.vue -->
 <script setup>
 import { ref } from 'vue';
+import { useTonearmStore } from '@/store/tonearmStore.js'; // NYTT: Importera store
 import InputPanel from '@/components/InputPanel.vue';
 import ResultsPanel from '@/components/ResultsPanel.vue';
 import TonearmVisualizer from '@/components/TonearmVisualizer.vue';
@@ -8,6 +9,7 @@ import SensitivityCharts from '@/components/SensitivityCharts.vue';
 import CounterweightChart from '@/components/CounterweightChart.vue';
 import HelpModal from '@/components/HelpModal.vue';
 
+const store = useTonearmStore(); // NYTT: Initiera store
 const showHelp = ref(false);
 </script>
 
@@ -25,9 +27,12 @@ const showHelp = ref(false);
         <InputPanel />
         <ResultsPanel />
       </div>
-      <TonearmVisualizer />
-      <SensitivityCharts />
-      <CounterweightChart />
+      <!-- NYTT: Villkorlig rendering av visualiseringar -->
+      <template v-if="store.params.calculationMode === 'detailed'">
+        <TonearmVisualizer />
+        <SensitivityCharts />
+        <CounterweightChart />
+      </template>
     </div>
 
     <HelpModal :isOpen="showHelp" @close="showHelp = false">
@@ -38,9 +43,8 @@ const showHelp = ref(false);
         <h4>How to Use This Tool</h4>
         <p>This calculator is a design aid for exploring the relationship between a tonearm's physical properties and its resonant frequency when paired with a specific cartridge. Adjust the sliders or enter values directly to see the results update in real-time.</p>
         <ul>
-            <li><strong>Input Parameters:</strong> Manipulate the physical properties of your theoretical tonearm design.</li>
-            <li><strong>Calculated Results:</strong> See the direct output of the calculations, including the all-important System Resonance Frequency.</li>
-            <li><strong>Visualizations:</strong> The diagrams provide immediate visual feedback on the tonearm's geometry and the sensitivity of the system to changes in each parameter.</li>
+            <li><strong>Detailed Mode:</strong> Use sliders to manipulate all physical properties of a theoretical tonearm. Ideal for designing an arm from scratch and understanding physical trade-offs.</li>
+            <li><strong>Direct Mode:</strong> If you already know your tonearm's effective mass, use this mode for a quick resonance calculation. This bypasses the detailed geometrical calculations.</li>
         </ul>
         <hr>
 
@@ -53,7 +57,7 @@ const showHelp = ref(false);
         </ol>
         <hr>
 
-        <h4>Understanding the Visualizations</h4>
+        <h4>Understanding the Visualizations (Detailed Mode)</h4>
         <p>The toolkit provides several interactive graphs to give you immediate visual feedback:</p>
         <ul>
             <li><strong>Tonearm Visualization:</strong> This top-down view shows the physical layout of your tonearm based on your inputs. It helps you visualize the balance and the crucial distances between the components and the pivot.</li>
@@ -61,28 +65,7 @@ const showHelp = ref(false);
             <li><strong>Counterweight Mass vs. Required Distance:</strong> This graph specifically explores the relationship between the adjustable counterweight's mass (m4) and how far it needs to be from the pivot to balance the arm. It clearly illustrates the principle that a heavier counterweight can be placed much closer to the pivot, which is key to reducing effective mass.</li>
         </ul>
         <hr>
-
-        <h4>The Two-Part Counterweight Philosophy</h4>
-        <p>A key design feature this calculator models is a two-part counterweight system. Instead of a single large weight, the task is split:</p>
-        <ul>
-            <li><strong>The Fixed Counterweight (m3):</strong> A mass integrated into the arm structure, very close to the pivot. Its purpose is to provide some of the balancing mass with a negligible contribution to the total inertia (since its distance, L3, is small).</li>
-            <li><strong>The Adjustable Counterweight (m4):</strong> This larger weight provides the final, precise balancing. Because m3 is already doing some work, m4 can be placed much closer to the pivot, significantly reducing its own contribution to inertia and thereby lowering the total effective mass.</li>
-        </ul>
-        <hr>
-
-        <h4>Core Formulas Used</h4>
-        <p>Adjustable Counterweight Distance (D or L4):</p>
-        <code>D = ( (m1*L1) + (m2*L2) - (m3*L3) - (VTF*L1) ) / m4</code>
-        <p>Total Moment of Inertia (Itot):</p>
-        <code>Itot = (m1*L1²) + (m2*L2²) + (m3*L3²) + (m4*D²)</code>
-        <p>Effective Mass (M_eff):</p>
-        <code>M_eff = Itot / L1²</code>
-        <p>Resonance Frequency (F):</p>
-        <code>F = 1000 / (2π * √(M_eff * Compliance))</code>
         
-        <hr>
-        
-        <!-- UPPDATERAD SEKTION HÄR -->
         <h4>Disclaimer and Limitations</h4>
         <p>
           This toolkit is provided as a design aid for theoretical exploration and educational purposes only. The calculations are based on established physical principles but are the product of a hobbyist project. Data is compiled from publicly available sources, including manufacturer specifications and community-driven databases.
@@ -90,14 +73,12 @@ const showHelp = ref(false);
         <p>
           While every effort is made to verify accuracy, there is no guarantee of the absolute correctness of the data or calculations. Users are encouraged to cross-reference the results with their own measurements and practical experience. The ultimate responsibility for any physical build or component matching rests with the user.
         </p>
-        <!-- SLUT PÅ UPPDATERAD SEKTION -->
       </template>
     </HelpModal>
   </div>
 </template>
 
 <style scoped>
-/* Befintlig CSS förblir oförändrad */
 .tool-view { display: flex; flex-direction: column; }
 .tool-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1.5rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border-color); }
 .tool-header h1 { margin: 0; font-size: 1.75rem; color: var(--header-color); }
