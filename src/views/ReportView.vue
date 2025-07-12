@@ -15,11 +15,11 @@
           <div class="data-group">
             <h3>Input Parameters</h3>
             <ul>
-              <li v-if="reportData.params.calculationMode === 'detailed'" v-for="param in tonearmParamsDetailed" :key="param.key">
+              <li v-if="reportData.params.calculationMode === 'detailed'" v-for="param in tonearmParamsDetailed.filter(p => reportData.params[p.key] !== null)" :key="param.key">
                 <strong>{{ param.label }}:</strong>
                 <span>{{ reportData.params[param.key] }} {{ param.unit }}</span>
               </li>
-              <li v-if="reportData.params.calculationMode === 'direct'" v-for="param in tonearmParamsDirect" :key="param.key">
+              <li v-if="reportData.params.calculationMode === 'direct'" v-for="param in tonearmParamsDirect.filter(p => reportData.params[p.key] !== null)" :key="param.key">
                 <strong>{{ param.label }}:</strong>
                 <span>{{ reportData.params[param.key] }} {{ param.unit }}</span>
               </li>
@@ -47,7 +47,7 @@
           <div class="data-group">
             <h3>Input Specifications</h3>
             <ul>
-               <li v-for="param in estimatorParams.filter(p => reportData.userInput[p.key])" :key="param.key">
+               <li v-for="param in estimatorParams.filter(p => reportData.userInput[p.key] !== null && reportData.userInput[p.key] !== '')" :key="param.key">
                 <strong>{{ param.label }}:</strong>
                 <span>{{ reportData.userInput[param.key] }}</span>
               </li>
@@ -112,6 +112,7 @@ const tonearmParamsDetailed = ref([
   { key: 'compliance', label: 'Compliance @ 10Hz', unit: 'cu' },
   { key: 'vtf', label: 'Tracking Force', unit: 'g' },
   { key: 'L1', label: 'Effective Length', unit: 'mm' },
+  { key: 'm_rear_assembly', label: 'Rear Assembly Mass', unit: 'g'},
   { key: 'm4_adj_cw', label: 'Adjustable CW Mass', unit: 'g' },
 ]);
 const tonearmParamsDirect = ref([
@@ -161,150 +162,3 @@ const confidenceClass = computed(() => {
 });
 
 </script>
-
-<style scoped>
-.report-wrapper {
-  max-width: 8.5in;
-  min-height: 11in;
-  margin: 2rem auto;
-  padding: 2rem;
-  background-color: white;
-  box-shadow: 0 0 15px rgba(0,0,0,0.1);
-  font-family: 'Times New Roman', Times, serif;
-}
-.report-header {
-  text-align: center;
-  border-bottom: 2px solid #333;
-  padding-bottom: 1rem;
-  margin-bottom: 2rem;
-}
-.report-header h1 {
-  margin: 0;
-  font-size: 24pt;
-}
-.report-header p {
-  margin: 0.5rem 0;
-  font-style: italic;
-  color: #555;
-}
-.report-section h2 {
-  font-size: 18pt;
-  border-bottom: 1px solid #ccc;
-  padding-bottom: 0.5rem;
-  margin-bottom: 1.5rem;
-}
-.data-grid {
-  display: flex;
-  gap: 2rem;
-  align-items: flex-start;
-}
-.data-group {
-  flex: 1;
-}
-.data-group h3 {
-  font-size: 14pt;
-  margin-top: 0;
-}
-.data-group ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-.data-group li {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem 0;
-  border-bottom: 1px dotted #eee;
-}
-.data-group li strong {
-  color: #333;
-  padding-right: 1rem;
-}
-.data-group li span {
-  color: #555;
-  text-align: right;
-}
-.final-result {
-  font-weight: bold;
-  font-size: 1.2em;
-  color: black !important;
-}
-.diagnosis-box {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  border-radius: 4px;
-}
-.diagnosis-box.ideal { background-color: #d4edda; border: 1px solid #c3e6cb;}
-.diagnosis-box.warning { background-color: #fff3cd; border: 1px solid #ffeeba;}
-.diagnosis-box.danger { background-color: #f8d7da; border: 1px solid #f5c6cb;}
-.danger-text { color: #721c24; font-weight: bold; }
-
-.main-result {
-    text-align: center;
-    padding: 1rem;
-    background: #f8f9fa;
-    border-radius: 6px;
-    margin-bottom: 1rem;
-}
-.main-result .result-value {
-    font-size: 28pt;
-    font-weight: bold;
-    color: #333;
-}
-.main-result .result-value span {
-    font-size: 14pt;
-    font-weight: normal;
-    margin-left: 0.5rem;
-    color: #555;
-}
-.median-note {
-    font-style: italic;
-    color: #666;
-    margin-top: 0.5rem;
-}
-
-.report-footer {
-  margin-top: 3rem;
-  padding-top: 1rem;
-  border-top: 2px solid #333;
-  font-size: 9pt;
-  color: #777;
-}
-
-.print-button {
-  display: block;
-  width: 200px;
-  margin: 1rem auto 0;
-  padding: 0.75rem 1rem;
-  background-color: var(--accent-color);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 12pt;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-.print-button:hover {
-  background-color: #2980b9;
-}
-
-/* Print-specific styles */
-@media print {
-  html, body {
-    background-color: white !important; /* Säkerställ vit bakgrund */
-  }
-  .report-wrapper {
-    margin: 0;
-    padding: 0;
-    box-shadow: none;
-    border: none;
-  }
-  .print-button, .sidebar, .mobile-menu-trigger, .header-buttons {
-    display: none !important;
-  }
-  @page {
-    size: A4;
-    margin: 2cm;
-  }
-}
-</style>
