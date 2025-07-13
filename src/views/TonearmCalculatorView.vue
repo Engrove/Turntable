@@ -72,6 +72,8 @@ onMounted(() => {
         <InputPanel />
         <ResultsPanel />
       </div>
+      <!-- NY PLACERING: Visualizer under grid, bara i detailed mode -->
+      <TonearmVisualizer v-if="store.params.calculationMode === 'detailed'" />
       <template v-if="store.params.calculationMode === 'detailed'">
    <!--     <TonearmVisualizer />  -->
         <SensitivityCharts />
