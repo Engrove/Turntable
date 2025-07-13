@@ -73,7 +73,7 @@ onMounted(() => {
         <ResultsPanel />
       </div>
       <template v-if="store.params.calculationMode === 'detailed'">
-        <TonearmVisualizer />
+   <!--     <TonearmVisualizer />  -->
         <SensitivityCharts />
         <CounterweightChart />
       </template>
