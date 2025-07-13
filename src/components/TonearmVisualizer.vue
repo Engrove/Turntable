@@ -134,6 +134,7 @@ const formatNumber = (num) => {
   margin: 0 0 1rem 0;
   line-height: 1.5;
 }
+/* Balansdiagram */
 .balance-diagram {
   display: flex;
   align-items: center;
@@ -175,6 +176,7 @@ const formatNumber = (num) => {
 .moment-total span {
   color: var(--accent-color);
 }
+/* Inertia-diagram */
 .inertia-diagram {
     margin-top: 1rem;
 }
@@ -202,6 +204,8 @@ const formatNumber = (num) => {
 .inertia-legend {
   display: flex;
   justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 1rem;
   margin-top: 0.75rem;
   font-size: 0.8rem;
   font-family: monospace;
@@ -212,27 +216,61 @@ const formatNumber = (num) => {
   border-radius: 50%;
   display: inline-block;
   margin-right: 5px;
+  vertical-align: middle;
 }
 .i1 { background-color: #3498db; }
 .i2 { background-color: #2ecc71; }
 .i3 { background-color: #e67e22; }
 .i4 { background-color: #9b59b6; }
 
+/* NY CSS FÖR FORMEL-LAYOUT */
 .final-calc {
   margin-top: 1rem;
-  padding: 0.75rem;
+  padding: 1rem;
   background-color: #e9ecef;
   border: 1px solid #ced4da;
   border-radius: 4px;
   text-align: center;
   font-family: monospace;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
-.final-calc span {
+.formula-line {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.term {
+  line-height: 1;
+}
+.operator {
   font-weight: bold;
-  font-size: 1.1em;
-  color: #2c3e50;
+  font-size: 1.2rem;
 }
+.fraction {
+  display: inline-flex;
+  flex-direction: column;
+  text-align: center;
+}
+.numerator {
+  padding: 0 0.5rem;
+}
+.denominator {
+  border-top: 1.5px solid #2c3e50;
+  padding: 0 0.5rem;
+}
+.final-value {
+  font-weight: bold;
+  font-size: 1.2em;
+  color: #2c3e50;
+  background-color: #fff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+/* SLUT PÅ NY CSS */
+
 .unbalanced-message {
     padding: 2rem;
     text-align: center;
