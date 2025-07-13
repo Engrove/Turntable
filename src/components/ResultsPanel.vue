@@ -41,6 +41,7 @@ const store = useTonearmStore()
         <!-- Alla visualiseringar renderas nu här, under resultatpanelen -->
         <template v-if="store.params.calculationMode === 'detailed'">
             <TonearmVisualizer />
+            <TonearmGeometry />
             <SensitivityCharts />
             <CounterweightChart />
         </template>
