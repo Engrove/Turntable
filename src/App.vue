@@ -65,7 +65,7 @@ const routeIcons = {
           <span class="nav-text">{{ route.meta.title }}</span>
         </RouterLink>
       </nav>
-      <!-- Knappen flyttas till botten igen för enklare hantering -->
+      <!-- Knappen är i botten -->
       <div v-if="!isMobile" class="menu-toggle-wrap">
         <button @click="toggleMenu" class="menu-toggle" title="Toggle Menu">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
@@ -107,7 +107,6 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .sidebar { background-color: var(--header-color); color: var(--text-light); height: 100vh; position: fixed; top: 0; left: 0; z-index: 1000; display: flex; flex-direction: column; width: var(--sidebar-width-collapsed); overflow: hidden; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .sidebar.is-expanded { width: var(--sidebar-width-expanded); }
 
-/* Återställd CSS, knappen tillbaka i botten */
 .sidebar-header {
   padding: 0 1.25rem;
   margin-top: 1rem;
@@ -118,6 +117,7 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 .sidebar.is-expanded .sidebar-header {
   justify-content: flex-start;
@@ -131,7 +131,24 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
   opacity: 1;
 }
 
-.main-nav { flex-grow: 1; overflow-y: auto; overflow-x: hidden; }
+/* KORRIGERAD CSS FÖR NAVIGERING OCH KNAPP */
+.main-nav {
+  flex-grow: 1; /* Låt denna sektion växa */
+  overflow-y: auto; /* Lägg till scrollbar om innehållet blir för långt */
+  overflow-x: hidden;
+}
+.menu-toggle-wrap {
+  flex-shrink: 0; /* Förhindra att denna sektion krymper */
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0;
+  border-top: 1px solid var(--bg-hover); /* Tydlig avgränsare */
+}
+.sidebar.is-expanded .menu-toggle-wrap {
+  justify-content: flex-end;
+  padding-right: 1rem;
+}
+
 .nav-link { display: flex; align-items: center; gap: 1.25rem; padding: 1rem; margin: 0.5rem; border-radius: 8px; color: var(--text-muted); text-decoration: none; transition: background-color 0.2s ease, color 0.2s ease; white-space: nowrap; }
 .sidebar.is-expanded .nav-link { padding-left: 1.5rem; }
 .nav-link:hover { background-color: var(--bg-hover); color: #fff; }
@@ -141,17 +158,6 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .sidebar.is-expanded .nav-icon { margin-left: 0; }
 .nav-text { opacity: 0; transition: opacity 0.2s ease; }
 .sidebar.is-expanded .nav-text { opacity: 1; }
-
-.menu-toggle-wrap {
-  display: flex;
-  justify-content: center;
-  padding: 1rem 0;
-  flex-shrink: 0; /* Förhindrar att den trycks ihop */
-}
-.sidebar.is-expanded .menu-toggle-wrap {
-  justify-content: flex-end;
-  padding-right: 1rem;
-}
 
 .menu-toggle { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0.5rem; border-radius: 50%; transition: background-color 0.2s ease, transform 0.3s ease-in-out; }
 .menu-toggle:hover { background-color: var(--bg-hover); color: #fff; }
