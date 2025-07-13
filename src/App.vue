@@ -65,7 +65,6 @@ const routeIcons = {
           <span class="nav-text">{{ route.meta.title }}</span>
         </RouterLink>
       </nav>
-      <!-- Knappen är i botten -->
       <div v-if="!isMobile" class="menu-toggle-wrap">
         <button @click="toggleMenu" class="menu-toggle" title="Toggle Menu">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
@@ -104,7 +103,8 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 #app { width: 100%; }
 .app-layout { position: relative; }
 .content-area { padding: 2rem; transition: margin-left 0.3s ease; margin-left: var(--sidebar-width-collapsed); }
-.sidebar { background-color: var(--header-color); color: var(--text-light); height: 100vh; position: fixed; top: 0; left: 0; z-index: 1000; display: flex; flex-direction: column; width: var(--sidebar-width-collapsed); overflow: hidden; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+/* KORRIGERING AV HÖJD */
+.sidebar { background-color: var(--header-color); color: var(--text-light); height: 100dvh; /* Använd 'dynamic viewport height' */ position: fixed; top: 0; left: 0; z-index: 1000; display: flex; flex-direction: column; width: var(--sidebar-width-collapsed); overflow: hidden; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .sidebar.is-expanded { width: var(--sidebar-width-expanded); }
 
 .sidebar-header {
@@ -131,18 +131,17 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
   opacity: 1;
 }
 
-/* KORRIGERAD CSS FÖR NAVIGERING OCH KNAPP */
 .main-nav {
-  flex-grow: 1; /* Låt denna sektion växa */
-  overflow-y: auto; /* Lägg till scrollbar om innehållet blir för långt */
+  flex-grow: 1;
+  overflow-y: auto;
   overflow-x: hidden;
 }
 .menu-toggle-wrap {
-  flex-shrink: 0; /* Förhindra att denna sektion krymper */
+  flex-shrink: 0;
   display: flex;
   justify-content: center;
   padding: 1rem 0;
-  border-top: 1px solid var(--bg-hover); /* Tydlig avgränsare */
+  border-top: 1px solid var(--bg-hover);
 }
 .sidebar.is-expanded .menu-toggle-wrap {
   justify-content: flex-end;
