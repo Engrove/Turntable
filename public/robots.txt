@@ -1,0 +1,6 @@
+# Allow all user agents to crawl the entire site
+User-agent: *
+Disallow:
+
+# Point to the sitemap file
+Sitemap: https://engrove.netlify.app/sitemap.xml
