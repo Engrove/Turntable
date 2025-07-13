@@ -1,4 +1,25 @@
 <!-- src/views/HomeView.vue -->
+<script setup>
+import { RouterLink } from 'vue-router';
+// NYTT (4a): Importera useHead
+import { useHead } from '@unhead/vue';
+
+const githubUrl = 'https://github.com/Engrove/Turntable';
+
+// NYTT (4a): Sätt sid-specifika meta-taggar
+useHead({
+  title: 'Engrove Audio Toolkit | Home',
+  meta: [
+    { 
+      name: 'description', 
+      content: 'Welcome to the Engrove Audio Toolkit. A collection of interactive tools for the DIY audio enthusiast, including calculators for tonearm resonance and cartridge compliance.' 
+    },
+    { property: 'og:title', content: 'Engrove Audio Toolkit | Home' },
+    { property: 'og:description', content: 'A collection of interactive tools for the DIY audio enthusiast.' },
+  ],
+});
+</script>
+
 <template>
   <div class="home-view">
     <header class="home-header">
@@ -21,7 +42,6 @@
 
     <section class="tools-section">
       <h2>Available Tools</h2>
-      <!-- UPPDATERAD SEKTION HÄR -->
       <div class="tools-grid">
         <RouterLink to="/tonearm-calculator" class="tool-card">
           <h3>Tonearm Resonance Calculator</h3>
@@ -33,13 +53,11 @@
           <p>A data-driven tool to estimate a cartridge's dynamic compliance at 10Hz. Uses a statistical model for higher accuracy and provides transparent feedback on its confidence.</p>
         </RouterLink>
 
-        <!-- NYTT KORT FÖR DATA EXPLORER -->
         <RouterLink to="/data-explorer" class="tool-card">
           <h3>Component Database Explorer</h3>
           <p>Search, filter, and explore the complete database of tonearms and cartridges. A tool for researching components and discovering suitable matches for your system.</p>
         </RouterLink>
       </div>
-      <!-- SLUT PÅ UPPDATERAD SEKTION -->
     </section>
 
     <footer class="home-footer">
@@ -54,15 +72,9 @@
   </div>
 </template>
 
-<script setup>
-import { RouterLink } from 'vue-router';
-
-const githubUrl = 'https://github.com/Engrove/Turntable';
-</script>
-
 <style scoped>
 .home-view {
-  max-width: 1200px; /* Ökad bredd för att bättre rymma tre kort */
+  max-width: 1200px;
   margin: 0 auto;
   padding: 1rem 2rem 2rem;
   text-align: center;
@@ -125,18 +137,16 @@ p.note {
   margin-bottom: 2rem;
 }
 
-/* UPPDATERAD CSS FÖR GRID */
 .tools-grid {
   display: grid;
-  /* Anpassar sig för 1, 2 eller 3 kolumner baserat på tillgängligt utrymme */
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 2rem;
   text-align: left;
 }
 
 .tool-card {
-  display: flex; /* Använd flexbox för bättre kontroll över innehållet */
-  flex-direction: column; /* Stapla innehållet vertikalt */
+  display: flex;
+  flex-direction: column;
   background-color: #fff;
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -153,14 +163,14 @@ p.note {
 
 .tool-card h3 {
   margin-top: 0;
-  margin-bottom: 0.75rem; /* Justerat marginal */
+  margin-bottom: 0.75rem;
   color: var(--accent-color);
 }
 
 .tool-card p {
   color: var(--label-color);
   line-height: 1.6;
-  flex-grow: 1; /* Låter p-taggen växa för att fylla utrymmet, justerar korten */
+  flex-grow: 1;
 }
 
 .home-footer {
