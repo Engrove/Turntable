@@ -10,14 +10,16 @@ const frontMassMoment = computed(() => store.m1 * store.params.L1);
 const vtfMoment = computed(() => store.params.vtf * store.params.L1);
 const totalFrontMoment = computed(() => frontMassMoment.value + vtfMoment.value);
 
-const m3Moment = computed(() => store.m3_fixed_cw.value * store.params.L3_fixed_cw);
+// KORRIGERING: Använder nu store.m3_fixed_cw direkt (utan .value)
+const m3Moment = computed(() => store.m3_fixed_cw * store.params.L3_fixed_cw);
 const m4Moment = computed(() => store.params.m4_adj_cw * store.calculatedResults.L4_adj_cw);
 const totalRearMoment = computed(() => m3Moment.value + m4Moment.value);
 
 // --- Beräkningar för Inertia-diagram ---
 const i1 = computed(() => store.m1 * (store.params.L1 ** 2));
-const i2 = computed(() => store.m2_tube.value * (store.params.L2 ** 2));
-const i3 = computed(() => store.m3_fixed_cw.value * (store.params.L3_fixed_cw ** 2));
+const i2 = computed(() => store.m2_tube * (store.params.L2 ** 2));
+// KORRIGERING: Använder nu store.m3_fixed_cw direkt (utan .value)
+const i3 = computed(() => store.m3_fixed_cw * (store.params.L3_fixed_cw ** 2));
 const i4 = computed(() => store.params.m4_adj_cw * (store.calculatedResults.L4_adj_cw ** 2));
 const totalInertia = computed(() => i1.value + i2.value + i3.value + i4.value);
 
@@ -31,15 +33,11 @@ const formatNumber = (num) => {
 <template>
   <div class="visualizer-wrapper" v-if="!store.calculatedResults.isUnbalanced">
     
-    <!-- ======================= -->
-    <!-- === BALANSDIAGRAM === -->
-    <!-- ======================= -->
     <div class="viz-panel">
       <h4 class="viz-title">1. Static Balance (Moment Equilibrium)</h4>
       <p class="viz-description">This diagram shows how the tonearm achieves balance. The total moment (mass × distance) on the front must be balanced by the rear moment to achieve the desired Vertical Tracking Force (VTF).</p>
       
       <div class="balance-diagram">
-        <!-- Vänster sida (Front) -->
         <div class="balance-side">
           <div class="moment-box front">
             <div class="moment-item">m1 × L1 = {{ formatNumber(frontMoment) }} g·mm</div>
@@ -47,11 +45,7 @@ const formatNumber = (num) => {
             <div class="moment-total">Total Front Moment: <span>{{ formatNumber(totalFrontMoment) }} g·mm</span></div>
           </div>
         </div>
-
-        <!-- Pivot -->
         <div class="pivot-point">▲</div>
-
-        <!-- Höger sida (Bak) -->
         <div class="balance-side">
           <div class="moment-box rear">
             <div class="moment-item">m3 × L3 = {{ formatNumber(m3Moment) }} g·mm</div>
@@ -62,9 +56,6 @@ const formatNumber = (num) => {
       </div>
     </div>
 
-    <!-- ====================== -->
-    <!-- === INERTIA-DIAGRAM === -->
-    <!-- ====================== -->
     <div class="viz-panel">
       <h4 class="viz-title">2. Rotational Inertia (Effective Mass Contribution)</h4>
       <p class="viz-description">This diagram shows how each component contributes to the total Moment of Inertia (I = m × d²). The final effective mass is this total inertia divided by the effective length squared (L1²).</p>
@@ -122,8 +113,6 @@ const formatNumber = (num) => {
   margin: 0 0 1rem 0;
   line-height: 1.5;
 }
-
-/* Balansdiagram */
 .balance-diagram {
   display: flex;
   align-items: center;
@@ -165,8 +154,6 @@ const formatNumber = (num) => {
 .moment-total span {
   color: var(--accent-color);
 }
-
-/* Inertia-diagram */
 .inertia-diagram {
     margin-top: 1rem;
 }
