@@ -87,7 +87,7 @@ const formatNumber = (num) => {
             <div class="operator">=</div>
             <div class="fraction">
                 <span class="numerator">I<sub>1</sub> + I₂ + I₃ + I₄</span>
-                <span class="denominator">L₁<sup>2</sup></span>
+                <span class="denominator">L<sub>1</sub><sup>2</sup></span>
             </div>
             <div class="operator">=</div>
             <div class="fraction">
