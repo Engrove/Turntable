@@ -33,6 +33,9 @@ const formatNumber = (num) => {
 <template>
   <div class="visualizer-wrapper" v-if="!store.calculatedResults.isUnbalanced">
     
+    <!-- ======================= -->
+    <!-- === BALANSDIAGRAM === -->
+    <!-- ======================= -->
     <div class="viz-panel">
       <h4 class="viz-title">1. Static Balance (Moment Equilibrium)</h4>
       <p class="viz-description">This diagram shows how the tonearm achieves balance. The total moment (mass × distance) on the front must be balanced by the rear moment to achieve the desired Vertical Tracking Force (VTF).</p>
@@ -40,42 +43,60 @@ const formatNumber = (num) => {
       <div class="balance-diagram">
         <div class="balance-side">
           <div class="moment-box front">
-            <div class="moment-item">m1 × L1 = {{ formatNumber(frontMoment) }} g·mm</div>
-            <div class="moment-item vtf">+ VTF × L1 = {{ formatNumber(vtfMoment) }} g·mm</div>
+            <div class="moment-item">m<sub>1</sub> × L<sub>1</sub> = {{ formatNumber(frontMoment) }} g·mm</div>
+            <div class="moment-item vtf">+ VTF × L<sub>1</sub> = {{ formatNumber(vtfMoment) }} g·mm</div>
             <div class="moment-total">Total Front Moment: <span>{{ formatNumber(totalFrontMoment) }} g·mm</span></div>
           </div>
         </div>
         <div class="pivot-point">▲</div>
         <div class="balance-side">
           <div class="moment-box rear">
-            <div class="moment-item">m3 × L3 = {{ formatNumber(m3Moment) }} g·mm</div>
-            <div class="moment-item">m4 × D = {{ formatNumber(m4Moment) }} g·mm</div>
+            <div class="moment-item">m<sub>3</sub> × L<sub>3</sub> = {{ formatNumber(m3Moment) }} g·mm</div>
+            <div class="moment-item">m<sub>4</sub> × D = {{ formatNumber(m4Moment) }} g·mm</div>
             <div class="moment-total">Total Rear Moment: <span>{{ formatNumber(totalRearMoment) }} g·mm</span></div>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- ====================== -->
+    <!-- === INERTIA-DIAGRAM === -->
+    <!-- ====================== -->
     <div class="viz-panel">
       <h4 class="viz-title">2. Rotational Inertia (Effective Mass Contribution)</h4>
-      <p class="viz-description">This diagram shows how each component contributes to the total Moment of Inertia (I = m × d²). The final effective mass is this total inertia divided by the effective length squared (L1²).</p>
+      <p class="viz-description">This diagram shows how each component contributes to the total Moment of Inertia (I = m × d²). The final effective mass is this total inertia divided by the effective length squared (L₁²).</p>
       
       <div class="inertia-diagram">
         <div class="inertia-bar">
-          <div class="segment i1" :style="{ flexGrow: i1 }"><span>I₁</span></div>
+          <div class="segment i1" :style="{ flexGrow: i1 }"><span>I<sub>1</sub></span></div>
           <div class="segment i2" :style="{ flexGrow: i2 }"><span>I₂</span></div>
           <div class="segment i3" :style="{ flexGrow: i3 }"><span>I₃</span></div>
           <div class="segment i4" :style="{ flexGrow: i4 }"><span>I₄</span></div>
         </div>
         <div class="inertia-legend">
-          <div><span class="dot i1"></span>I₁ (Front): {{ formatNumber(i1) }} g·mm²</div>
+          <div><span class="dot i1"></span>I<sub>1</sub> (Front): {{ formatNumber(i1) }} g·mm²</div>
           <div><span class="dot i2"></span>I₂ (Armwand): {{ formatNumber(i2) }} g·mm²</div>
           <div><span class="dot i3"></span>I₃ (Fixed CW): {{ formatNumber(i3) }} g·mm²</div>
           <div><span class="dot i4"></span>I₄ (Adj. CW): {{ formatNumber(i4) }} g·mm²</div>
         </div>
       </div>
+      <!-- NY, TYDLIGARE LAYOUT FÖR SLUTBERÄKNING -->
       <div class="final-calc">
-        M_eff = (I₁ + I₂ + I₃ + I₄) / L₁² = {{ formatNumber(totalInertia) }} / {{ store.params.L1 }}² = <span>{{ store.calculatedResults.M_eff.toFixed(1) }} g</span>
+        <div class="formula-line">
+            <div class="term">M<sub>eff</sub></div>
+            <div class="operator">=</div>
+            <div class="fraction">
+                <span class="numerator">I<sub>1</sub> + I₂ + I₃ + I₄</span>
+                <span class="denominator">L₁<sup>2</sup></span>
+            </div>
+            <div class="operator">=</div>
+            <div class="fraction">
+                <span class="numerator">{{ formatNumber(totalInertia) }}</span>
+                <span class="denominator">{{ store.params.L1 }}<sup>2</sup></span>
+            </div>
+             <div class="operator">=</div>
+            <div class="term final-value">{{ store.calculatedResults.M_eff.toFixed(1) }} g</div>
+        </div>
       </div>
     </div>
 
