@@ -135,14 +135,4 @@ export const useTonearmStore = defineStore('tonearm', () => {
         pivotToSpindleDistance, overhang, // Exponera de nya
         calculatedResults, diagnosis, currentTonearm
     };
-});```
-
-**Vad som har ändrats:**
-*   Två nya `computed`-egenskaper, `pivotToSpindleDistance` och `overhang`, har lagts till.
-*   De använder standardformler för Baerwald-geometri för att beräkna dessa värden baserat på den `Effective Length (L1)` som användaren har angett. Detta är en förenkling (eftersom olika armar använder olika geometrier), men det ger en mycket bra och pedagogisk representation.
-*   Dessa nya getters exporteras från storen.
-
-**Instruktion:**
-Ersätt din lokala `src/store/tonearmStore.js` med koden ovan.
-
-När du är klar, meddela mig så får du den sista filen, `ResultsPanel.vue`, där vi lägger till den nya geometri-visualiseringen.
+});
