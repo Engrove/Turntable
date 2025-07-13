@@ -5,18 +5,10 @@ import { ref, computed } from 'vue';
 export const useTonearmStore = defineStore('tonearm', () => {
     // --- STATE ---
     const params = ref({
-        m_headshell: 6.5,
-        m_pickup: 6.5,
-        m_screws: 0.5,
-        m_rear_assembly: 75.0,
-        m_tube_percentage: 20.0,
-        m4_adj_cw: 100,
-        L1: 229,
-        L2: 30.0,
-        L3_fixed_cw: 22.0,
-        vtf: 1.75,
-        compliance: 12,
-        calculationMode: 'detailed',
+        m_headshell: 6.5, m_pickup: 6.5, m_screws: 0.5,
+        m_rear_assembly: 75.0, m_tube_percentage: 20.0,
+        m4_adj_cw: 100, L1: 229, L2: 30.0, L3_fixed_cw: 22.0,
+        vtf: 1.75, compliance: 12, calculationMode: 'detailed',
         directEffectiveMass: 10,
     });
 
@@ -52,8 +44,10 @@ export const useTonearmStore = defineStore('tonearm', () => {
         selectedTonearmId.value = id;
         if (!id) return;
         const preset = availableTonearms.value.find(t => t.id == id);
-        if (preset && preset.example_params_for_calculator) {
-            Object.assign(params.value, preset.example_params_for_calculator);
+        if (preset) {
+            if (preset.example_params_for_calculator) {
+              Object.assign(params.value, preset.example_params_for_calculator);
+            }
             params.value.L1 = preset.effective_length_mm;
         }
     }
@@ -75,34 +69,47 @@ export const useTonearmStore = defineStore('tonearm', () => {
 
     // --- GETTERS ---
     const m1 = computed(() => params.value.m_headshell + params.value.m_pickup + params.value.m_screws);
-    // NYTT: Exponera m2 och m3 som computed
     const m2_tube = computed(() => params.value.m_rear_assembly * (params.value.m_tube_percentage / 100.0));
     const m3_fixed_cw = computed(() => params.value.m_rear_assembly - m2_tube.value);
+
+    // NYTT: Beräkna och exponera geometriska värden
+    const pivotToSpindleDistance = computed(() => {
+        const L = params.value.L1;
+        // Standard Baerwald null-punkter
+        const R1 = 66.0;
+        const R2 = 120.9;
+        return (R1 * R2 * (R1 + R2)) / (L*L - R1*R1 - (L*L - R2*R2)*(R1/R2));
+    });
+
+    const overhang = computed(() => {
+        const L = params.value.L1;
+        const D = pivotToSpindleDistance.value;
+        // Approximation: Overhang = L - D, men mer exakt via Pythagoras
+        // Detta är en förenkling, men tillräckligt bra för visualisering
+        return L - Math.sqrt(L*L - ((L*L-D*D)/(2*D))**2);
+    });
     
     const calculatedResults = computed(() => {
+        // ... (befintlig kod är oförändrad) ...
         if (params.value.calculationMode === 'direct') {
             const M_eff = params.value.directEffectiveMass;
             const F = 1000 / (2 * Math.PI * Math.sqrt(Math.max(1, M_eff * params.value.compliance)));
             return { M_eff, F, isUnbalanced: false, L4_adj_cw: NaN };
         }
-
         const numerator = (m1.value * params.value.L1) + (m2_tube.value * params.value.L2) - (m3_fixed_cw.value * params.value.L3_fixed_cw) - (params.value.vtf * params.value.L1);
-        
         const isUnbalanced = numerator < 0 || params.value.m4_adj_cw <= 0;
         if (isUnbalanced) {
             return { M_eff: 0, F: 0, L4_adj_cw: 0, isUnbalanced };
         }
-        
         const L4_adj_cw = numerator / params.value.m4_adj_cw;
-
         const Itot = (m1.value * (params.value.L1 ** 2)) + (m2_tube.value * (params.value.L2 ** 2)) + (m3_fixed_cw.value * (params.value.L3_fixed_cw ** 2)) + (params.value.m4_adj_cw * (L4_adj_cw ** 2));
         const M_eff = Itot / (params.value.L1 ** 2);
         const F = 1000 / (2 * Math.PI * Math.sqrt(Math.max(1, M_eff * params.value.compliance)));
-
         return { M_eff, F, L4_adj_cw, isUnbalanced };
     });
 
     const diagnosis = computed(() => {
+        // ... (befintlig kod är oförändrad) ...
         const F = calculatedResults.value.F;
         if (calculatedResults.value.isUnbalanced && params.value.calculationMode === 'detailed') {
             return { status: 'danger', title: 'Unbalanced System', recommendations: ['Arm cannot be balanced with current settings.', 'Increase counterweight mass or reduce front mass.'] };
@@ -115,6 +122,7 @@ export const useTonearmStore = defineStore('tonearm', () => {
     });
 
     const currentTonearm = computed(() => {
+        // ... (befintlig kod är oförändrad) ...
         if (!selectedTonearmId.value) return null;
         const arm = availableTonearms.value.find(t => t.id == selectedTonearmId.value);
         return arm ? { ...arm, has_integrated_headshell: arm.headshell_connector === 'integrated' } : null;
@@ -123,7 +131,18 @@ export const useTonearmStore = defineStore('tonearm', () => {
     return {
         params, availableTonearms, availablePickups, selectedTonearmId, selectedPickupId,
         isLoading, error, initialize, loadTonearmPreset, loadCartridgePreset, setCalculationMode,
-        m1, m2_tube, m3_fixed_cw, // Exponera de nya
+        m1, m2_tube, m3_fixed_cw,
+        pivotToSpindleDistance, overhang, // Exponera de nya
         calculatedResults, diagnosis, currentTonearm
     };
-});
+});```
+
+**Vad som har ändrats:**
+*   Två nya `computed`-egenskaper, `pivotToSpindleDistance` och `overhang`, har lagts till.
+*   De använder standardformler för Baerwald-geometri för att beräkna dessa värden baserat på den `Effective Length (L1)` som användaren har angett. Detta är en förenkling (eftersom olika armar använder olika geometrier), men det ger en mycket bra och pedagogisk representation.
+*   Dessa nya getters exporteras från storen.
+
+**Instruktion:**
+Ersätt din lokala `src/store/tonearmStore.js` med koden ovan.
+
+När du är klar, meddela mig så får du den sista filen, `ResultsPanel.vue`, där vi lägger till den nya geometri-visualiseringen.
