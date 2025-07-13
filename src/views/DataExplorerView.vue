@@ -1,4 +1,53 @@
 <!-- src/views/DataExplorerView.vue -->
+<script setup>
+import { computed, ref, watch } from 'vue';
+import { useHead } from '@unhead/vue';
+import { useExplorerStore } from '@/store/explorerStore.js';
+import ResultsTable from '@/components/ResultsTable.vue';
+import RangeFilter from '@/components/RangeFilter.vue';
+import ItemDetailModal from '@/components/ItemDetailModal.vue';
+
+const store = useExplorerStore();
+
+useHead({
+  title: 'Component Database Explorer | Engrove Audio Toolkit',
+  meta: [
+    { 
+      name: 'description', 
+      content: 'Search and filter a comprehensive database of tonearms and phono cartridges. Find specifications, compliance data, effective mass, and more.' 
+    },
+    { property: 'og:title', content: 'Component Database Explorer | Engrove Audio Toolkit' },
+    { property: 'og:description', content: 'Search and filter a comprehensive database of tonearms and phono cartridges.' },
+  ],
+});
+
+const isModalOpen = ref(false);
+const selectedItem = ref(null);
+
+function showItemDetails(item) {
+  selectedItem.value = item;
+  isModalOpen.value = true;
+}
+
+watch(() => store.availableNumericFilters, (newFilters) => {
+  newFilters.forEach(filter => {
+    if (!store.numericFilters[filter.key]) {
+      store.numericFilters[filter.key] = { min: null, max: null };
+    }
+  });
+}, { immediate: true });
+
+const cartridgeHeaders = [
+  { key: 'manufacturer', label: 'Manufacturer', sortable: true }, { key: 'model', label: 'Model', sortable: true }, { key: 'type', label: 'Type', sortable: true },
+  { key: 'cu_dynamic_10hz', label: 'Compliance @ 10Hz', sortable: true }, { key: 'weight_g', label: 'Weight (g)', sortable: true }, { key: 'stylus_family', label: 'Stylus', sortable: true }
+];
+const tonearmHeaders = [
+  { key: 'manufacturer', label: 'Manufacturer', sortable: true }, { key: 'model', label: 'Model', sortable: true }, { key: 'effective_mass_g', label: 'Effective Mass (g)', sortable: true },
+  { key: 'effective_length_mm', label: 'Length (mm)', sortable: true }, { key: 'bearing_type', label: 'Bearing', sortable: true }, { key: 'headshell_connector', label: 'Headshell', sortable: true }
+];
+const currentHeaders = computed(() => store.dataType === 'cartridges' ? cartridgeHeaders : tonearmHeaders);
+</script>
+
 <template>
   <div class="tool-view">
     <div class="tool-header">
@@ -12,7 +61,6 @@
     <div v-else-if="store.error" class="status-container error">{{ store.error }}</div>
     
     <div v-else class="explorer-layout">
-      <!-- Filterpanel -->
       <aside class="filter-panel">
         <h3>Controls</h3>
         <div class="control-group">
@@ -51,18 +99,15 @@
         </div>
       </aside>
 
-      <!-- Resultatyta -->
       <main class="results-area">
         <div v-if="store.totalResultsCount === 0 && store.searchTerm === '' && Object.keys(store.filters).length === 0 && Object.keys(store.numericFilters).every(k => !store.numericFilters[k] || (store.numericFilters[k].min === null && store.numericFilters[k].max === null))" class="results-placeholder">
           <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 17.58A5 5 0 0 0 15 8l-6.4 6.4a5 5 0 1 0 7.8 7.8L20 17.58z"></path></svg>
           <p>Use the filters to begin your search.</p>
         </div>
 
-
         <div v-else>
           <div class="results-header">
             <h3>Found {{ store.totalResultsCount }} {{ store.dataType }}</h3>
-            <!-- NYTT (1f): Download-knapp -->
             <button @click="store.exportToCSV" class="download-csv-btn" :disabled="store.totalResultsCount === 0">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
               Download CSV
@@ -100,42 +145,6 @@
   </div>
 </template>
 
-<script setup>
-import { computed, ref, watch } from 'vue';
-import { useExplorerStore } from '@/store/explorerStore.js';
-import ResultsTable from '@/components/ResultsTable.vue';
-import RangeFilter from '@/components/RangeFilter.vue';
-import ItemDetailModal from '@/components/ItemDetailModal.vue';
-
-const store = useExplorerStore();
-
-const isModalOpen = ref(false);
-const selectedItem = ref(null);
-
-function showItemDetails(item) {
-  selectedItem.value = item;
-  isModalOpen.value = true;
-}
-
-watch(() => store.availableNumericFilters, (newFilters) => {
-  newFilters.forEach(filter => {
-    if (!store.numericFilters[filter.key]) {
-      store.numericFilters[filter.key] = { min: null, max: null };
-    }
-  });
-}, { immediate: true });
-
-const cartridgeHeaders = [
-  { key: 'manufacturer', label: 'Manufacturer', sortable: true }, { key: 'model', label: 'Model', sortable: true }, { key: 'type', label: 'Type', sortable: true },
-  { key: 'cu_dynamic_10hz', label: 'Compliance @ 10Hz', sortable: true }, { key: 'weight_g', label: 'Weight (g)', sortable: true }, { key: 'stylus_family', label: 'Stylus', sortable: true }
-];
-const tonearmHeaders = [
-  { key: 'manufacturer', label: 'Manufacturer', sortable: true }, { key: 'model', label: 'Model', sortable: true }, { key: 'effective_mass_g', label: 'Effective Mass (g)', sortable: true },
-  { key: 'effective_length_mm', label: 'Length (mm)', sortable: true }, { key: 'bearing_type', label: 'Bearing', sortable: true }, { key: 'headshell_connector', label: 'Headshell', sortable: true }
-];
-const currentHeaders = computed(() => store.dataType === 'cartridges' ? cartridgeHeaders : tonearmHeaders);
-</script>
-
 <style scoped>
 .tool-view { display: flex; flex-direction: column; }
 .tool-header { padding-bottom: 1rem; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); }
@@ -169,9 +178,6 @@ const currentHeaders = computed(() => store.dataType === 'cartridges' ? cartridg
 .results-placeholder p { font-size: 1.25rem; font-weight: 500; }
 .status-container { padding: 2rem; text-align: center; background-color: var(--panel-bg); border-radius: 6px; }
 .status-container.error { background-color: var(--danger-color); color: var(--danger-text); }
-@media (max-width: 900px) { .explorer-layout { grid-template-columns: 1fr; } .filter-panel { position: static; } }
-
-/* NYTT (1f): Styling för download-knappen */
 .download-csv-btn {
   display: inline-flex;
   align-items: center;
@@ -180,7 +186,7 @@ const currentHeaders = computed(() => store.dataType === 'cartridges' ? cartridg
   font-size: 0.9rem;
   font-weight: 600;
   color: #fff;
-  background-color: #28a745; /* Grön färg */
+  background-color: #28a745;
   border: 1px solid #28a745;
   border-radius: 6px;
   cursor: pointer;
@@ -196,4 +202,5 @@ const currentHeaders = computed(() => store.dataType === 'cartridges' ? cartridg
   opacity: 0.65;
   cursor: not-allowed;
 }
+@media (max-width: 900px) { .explorer-layout { grid-template-columns: 1fr; } .filter-panel { position: static; } }
 </style>
