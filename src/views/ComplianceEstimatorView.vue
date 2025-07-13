@@ -51,9 +51,13 @@ onUnmounted(() => {
     <div v-else-if="store.error" class="status-container error">
       <h2>Initialization Failed</h2>
       <p>{{ store.error }}</p>
+      <h4>Debug Progression:</h4>
+      <ol class="debug-log">
+        <li v-for="(entry, index) in store.debugLog" :key="index">{{ entry }}</li>
+      </ol>
     </div>
     
-    <div v-else class="tool-view">
+    <div v-else-if="store.estimationRules && store.allPickups.length > 0" class="tool-view">
       <div class="tool-header">
         <h1>Compliance Estimator</h1>
         <div class="header-buttons">
@@ -137,7 +141,6 @@ onUnmounted(() => {
           <p>
             The tool works with just the basics (Type and one compliance value). However, by providing more details, you allow the estimation engine to find a more specific, and therefore likely more accurate, rule. Adding these details will usually increase the confidence level of the result.
           </p>
-
           <hr>
           <h4>Why Data Matters</h4>
           <p>The accuracy of this tool is directly proportional to the quality and quantity of data in the underlying `pickup_data.json` file. The more cartridges with known 10Hz and 100Hz values we have, the more precise and reliable the generated rules become. The statistical analysis only creates rules for combinations with a sufficient number of data points to be considered meaningful.</p>
@@ -145,9 +148,12 @@ onUnmounted(() => {
       </HelpModal>
     </div>
 
+    <!-- FELMEDDELANDE VI VILL FELSÖKA -->
     <div v-else class="status-container error">
       <h2>An Unexpected Error Occurred</h2>
       <p>Could not render the tool. The state after loading was not as expected. Please see debug log below.</p>
+      <!-- NYTT: Visar debug-loggen -->
+      <h4>Debug Progression:</h4>
       <ol class="debug-log">
         <li v-for="(entry, index) in store.debugLog" :key="index">{{ entry }}</li>
       </ol>
@@ -156,7 +162,19 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.debug-log { text-align: left; background: #fff; border: 1px solid #ddd; padding: 1rem; padding-left: 3rem; border-radius: 4px; font-family: monospace; font-size: 0.85rem; color: #333; max-height: 300px; overflow-y: auto; }
+.debug-log {
+  text-align: left;
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 1rem;
+  padding-left: 3rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #333;
+  max-height: 300px;
+  overflow-y: auto;
+}
 .status-container { padding: 2rem; text-align: center; background-color: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 6px; }
 .status-container.error { background-color: var(--danger-color); color: var(--danger-text); border-color: #f5c6cb; }
 .status-container pre { white-space: pre-wrap; word-wrap: break-word; text-align: left; background-color: rgba(0,0,0,0.05); padding: 1rem; border-radius: 4px; }
