@@ -1,6 +1,7 @@
 <!-- src/views/ComplianceEstimatorView.vue -->
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+// NYTT: Importerar 'watch' från Vue för att övervaka ändringar
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useHead } from '@unhead/vue';
 import { useEstimatorStore } from '@/store/estimatorStore.js';
@@ -40,6 +41,14 @@ onUnmounted(() => {
     store.resetInput();
   }
 });
+
+// NYTT OCH AVGÖRANDE: Detta är den korrekta platsen för att övervaka ändringar.
+// När något i userInput-objektet ändras, anropas store.calculateEstimate().
+// 'deep: true' är nödvändigt för att upptäcka ändringar inuti objektet.
+watch(() => store.userInput, () => {
+  store.calculateEstimate();
+}, { deep: true });
+
 </script>
 
 <template>
