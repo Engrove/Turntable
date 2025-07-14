@@ -1,13 +1,13 @@
 {
-  "timestamp": "2025-07-14T12:00:00.000Z",
-  "source_data_count": 127,
+  "timestamp": "2025-07-14T18:00:00.000Z",
+  "source_data_count": 52,
   "global_fallback": {
     "priority": 99,
     "conditions": {},
-    "k": 0.560,
-    "m": 4.740,
-    "r_squared": 0.642,
-    "sample_size": 127
+    "k": 0.498,
+    "m": 5.011,
+    "r_squared": 0.591,
+    "sample_size": 52
   },
   "segmented_rules": [
     {
@@ -17,22 +17,22 @@
         "cantilever_class": "Aluminum",
         "stylus_family": "Elliptical"
       },
-      "k": 0.507,
-      "m": 5.725,
-      "r_squared": 0.672,
-      "sample_size": 53
+      "k": 0.411,
+      "m": 6.825,
+      "r_squared": 0.472,
+      "sample_size": 18
     },
     {
       "priority": 1,
       "conditions": {
-        "type": "MC",
-        "cantilever_class": "Aluminum",
-        "stylus_family": "Elliptical"
+        "type": "MM",
+        "cantilever_class": "Exotic/High-Performance",
+        "stylus_family": "Advanced Line-Contact"
       },
-      "k": 0.822,
-      "m": -2.885,
-      "r_squared": 0.865,
-      "sample_size": 12
+      "k": 0.533,
+      "m": 0.178,
+      "r_squared": 0.989,
+      "sample_size": 3
     },
     {
       "priority": 2,
@@ -40,51 +40,41 @@
         "type": "MM",
         "cantilever_class": "Aluminum"
       },
-      "k": 0.540,
-      "m": 5.043,
-      "r_squared": 0.629,
-      "sample_size": 106
+      "k": 0.452,
+      "m": 5.831,
+      "r_squared": 0.519,
+      "sample_size": 28
     },
     {
       "priority": 2,
       "conditions": {
-        "type": "MC",
+        "type": "MM",
         "cantilever_class": "Exotic/High-Performance"
       },
-      "k": 0.357,
-      "m": 3.738,
-      "r_squared": 0.605,
-      "sample_size": 3
+      "k": 0.541,
+      "m": 2.101,
+      "r_squared": 0.815,
+      "sample_size": 8
     },
     {
       "priority": 3,
       "conditions": {
         "type": "MM"
       },
-      "k": 0.560,
-      "m": 4.740,
-      "r_squared": 0.642,
-      "sample_size": 127
-    },
-    {
-      "priority": 3,
-      "conditions": {
-        "type": "MC"
-      },
-      "k": 0.658,
-      "m": -0.518,
-      "r_squared": 0.701,
-      "sample_size": 16
+      "k": 0.489,
+      "m": 4.987,
+      "r_squared": 0.583,
+      "sample_size": 40
     },
     {
       "priority": 3,
       "conditions": {
         "type": "MI"
       },
-      "k": 0.052,
-      "m": 16.866,
-      "r_squared": 0.009,
-      "sample_size": 32
+      "k": 0.286,
+      "m": 6.571,
+      "r_squared": 0.198,
+      "sample_size": 5
     }
   ]
 }
