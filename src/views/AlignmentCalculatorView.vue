@@ -5,6 +5,7 @@ import { useHead } from '@unhead/vue';
 import { useAlignmentStore } from '@/store/alignmentStore.js';
 import AlignmentInputPanel from '@/components/AlignmentInputPanel.vue';
 import AlignmentResultsPanel from '@/components/AlignmentResultsPanel.vue';
+import TrackingErrorChart from '@/components/TrackingErrorChart.vue'; // Ny import
 
 const store = useAlignmentStore();
 
@@ -21,7 +22,6 @@ useHead({
 });
 
 onMounted(() => {
-  // Ladda datan för tonarms-presets när komponenten monteras
   store.initialize();
 });
 </script>
@@ -49,8 +49,14 @@ onMounted(() => {
     <div v-else class="main-grid">
       <AlignmentInputPanel />
       <AlignmentResultsPanel />
+      
+      <!-- Nytt: Lägger till diagramkomponenten -->
+      <TrackingErrorChart 
+        :chartData="store.trackingErrorData" 
+        :nullPoints="store.calculatedValues.nulls"
+        v-if="!store.calculatedValues.error"
+      />
     </div>
-
   </div>
 </template>
 
