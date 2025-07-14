@@ -12,9 +12,7 @@ const props = defineProps({
     required: true,
     default: () => ({
       dataPoints: [],
-      medianRatio: 1,
-      labels: { x: 'X-Axis', y: 'Y-Axis', title: 'Chart', lineLabel: 'Ratio' },
-      scales: { suggestedMax: { x: 20, y: 40 } }
+      labels: { x: 'X-Axis', y: 'Y-Axis', title: 'Chart', lineLabel: 'Line' }
     })
   }
 });
@@ -30,33 +28,58 @@ const updateChart = () => {
   // Uppdatera scatter-data
   chartInstance.data.datasets[0].data = config.dataPoints;
 
-  // --- KORRIGERING AV LINJEN ---
   // Hitta det högsta x-värdet i den nya datamängden för att rita linjen realistiskt
-  const maxXValue = config.dataPoints.reduce((max, p) => p.x > max ? p.x : max, 0);
-  const lineEndX = Math.max(maxXValue, 1); // Se till att den är minst 1 för att undvika noll-längd
-  const lineEndY = lineEndX * config.medianRatio;
+  const maxXValue = config.dataPoints.reduce((max, p) => (p.x > max ? p.x : max), 1);
+  const lineEndX = Math.max(maxXValue, 1);
 
-  // Uppdatera annotations-pluginet med de nya korrekta värdena
-  chartInstance.options.plugins.annotation.annotations.medianLine = {
-    type: 'line',
-    xMin: 0,
-    yMin: 0,
-    xMax: lineEndX,
-    yMax: lineEndY,
-    borderColor: 'rgba(231, 76, 60, 0.8)',
-    borderWidth: 2,
-    borderDash: [6, 6],
-    label: {
-      content: config.labels.lineLabel,
-      display: true,
-      position: 'end',
-      backgroundColor: 'rgba(231, 76, 60, 0.8)',
-      color: 'white',
-      font: { size: 10 },
-      yAdjust: -10
-    }
-  };
-  // --- SLUT PÅ KORRIGERING ---
+  let lineAnnotation = {};
+
+  // KORRIGERING: Hantera båda typerna av linjer (regression och median-kvot)
+  if (config.k !== undefined && config.m !== undefined) {
+    // Regressionslinje: y = kx + m
+    lineAnnotation = {
+      type: 'line',
+      xMin: 0,
+      yMin: config.m, // Startar vid intercept
+      xMax: lineEndX,
+      yMax: config.k * lineEndX + config.m, // Slutar vid max X
+      borderColor: 'rgba(231, 76, 60, 0.8)',
+      borderWidth: 2,
+      borderDash: [6, 6],
+      label: {
+        content: config.labels.lineLabel,
+        display: true,
+        position: 'end',
+        backgroundColor: 'rgba(231, 76, 60, 0.8)',
+        color: 'white',
+        font: { size: 10 },
+        yAdjust: -10
+      }
+    };
+  } else if (config.medianRatio !== undefined) {
+    // Median-kvot linje: y = ratio * x
+    lineAnnotation = {
+      type: 'line',
+      xMin: 0,
+      yMin: 0, // Startar vid origo
+      xMax: lineEndX,
+      yMax: lineEndX * config.medianRatio,
+      borderColor: 'rgba(231, 76, 60, 0.8)',
+      borderWidth: 2,
+      borderDash: [6, 6],
+      label: {
+        content: config.labels.lineLabel,
+        display: true,
+        position: 'end',
+        backgroundColor: 'rgba(231, 76, 60, 0.8)',
+        color: 'white',
+        font: { size: 10 },
+        yAdjust: -10
+      }
+    };
+  }
+  
+  chartInstance.options.plugins.annotation.annotations.mainLine = lineAnnotation;
 
   // Uppdatera dynamiska texter och skalor
   chartInstance.options.plugins.title.text = config.labels.title;
@@ -64,8 +87,10 @@ const updateChart = () => {
   chartInstance.options.scales.y.title.text = config.labels.y;
   
   // Justera skalans maxvärde för att ge lite marginal
-  chartInstance.options.scales.x.max = Math.ceil(lineEndX * 1.1); 
-  chartInstance.options.scales.y.max = Math.ceil(config.dataPoints.reduce((max, p) => p.y > max ? p.y : max, 0) * 1.1);
+  const suggestedMaxX = Math.ceil(lineEndX * 1.1);
+  const suggestedMaxY = Math.ceil(config.dataPoints.reduce((max, p) => (p.y > max ? p.y : max), 0) * 1.1);
+  chartInstance.options.scales.x.max = suggestedMaxX > 10 ? suggestedMaxX : 10;
+  chartInstance.options.scales.y.max = suggestedMaxY > 10 ? suggestedMaxY : 10;
 
   chartInstance.update();
 };
@@ -111,7 +136,7 @@ onMounted(() => {
         },
         annotation: {
           annotations: {
-            medianLine: {} // Definieras dynamiskt
+            mainLine: {} // Definieras dynamiskt
           }
         }
       },
