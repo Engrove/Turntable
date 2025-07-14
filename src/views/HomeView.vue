@@ -26,7 +26,6 @@ useHead({
     </header>
 
     <section class="intro-section">
-      <!-- NY, MER INBJUDANDE TEXT -->
       <p class="intro-hook">
         Want to easily see how your cartridge and tonearm match, or optimize your turntable without complex math? You've come to the right place!
       </p>
@@ -41,9 +40,9 @@ useHead({
     <section class="tools-section">
       <h2>Available Tools</h2>
       <div class="tools-grid">
-        <!-- UPPDATERAT KORT-FORMAT -->
+        <!-- KORRIGERAD FILÄNDELSE -->
         <RouterLink to="/tonearm-calculator" class="tool-card">
-          <img src="/images/preview-resonance.png" alt="Tonearm Resonance Calculator Preview" class="tool-preview-image"/>
+          <img src="/images/preview-resonance.jpg" alt="Tonearm Resonance Calculator Preview" class="tool-preview-image"/>
           <div class="card-content">
             <h3>Tonearm Resonance Calculator</h3>
             <p>Visualize the critical relationship between tonearm effective mass and cartridge compliance to find the perfect resonant frequency.</p>
@@ -51,8 +50,9 @@ useHead({
           </div>
         </RouterLink>
 
+        <!-- KORRIGERAD FILÄNDELSE -->
         <RouterLink to="/compliance-estimator" class="tool-card">
-          <img src="/images/preview-compliance.png" alt="Compliance Estimator Preview" class="tool-preview-image"/>
+          <img src="/images/preview-compliance.jpg" alt="Compliance Estimator Preview" class="tool-preview-image"/>
           <div class="card-content">
             <h3>Compliance Estimator</h3>
             <p>A data-driven tool to estimate a cartridge's dynamic compliance at 10Hz. Uses a statistical model for higher accuracy.</p>
@@ -60,8 +60,9 @@ useHead({
           </div>
         </RouterLink>
 
+        <!-- KORRIGERAD FILÄNDELSE -->
         <RouterLink to="/alignment-calculator" class="tool-card">
-          <img src="/images/preview-alignment.png" alt="Alignment Calculator Preview" class="tool-preview-image"/>
+          <img src="/images/preview-alignment.jpg" alt="Alignment Calculator Preview" class="tool-preview-image"/>
           <div class="card-content">
             <h3>Alignment Calculator</h3>
             <p>Generate printable protractors and visualize tracking error for various alignment geometries like Baerwald, Löfgren, and Stevenson.</p>
@@ -69,8 +70,9 @@ useHead({
           </div>
         </RouterLink>
 
+        <!-- KORRIGERAD FILÄNDELSE -->
         <RouterLink to="/data-explorer" class="tool-card">
-          <img src="/images/preview-explorer.png" alt="Data Explorer Preview" class="tool-preview-image"/>
+          <img src="/images/preview-explorer.jpg" alt="Data Explorer Preview" class="tool-preview-image"/>
           <div class="card-content">
             <h3>Component Database Explorer</h3>
             <p>Search, filter, and explore the complete database of tonearms and cartridges to research components for your system.</p>
@@ -133,7 +135,6 @@ useHead({
   border: 1px solid var(--border-color);
 }
 
-/* NYTT: Styling för hook-texten */
 .intro-hook {
   font-size: 1.2rem;
   font-weight: 600;
@@ -178,7 +179,6 @@ p.note {
   text-align: left;
 }
 
-/* UPPDATERAD KORT-STYLING */
 .tool-card {
   display: flex;
   flex-direction: column;
@@ -188,7 +188,7 @@ p.note {
   text-decoration: none;
   color: inherit;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  overflow: hidden; /* För att bildens hörn ska vara runda */
+  overflow: hidden;
 }
 
 .tool-card:hover {
