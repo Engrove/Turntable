@@ -27,12 +27,15 @@ const sitemapContent = `
     .map(route => {
       // Hantera rotsökvägen korrekt
       const fullPath = route.path === '/' ? '' : route.path;
+      // Sätt prioritet baserat på om det är hemsidan eller en undersida
+      const priority = route.path === '/' ? '1.0' : '0.8';
+      
       return `
   <url>
     <loc>${baseUrl}${fullPath}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>${route.path === '/' ? '1.0' : '0.8'}</priority>
+    <priority>${priority}</priority>
   </url>`;
     })
     .join('')}
@@ -45,7 +48,7 @@ try {
     fs.mkdirSync(publicPath);
   }
   fs.writeFileSync(path.join(publicPath, 'sitemap.xml'), sitemapContent);
-  console.log('Sitemap generated successfully!');
+  console.log('Sitemap generated successfully with enhanced data!');
 } catch (error) {
   console.error('Error generating sitemap:', error);
 }
