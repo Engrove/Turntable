@@ -7,3 +7,10 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# NYTT: Aktiverar Netlifys prerendering-tjänst.
+# Detta serverar en cachad, fullständigt renderad HTML-version av sidan
+# till specificerade user agents (sökmotor-bots), vilket är kritiskt
+# för SEO i en Single-Page Application.
+[prerender]
+  enable = true
