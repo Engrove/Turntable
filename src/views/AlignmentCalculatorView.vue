@@ -5,7 +5,8 @@ import { useHead } from '@unhead/vue';
 import { useAlignmentStore } from '@/store/alignmentStore.js';
 import AlignmentInputPanel from '@/components/AlignmentInputPanel.vue';
 import AlignmentResultsPanel from '@/components/AlignmentResultsPanel.vue';
-import TrackingErrorChart from '@/components/TrackingErrorChart.vue'; // Ny import
+import TrackingErrorChart from '@/components/TrackingErrorChart.vue';
+import AlignmentProtractor from '@/components/AlignmentProtractor.vue'; // Ny import
 
 const store = useAlignmentStore();
 
@@ -50,13 +51,23 @@ onMounted(() => {
       <AlignmentInputPanel />
       <AlignmentResultsPanel />
       
-      <!-- Nytt: Lägger till diagramkomponenten -->
+      <AlignmentProtractor
+        v-if="!store.calculatedValues.error"
+        :pivot-to-spindle="store.userInput.pivotToSpindle"
+        :effective-length="store.calculatedValues.effectiveLength"
+        :overhang="store.calculatedValues.overhang"
+        :offset-angle="store.calculatedValues.offsetAngle"
+        :nulls="store.calculatedValues.nulls"
+        :alignment-type="store.userInput.alignmentType"
+      />
+
       <TrackingErrorChart 
         :chartData="store.trackingErrorData" 
         :nullPoints="store.calculatedValues.nulls"
         v-if="!store.calculatedValues.error"
       />
     </div>
+
   </div>
 </template>
 
