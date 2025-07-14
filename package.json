@@ -1,3 +1,4 @@
+// package.json
 {
   "name": "engrove-audio-toolkit",
   "version": "1.0.0",
@@ -5,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "VITE_DEPLOY_TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%M:%SZ') vite build",
     "preview": "vite preview",
     "test": "vitest"
   },
