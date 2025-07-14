@@ -68,6 +68,10 @@ useHead({
       <p>
         While every effort is made to verify accuracy, there is no guarantee of the absolute correctness of the data or calculations. Users are encouraged to cross-reference the results with their own measurements and practical experience. The ultimate responsibility for any physical build or component matching rests with the user.
       </p>
+      <br>
+      <center>
+        <a href="https://dashboard.simpleanalytics.com/engrove.netlify.app?utm_source=engrove.netlify.app&utm_content=badge&affiliate=kurof" referrerpolicy="origin" target="_blank"><picture><source srcset="https://simpleanalyticsbadges.com/engrove.netlify.app?mode=dark" media="(prefers-color-scheme: dark)" /><img src="https://simpleanalyticsbadges.com/engrove.netlify.app?mode=light" loading="lazy" referrerpolicy="no-referrer" crossorigin="anonymous" /></picture></a>
+      </center>
     </footer>
   </div>
 </template>
