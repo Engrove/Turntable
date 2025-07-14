@@ -34,7 +34,7 @@ onMounted(() => {
         <h3>Visualizations Under Construction</h3>
         <p>The protractor visualization and tracking error chart are currently being rebuilt to provide a better and more accurate experience. Thank you for your patience!</p>
       </div>
-  
+  <br>
   <div class="tool-view">
 
     <div class="tool-header">
