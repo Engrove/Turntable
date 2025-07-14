@@ -203,7 +203,6 @@ export const useEstimatorStore = defineStore('estimator', {
         const dataPoints = this.allPickups.filter(p => p.cu_static && p.cu_dynamic_10hz && Object.entries(rule.conditions).every(([key, value]) => p[key] === value))
                                            .map(p => ({ x: p.cu_static, y: p.cu_dynamic_10hz, model: p.model }));
 
-        // KORRIGERING: Skicka med både k och m till chartConfig
         this.result.chartConfig = {
           dataPoints,
           k: rule.k,
@@ -227,15 +226,6 @@ export const useEstimatorStore = defineStore('estimator', {
           chartConfig: null,
         };
       }
-    },
-  },
-
-  watch: {
-    userInput: {
-      handler() {
-        this.calculateEstimate();
-      },
-      deep: true,
     },
   },
 });
