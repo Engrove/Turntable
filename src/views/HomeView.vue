@@ -5,7 +5,7 @@ import { useHead } from '@unhead/vue';
 
 const githubUrl = 'https://github.com/Engrove/Turntable';
 
-// NYTT: Sid-specifika meta-taggar för SEO och social delning.
+// Sid-specifika meta-taggar för SEO och social delning.
 useHead({
   title: 'Engrove Audio Toolkit | Home',
   meta: [
@@ -50,6 +50,12 @@ useHead({
         <RouterLink to="/compliance-estimator" class="tool-card">
           <h3>Compliance Estimator</h3>
           <p>A data-driven tool to estimate a cartridge's dynamic compliance at 10Hz. Uses a statistical model for higher accuracy and provides transparent feedback on its confidence.</p>
+        </RouterLink>
+
+        <!-- NYTT: Länkkort för Alignment Calculator -->
+        <RouterLink to="/alignment-calculator" class="tool-card">
+          <h3>Alignment Calculator</h3>
+          <p>Generate printable protractors and visualize tracking error for various alignment geometries like Baerwald, Löfgren, and Stevenson.</p>
         </RouterLink>
 
         <RouterLink to="/data-explorer" class="tool-card">
