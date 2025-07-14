@@ -11,56 +11,42 @@ const props = defineProps({
   alignmentType: String,
 });
 
-const viewBoxWidth = 400;
-const viewBoxHeight = 320;
-const center_x = viewBoxWidth / 2;
-const center_y = viewBoxHeight / 2 + 30;
+const viewBoxWidth = 500;
+const viewBoxHeight = 350;
+const center_x = viewBoxWidth / 2 - 50;
+const center_y = viewBoxHeight / 2 + 50;
 
-// --- Skalning och grundläggande koordinater ---
 const p2s = computed(() => props.pivotToSpindle || 0);
 const el = computed(() => props.effectiveLength || 0);
 
-// Skalfaktor för att passa geometrin i viewBox
 const scaleFactor = computed(() => {
-  const totalSpan = p2s.value + 75; // P2S + yttre radie
+  const totalSpan = p2s.value + 80;
   return viewBoxWidth / totalSpan * 0.9;
 });
 
-// Skalade värden
 const pivot_x = computed(() => p2s.value * scaleFactor.value);
-const spindle_x = 0; // Spindeln är vår origo
+const spindle_x = 0;
 const effectiveLength_scaled = computed(() => el.value * scaleFactor.value);
 
-// --- Beräkning av svepbåge (Arc) ---
 const arcPath = computed(() => {
   const r = effectiveLength_scaled.value;
-  // Beräkna start- och slutvinklar för bågen över en typisk skivyta
-  const startAngleRad = Math.asin(60 / el.value);
-  const endAngleRad = Math.asin(146 / el.value);
-
+  const startAngleRad = Math.asin(58 / el.value);
+  const endAngleRad = Math.asin(148 / el.value);
   const start_y = r * Math.sin(startAngleRad);
   const start_x = pivot_x.value - r * Math.cos(startAngleRad);
   const end_y = r * Math.sin(endAngleRad);
   const end_x = pivot_x.value - r * Math.cos(endAngleRad);
-
   return `M ${start_x} ${start_y} A ${r} ${r} 0 0 0 ${end_x} ${end_y}`;
 });
 
-// --- Beräkning av Nollpunkternas positioner ---
 const getNullPointCoords = (radius) => {
+  if (!p2s.value || !el.value) return { x: 0, y: 0, angle: 0 };
   const D = p2s.value;
   const Le = el.value;
-  if (!D || D <= 0 || !Le || Le <=0 ) return { x: 0, y: 0, angle: 0 };
-  
   const R = radius;
-  // Lös för x-koordinaten där de två cirklarna (från pivot och spindel) skär varandra
   const x = (D*D - Le*Le + R*R) / (2 * D);
-  // Använd Pythagoras för att hitta y
   const y = Math.sqrt(Math.max(0, R*R - x*x));
-
-  // Beräkna tangentens vinkel för att rotera gridet
   const tangentAngle = Math.atan2(x, -y) * (180 / Math.PI);
-
   return { 
     x: x * scaleFactor.value, 
     y: y * scaleFactor.value,
@@ -71,6 +57,8 @@ const getNullPointCoords = (radius) => {
 const innerNullCoords = computed(() => getNullPointCoords(props.nulls.inner));
 const outerNullCoords = computed(() => getNullPointCoords(props.nulls.outer));
 
+const stylusPosition = computed(() => outerNullCoords.value);
+
 </script>
 
 <template>
@@ -78,97 +66,80 @@ const outerNullCoords = computed(() => getNullPointCoords(props.nulls.outer));
     <h3>Dynamic Protractor Visualization</h3>
     <div class="protractor-container">
       <svg :viewBox="`0 0 ${viewBoxWidth} ${viewBoxHeight}`" preserveAspectRatio="xMidYMid meet">
-        <!-- Flytta hela systemet till mitten av SVG:n -->
-        <g :transform="`translate(${center_x - pivot_x/2}, ${center_y})`">
+        <g :transform="`translate(${center_x}, ${center_y})`">
           
+          <!-- Linjer för mått -->
+          <g class="dimension-lines">
+            <line :x1="spindle_x" y1="50" :x2="pivot_x" y2="50" class="dim-line p2s" />
+            <text :x="pivot_x / 2" y="45" class="dim-text p2s-text">P2S: {{ pivotToSpindle.toFixed(1) }}mm</text>
+
+            <line :x1="spindle_x" y1="70" :x2="stylusPosition.x" y2="70" class="dim-line overhang" />
+            <text :x="stylusPosition.x / 2" y="65" class="dim-text overhang-text">Overhang: {{ overhang.toFixed(1) }}mm</text>
+            
+            <line :x1="stylusPosition.x" y1="90" :x2="pivot_x" y2="90" class="dim-line el" />
+            <text :x="(pivot_x + stylusPosition.x)/2" y="85" class="dim-text el-text">Eff. Length: {{ effectiveLength.toFixed(1) }}mm</text>
+          </g>
+
           <!-- Spindel -->
           <g class="spindle" :transform="`translate(${spindle_x}, 0)`">
-            <circle cx="0" cy="0" r="2" fill="#2c3e50" />
-            <text x="0" y="-8">Spindle</text>
+            <circle cx="0" cy="0" r="2.5" fill="#2c3e50" />
+            <text x="0" y="-10">Spindle</text>
           </g>
           
           <!-- Pivot -->
           <g class="pivot" :transform="`translate(${pivot_x}, 0)`">
-            <circle cx="0" cy="0" r="2.5" fill="none" stroke="#2c3e50" stroke-width="1.5" />
-            <path d="M -1.5 0 L 1.5 0 M 0 -1.5 L 0 1.5" stroke="#2c3e50" stroke-width="1" />
-            <text x="0" y="-8">Pivot</text>
+            <circle cx="0" cy="0" r="3" fill="none" stroke="#2c3e50" stroke-width="2" />
+            <path d="M -2 0 L 2 0 M 0 -2 L 0 2" stroke="#2c3e50" stroke-width="1.5" />
+            <text x="0" y="-10">Pivot</text>
           </g>
 
-          <!-- Svepbåge (Arc) -->
-          <path :d="arcPath" class="arc-path" fill="none" stroke="#3498db" stroke-width="1.5" />
+          <!-- Tonarmssketch -->
+          <g class="tonearm-sketch" :transform="`translate(${pivot_x}, 0)`">
+            <line :x1="stylusPosition.x - pivot_x" :y1="-stylusPosition.y" x2="0" y2="0" stroke="#7f8c8d" stroke-width="3" />
+            <g :transform="`translate(${stylusPosition.x - pivot_x}, ${-stylusPosition.y}) rotate(${offsetAngle})`">
+              <path d="M -15 -8 L 15 -8 L 15 8 L -15 8 Z" fill="#f8f9fa" stroke="#34495e" stroke-width="1.5" />
+              <circle cx="0" cy="0" r="1.5" fill="none" stroke="#e74c3c" stroke-width="1" />
+            </g>
+          </g>
+          
+          <path :d="arcPath" class="arc-path" fill="none" />
           
           <!-- Nollpunkter & Rutnät -->
           <g class="null-point" :transform="`translate(${innerNullCoords.x}, ${-innerNullCoords.y})`">
             <g :transform="`rotate(${innerNullCoords.angle})`">
-              <path d="M -15 0 L 15 0 M -10 -5 L 10 -5 M -10 5 L 10 5 M 0 -8 L 0 8" stroke="#e74c3c" stroke-width="0.75" />
+              <path class="grid-lines" d="M -20 0 L 20 0 M -15 -6 L 15 -6 M -15 6 L 15 6 M 0 -10 L 0 10" />
             </g>
-             <circle cx="0" cy="0" r="1" fill="#e74c3c" />
+            <circle cx="0" cy="0" r="1.5" fill="#e74c3c" />
           </g>
           <g class="null-point" :transform="`translate(${outerNullCoords.x}, ${-outerNullCoords.y})`">
             <g :transform="`rotate(${outerNullCoords.angle})`">
-              <path d="M -15 0 L 15 0 M -10 -5 L 10 -5 M -10 5 L 10 5 M 0 -8 L 0 8" stroke="#e74c3c" stroke-width="0.75" />
+              <path class="grid-lines" d="M -20 0 L 20 0 M -15 -6 L 15 -6 M -15 6 L 15 6 M 0 -10 L 0 10" />
             </g>
-             <circle cx="0" cy="0" r="1" fill="#e74c3c" />
+            <circle cx="0" cy="0" r="1.5" fill="#e74c3c" />
           </g>
 
-          <!-- Etiketter för nollpunkter -->
-          <text class="null-label" :x="innerNullCoords.x" :y="-innerNullCoords.y - 10">Inner Null</text>
-          <text class="null-label" :x="outerNullCoords.x" :y="-outerNullCoords.y - 10">Outer Null</text>
+          <text class="null-label" :x="innerNullCoords.x" :y="-innerNullCoords.y - 12">Inner: {{ nulls.inner.toFixed(1) }}mm</text>
+          <text class="null-label" :x="outerNullCoords.x" :y="-outerNullCoords.y - 12">Outer: {{ nulls.outer.toFixed(1) }}mm</text>
         </g>
       </svg>
-    </div>
-     <div class="instructions">
-        <h4>How to read this diagram:</h4>
-        <ol>
-            <li>The <strong>blue arc</strong> represents the path the stylus tip will travel across the record.</li>
-            <li>The two <strong>red targets</strong> are the null points, where the cartridge is perfectly aligned and distortion is zero.</li>
-            <li>To use a real-world protractor, you first adjust the cartridge position to make the stylus follow the blue arc (setting the overhang), then you angle the cartridge to align with the red grids (setting the offset angle).</li>
-        </ol>
     </div>
   </div>
 </template>
 
 <style scoped>
-.protractor-panel {
-  grid-column: 1 / -1;
-}
-.protractor-panel h3 {
-  margin-top: 0;
-  color: var(--header-color);
-  font-size: 1.25rem;
-}
-.protractor-container {
-  width: 100%;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 1rem;
-}
-svg {
-  width: 100%;
-  height: auto;
-}
-.spindle text, .pivot text, .null-label {
-    text-anchor: middle;
-    font-size: 8px;
-    font-family: sans-serif;
-    fill: #7f8c8d;
-}
-.arc-path {
-  stroke-dasharray: 2, 2;
-}
-.instructions {
-  margin-top: 1rem;
-  background-color: #f8f9fa;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  font-size: 0.9rem;
-}
-.instructions h4 {
-    margin: 0.5rem 0;
-}
-.instructions ol {
-    padding-left: 1.25rem;
-    margin: 0.5rem 0;
-}
+.protractor-panel { grid-column: 1 / -1; }
+.protractor-panel h3 { margin-top: 0; color: var(--header-color); font-size: 1.25rem; }
+.protractor-container { width: 100%; background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 1rem; }
+svg { width: 100%; height: auto; }
+.spindle text, .pivot text, .null-label, .dim-text { text-anchor: middle; font-size: 8px; font-family: sans-serif; fill: #555; }
+.arc-path { stroke: #3498db; stroke-width: 1.5; stroke-dasharray: 3, 3; }
+.grid-lines { stroke: #e74c3c; stroke-width: 0.75; }
+.dimension-lines .dim-line { stroke-width: 1px; marker-start: url(#dim-marker); marker-end: url(#dim-marker); }
+.dim-line.p2s { stroke: #9b59b6; }
+.dim-line.overhang { stroke: #e67e22; }
+.dim-line.el { stroke: #27ae60; }
+.dim-text { font-weight: bold; }
+.dim-text.p2s-text { fill: #9b59b6; }
+.dim-text.overhang-text { fill: #e67e22; }
+.dim-text.el-text { fill: #27ae60; }
 </style>
