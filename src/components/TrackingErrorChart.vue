@@ -22,9 +22,9 @@ const chartCanvas = ref(null);
 let chartInstance = null;
 
 const updateChart = () => {
-  if (!chartInstance || !props.chartData) return;
+  if (!chartInstance || !props.chartData || !props.chartData.datasets) return;
 
-  // Uppdatera dataset
+  // Uppdatera dataset med den nya datan
   chartInstance.data.datasets = props.chartData.datasets;
   
   // Uppdatera annotations för nollpunkter
@@ -36,11 +36,12 @@ const updateChart = () => {
     borderWidth: 1.5,
     borderDash: [6, 6],
     label: {
-      content: 'Null',
+      content: `Null ${props.nullPoints.inner.toFixed(1)}mm`,
       display: true,
       position: 'start',
       font: { size: 10 },
       backgroundColor: 'rgba(231, 76, 60, 0.7)',
+      yAdjust: -15,
     }
   };
   chartInstance.options.plugins.annotation.annotations.outerNull = {
@@ -51,11 +52,12 @@ const updateChart = () => {
     borderWidth: 1.5,
     borderDash: [6, 6],
     label: {
-      content: 'Null',
+      content: `Null ${props.nullPoints.outer.toFixed(1)}mm`,
       display: true,
       position: 'start',
       font: { size: 10 },
       backgroundColor: 'rgba(231, 76, 60, 0.7)',
+      yAdjust: -15,
     }
   };
 
@@ -82,13 +84,17 @@ onMounted(() => {
         },
         tooltip: {
           callbacks: {
+            title: (tooltipItems) => {
+              const xVal = tooltipItems[0].parsed.x;
+              return `At ${xVal.toFixed(1)} mm radius`;
+            },
             label: function(context) {
               let label = context.dataset.label || '';
               if (label) {
                 label += ': ';
               }
               if (context.parsed.y !== null) {
-                label += `${context.parsed.y.toFixed(2)}° at ${context.parsed.x.toFixed(1)}mm`;
+                label += `${context.parsed.y.toFixed(2)}°`;
               }
               return label;
             }
@@ -100,8 +106,9 @@ onMounted(() => {
               type: 'line',
               yMin: 0,
               yMax: 0,
-              borderColor: 'rgba(0, 0, 0, 0.3)',
-              borderWidth: 1,
+              borderColor: 'rgba(0, 0, 0, 0.5)',
+              borderWidth: 1.5,
+              borderDash: [2, 2],
             },
             innerNull: {},
             outerNull: {}
@@ -120,6 +127,7 @@ onMounted(() => {
           type: 'linear',
           position: 'left',
           title: { display: true, text: 'Tracking Error (°)' },
+          // Låt skalan anpassa sig dynamiskt baserat på datan
         }
       }
     }
@@ -142,6 +150,6 @@ watch(() => [props.chartData, props.nullPoints], updateChart, { deep: true });
   padding: 1.5rem;
   background-color: #ffffff;
   border-radius: 6px;
-  grid-column: 1 / -1; /* Får grafen att ta upp hela bredden i grid-layout */
+  grid-column: 1 / -1;
 }
 </style>
