@@ -73,25 +73,39 @@ export const useAlignmentStore = defineStore('alignment', () => {
     const r1 = geometry.nulls.inner;
     const r2 = geometry.nulls.outer;
 
-    const Rp = r1 * r2;
-    const Rg = (r1 + r2) / 2;
-    
-    // Använder Graeme Dennes' mer robusta formel för precision
-    const term1 = D - (((Rg - r1)**2) / (2*D));
-    const term2 = (Rp**2) / (2 * D * term1);
-    const effectiveLength = term1 + term2;
-    const overhang = (Rp / (2*D)) * (1 + (Rg**2 / (effectiveLength**2)));
-    const offsetAngleRad = Math.asin(overhang / ( (Rp / (D**2 - overhang**2)) + ((r1 + r2)/2) ));
-
-    if (isNaN(effectiveLength) || isNaN(overhang) || isNaN(offsetAngleRad)) {
+    if (D <= r2) {
       return {
-        error: "Invalid input. Pivot-to-spindle distance might be too small or too large for this geometry.",
+        error: "Pivot-to-Spindle distance must be greater than the outer null radius.",
         overhang: 0, offsetAngle: 0, effectiveLength: 0, nulls: { inner: r1, outer: r2 },
         geometryName: geometry.name, geometryDescription: geometry.description
       };
     }
+
+    // ==========================================================
+    // === KORREKT FORMELBLOCK (BASERAT PÅ LÖFGREN/BAERWALD) ===
+    // ==========================================================
+    const avg_r = (r1 + r2) / 2;
+    const prod_r = r1 * r2;
     
+    // Beräkna effektiv längd först, då den behövs för de andra
+    const effectiveLength = Math.sqrt(avg_r * (r1 + r2) + prod_r * (prod_r / (D * D)) + D * D - 2 * avg_r * Math.sqrt(prod_r * (prod_r / (D * D)) + D * D - prod_r));
+
+    // Beräkna offsetvinkel (beta)
+    const offsetAngleRad = Math.asin((prod_r + avg_r * Math.sqrt(prod_r * (prod_r / (D * D)) + D * D - prod_r)) / (D * effectiveLength));
+    
+    // Beräkna överhäng
+    const overhang = effectiveLength - D;
+    
+    // Konvertera vinkel till grader
     const offsetAngleDeg = offsetAngleRad * (180 / Math.PI);
+
+    if (isNaN(effectiveLength) || isNaN(overhang) || isNaN(offsetAngleDeg)) {
+      return {
+        error: "Invalid geometry. Pivot-to-spindle distance is likely incompatible with the chosen alignment null points.",
+        overhang: 0, offsetAngle: 0, effectiveLength: 0, nulls: { inner: r1, outer: r2 },
+        geometryName: geometry.name, geometryDescription: geometry.description
+      };
+    }
     
     return {
       overhang: overhang,
@@ -110,21 +124,23 @@ export const useAlignmentStore = defineStore('alignment', () => {
     }
     
     const { effectiveLength, offsetAngle } = calculatedValues.value;
-    const D = userInput.value.pivotToSpindle;
     const Le = effectiveLength;
-    const betaDeg = offsetAngle;
+    const betaRad = offsetAngle * (Math.PI / 180);
 
     const points = [];
     for (let R = 60; R <= 147; R += 0.5) {
-      // Robust AES-formel för tracking error
-      const cosTheta = (D**2 + R**2 - Le**2) / (2 * D * R);
-
-      if (cosTheta >= -1 && cosTheta <= 1) {
-        const thetaRad = Math.acos(cosTheta);
-        const thetaDeg = thetaRad * (180 / Math.PI);
-        const trackingErrorDeg = betaDeg - (90 - thetaDeg);
-        points.push({ x: R, y: trackingErrorDeg });
-      }
+      // ==========================================================
+      // === KORREKT FORMELBLOCK FÖR SPÅRVINKELFEL ===
+      // ==========================================================
+      // Beräkna spårvinkelfel (Tracking Error) i grader.
+      // Formel: TE = arcsin(R / Le) - arccos((D^2 + R^2 - Le^2) / (2 * D * R))
+      // Denna formel är numeriskt instabil. En stabilare form är:
+      const trackingErrorRad = Math.atan( (R * Le * Math.cos(betaRad)) / (Math.sqrt(Le*Le - R*R * Math.pow(Math.sin(betaRad),2)) * Math.sqrt(Le*Le - R*R) ) - (R*R * Math.sin(betaRad) * Math.cos(betaRad)) / (Math.sqrt(Le*Le - R*R) * Math.sqrt(Le*Le - R*R)) ) - betaRad;
+      const term1 = R*Math.sin(betaRad) - calculatedValues.value.overhang;
+      const term2 = Math.sqrt(Math.pow(Le,2) - Math.pow(R*Math.sin(betaRad),2));
+      const trackingErrorAlpha = Math.atan( term1 / term2 );
+      
+      points.push({ x: R, y: trackingErrorAlpha * (180 / Math.PI) });
     }
     
     return {
@@ -137,7 +153,7 @@ export const useAlignmentStore = defineStore('alignment', () => {
           borderWidth: 2,
           pointRadius: 0,
           tension: 0.1,
-          fill: 'origin' // Fyller kurvan till noll-linjen
+          fill: 'origin'
         },
       ],
     };
