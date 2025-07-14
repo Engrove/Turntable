@@ -1,6 +1,5 @@
 <!-- src/views/ComplianceEstimatorView.vue -->
 <script setup>
-// NYTT: Importerar 'watch' från Vue för att övervaka ändringar
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useHead } from '@unhead/vue';
@@ -42,9 +41,6 @@ onUnmounted(() => {
   }
 });
 
-// NYTT OCH AVGÖRANDE: Detta är den korrekta platsen för att övervaka ändringar.
-// När något i userInput-objektet ändras, anropas store.calculateEstimate().
-// 'deep: true' är nödvändigt för att upptäcka ändringar inuti objektet.
 watch(() => store.userInput, () => {
   store.calculateEstimate();
 }, { deep: true });
@@ -122,8 +118,8 @@ watch(() => store.userInput, () => {
           <h4>Two Estimation Methods</h4>
           <p>The tool automatically selects the best method based on your input:</p>
           <ol>
-              <li><strong>From 100Hz Compliance (Primary):</strong> If you provide a value for "Dynamic Compliance @ 100Hz", the tool uses a set of median conversion ratios derived from our database. This is generally the more reliable method.</li>
-              <li><strong>From Static Compliance (Fallback):</strong> If the 100Hz value is empty, the tool uses a more advanced <strong>linear regression model</strong> to estimate the 10Hz value from the static compliance. This is far more accurate than a simple multiplier.</li>
+              <li><strong>From 100Hz Compliance (Primary):</strong> If you provide a value for "Dynamic Compliance @ 100Hz", the tool uses a set of median conversion ratios derived from our database.</li>
+              <li><strong>From Static Compliance (Fallback):</strong> If the 100Hz value is empty, the tool uses a linear regression model to estimate the 10Hz value from the static compliance.</li>
           </ol>
           <hr>
 
@@ -138,12 +134,12 @@ watch(() => store.userInput, () => {
           <p>The confidence level and the description text in the results panel will tell you exactly which level of rule was used for your estimate.</p>
           <hr>
 
-          <h4>The Confidence Score (for Static Compliance)</h4>
-          <p>When estimating from static compliance, a more detailed confidence score is calculated based on three factors:</p>
+          <h4>The Confidence Score</h4>
+          <p>A detailed confidence score is calculated based on three factors from the applied rule:</p>
           <ul>
             <li><strong>Specificity (max 30 pts):</strong> How specific was the rule that matched your input? (e.g., a rule for "MC, Boron" is more specific than just "MC").</li>
-            <li><strong>Sample Size (max 20 pts):</strong> How many data points was the regression model based on? More data leads to higher confidence.</li>
-            <li><strong>Regression Accuracy (R², max 25 pts):</strong> How well did the regression model fit the data? A higher R² value (closer to 1.0) means the model has strong predictive power.</li>
+            <li><strong>Sample Size (max 20 pts):</strong> How many data points was the rule based on? More data leads to higher confidence.</li>
+            <li><strong>Regression Accuracy (R², max 25 pts):</strong> How well did a regression model fit the data for this segment? A higher R² value (closer to 1.0) means the variables have a strong correlation.</li>
           </ul>
           <p>These points are summed (max 75) and converted to a percentage, giving you a transparent look at the estimate's reliability.</p>
           <hr>
