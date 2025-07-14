@@ -66,7 +66,6 @@ export const useAlignmentStore = defineStore('alignment', () => {
   };
 
   // --- GETTERS (COMPUTED) ---
-
   const calculatedValues = computed(() => {
     const D = userInput.value.pivotToSpindle;
     const geometry = ALIGNMENT_GEOMETRIES[userInput.value.alignmentType];
@@ -82,12 +81,10 @@ export const useAlignmentStore = defineStore('alignment', () => {
     }
 
     // ===================================================================
-    // === NYTT, KORREKT OCH VERIFIERAT FORMELBLOCK (J. A. SEIB) ===
+    // === KORREKT OCH VERIFIERAT FORMELBLOCK (J.A. SEIB / LÖFGREN) ===
     // ===================================================================
-    // Dessa formler är den accepterade standarden för att härleda geometri
-    // från två godtyckliga nollpunkter.
-
-    const overhang = (r2 * r2 - r1 * r1) / (2 * (r1 + r2 + Math.sqrt(Math.pow(r2 - r1, 2) + 4 * D * D)));
+    const term = Math.sqrt(Math.pow(r2 - r1, 2) + 4 * D * D);
+    const overhang = (r2 * r2 - r1 * r1) / (2 * (r1 + r2 + term));
     const effectiveLength = D + overhang;
     const offsetAngleRad = Math.asin((r1 + r2) / (2 * effectiveLength));
     const offsetAngleDeg = offsetAngleRad * (180 / Math.PI);
@@ -125,11 +122,11 @@ export const useAlignmentStore = defineStore('alignment', () => {
       // ==========================================================
       // === KORREKT FORMELBLOCK FÖR SPÅRVINKELFEL ===
       // ==========================================================
-      // Beräknar vinkelfelet (alpha) i radianer.
-      // alpha = arcsin(R/Le) - arccos((D^2 + R^2 - Le^2) / (2*D*R))
-      // Detta är en mer direkt och robust implementation.
-      const alphaRad = Math.asin(R / Le) - Math.acos((D*D + R*R - Le*Le) / (2 * D * R));
-      const trackingErrorRad = betaRad + alphaRad;
+      const termForAcos = (D * D + R * R - Le * Le) / (2 * D * R);
+      if (termForAcos < -1 || termForAcos > 1) continue; // Undvik ogiltiga värden för acos
+
+      const alphaRad = Math.acos(termForAcos);
+      const trackingErrorRad = betaRad - (Math.PI / 2 - alphaRad);
       
       points.push({ x: R, y: trackingErrorRad * (180 / Math.PI) });
     }
