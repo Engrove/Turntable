@@ -5,68 +5,61 @@ import { computed } from 'vue'
 
 const store = useTonearmStore()
 
-// --- Beräkningar för Geometri-visualisering ---
+// Beräkningar baseras nu på den valda tonarmen
+const arm = computed(() => store.currentTonearm);
 
-// Fast bredd för vår visualisering i SVG-enheter
+// Om ingen arm är vald, eller om den saknar data, sätt defaultvärden
+const pivotToSpindle = computed(() => arm.value?.pivot_to_spindle_mm ?? 215);
+const overhang = computed(() => arm.value?.overhang_mm ?? 15);
+const effectiveLength = computed(() => arm.value?.effective_length_mm ?? 230);
+
 const vizWidth = 600;
+const scaleFactor = computed(() => vizWidth / (pivotToSpindle.value + overhang.value + 20)); // +20 för lite marginal
 
-// Vi behöver en skalningsfaktor för att tonarmar av olika längd ska se bra ut
-// Vi baserar skalan på ett "typiskt" pivot-till-spindel-avstånd på 222mm
-const scaleFactor = computed(() => vizWidth / (store.pivotToSpindleDistance + store.overhang));
-
-// Beräknade X-positioner i vår nya, skalade koordinatsystem
-const pivot_x = computed(() => store.pivotToSpindleDistance * scaleFactor.value);
-const spindle_x = 0; // Spindel är vår nollpunkt för enkelhetens skull
-const stylus_x = computed(() => -store.overhang * scaleFactor.value);
-
-// Effektiva längden som en hypotenusa (även om vi ritar den rakt för enkelhetens skull)
-const effectiveLength_viz = computed(() => store.params.L1 * scaleFactor.value);
+const pivot_x = computed(() => pivotToSpindle.value * scaleFactor.value);
+const spindle_x = 0;
+const stylus_x = computed(() => -overhang.value * scaleFactor.value);
 
 </script>
 
 <template>
-  <div class="viz-panel">
+  <!-- Komponent renderas bara om en tonarm är vald -->
+  <div v-if="arm" class="viz-panel">
     <h4 class="viz-title">3. Tonearm Geometry & Alignment</h4>
-    <p class="viz-description">This diagram illustrates the key alignment measurements of the tonearm: Pivot to Spindle distance, Overhang, and the resulting Effective Length.</p>
+    <p class="viz-description">This diagram illustrates the key alignment measurements for the selected tonearm: [b]{{ arm.manufacturer }} {{ arm.model }}[/b].</p>
     <div class="geometry-container">
-      <svg :viewBox="`-${vizWidth * 0.1} -100 ${vizWidth * 1.2} 200`" preserveAspectRatio="xMidYMid meet">
+      <svg :viewBox="`-${vizWidth * 0.2} -100 ${vizWidth * 1.3} 200`" preserveAspectRatio="xMidYMid meet">
 
-        <!-- Spindel (Tallrikens mitt) -->
         <g class="spindle" :transform="`translate(${spindle_x}, 0)`">
           <circle cx="0" cy="0" r="5" fill="none" stroke="#2c3e50" stroke-width="2"/>
           <circle cx="0" cy="0" r="1.5" fill="#2c3e50"/>
           <text y="-15">Spindle</text>
         </g>
         
-        <!-- Pivot -->
         <g class="pivot" :transform="`translate(${pivot_x}, 0)`">
            <circle cx="0" cy="0" r="5" fill="none" stroke="#2c3e50" stroke-width="2"/>
            <path d="M -3 0 l 6 0 M 0 -3 l 0 6" stroke="#2c3e50" stroke-width="1.5"/>
            <text y="-15">Pivot</text>
         </g>
 
-        <!-- Måttlinje: Pivot-to-Spindle -->
+        <!-- Måttlinjer -->
         <g class="dimension-line">
             <line :x1="spindle_x" y1="50" :x2="pivot_x" y2="50" />
             <line :x1="spindle_x" y1="45" :x2="spindle_x" y2="55" />
             <line :x1="pivot_x" y1="45" :x2="pivot_x" y2="55" />
-            <text :x="(pivot_x + spindle_x) / 2" y="42">Pivot to Spindle: {{ store.pivotToSpindleDistance.toFixed(1) }} mm</text>
+            <text :x="(pivot_x + spindle_x) / 2" y="42">Pivot to Spindle: {{ pivotToSpindle.toFixed(1) }} mm</text>
         </g>
-
-        <!-- Måttlinje: Overhang -->
         <g class="dimension-line overhang">
             <line :x1="spindle_x" y1="-50" :x2="stylus_x" y2="-50" />
             <line :x1="spindle_x" y1="-55" :x2="spindle_x" y2="-45" />
             <line :x1="stylus_x" y1="-55" :x2="stylus_x" y2="-45" />
-            <text :x="(stylus_x + spindle_x) / 2" y="-58">Overhang: {{ store.overhang.toFixed(1) }} mm</text>
+            <text :x="(stylus_x + spindle_x) / 2" y="-58">Overhang: {{ overhang.toFixed(1) }} mm</text>
         </g>
-
-        <!-- Måttlinje: Effective Length -->
          <g class="dimension-line effective-length">
             <line :x1="stylus_x" y1="70" :x2="pivot_x" y2="70" />
             <line :x1="stylus_x" y1="65" :x2="stylus_x" y2="75" />
             <line :x1="pivot_x" y1="65" :x2="pivot_x" y2="75" />
-            <text :x="(pivot_x + stylus_x) / 2" y="85">Effective Length: {{ store.params.L1.toFixed(1) }} mm</text>
+            <text :x="(pivot_x + stylus_x) / 2" y="85">Effective Length: {{ effectiveLength.toFixed(1) }} mm</text>
         </g>
 
         <!-- Tonarm Skiss -->
@@ -75,7 +68,6 @@ const effectiveLength_viz = computed(() => store.params.L1 * scaleFactor.value);
             fill="none" stroke="#2c3e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
             :transform="`scale(1, -1)`" />
         </g>
-
       </svg>
     </div>
   </div>
@@ -122,16 +114,12 @@ const effectiveLength_viz = computed(() => store.params.L1 * scaleFactor.value);
     stroke: #7f8c8d;
     stroke-width: 1px;
 }
-.dimension-line.overhang {
-    stroke: #c0392b;
-}
-.dimension-line.effective-length {
-    stroke: #27ae60;
-}
+.dimension-line.overhang { stroke: #c0392b; }
+.dimension-line.effective-length { stroke: #27ae60; }
 .dimension-line text {
     font-size: 12px;
     font-family: sans-serif;
-    fill: #7f8c8d;
+    fill: #34495e;
     text-anchor: middle;
     font-weight: 500;
 }
