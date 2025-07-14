@@ -22,8 +22,7 @@ export const useTonearmStore = defineStore('tonearm', () => {
     // --- ACTIONS ---
     async function initialize() {
         try {
-            isLoading.value = true;
-            error.value = null;
+            isLoading.value = true; error.value = null;
             const [tonearmsRes, pickupsRes] = await Promise.all([
                 fetch('/data/tonearm_data.json'),
                 fetch('/data/pickup_data.json')
@@ -71,26 +70,15 @@ export const useTonearmStore = defineStore('tonearm', () => {
     const m1 = computed(() => params.value.m_headshell + params.value.m_pickup + params.value.m_screws);
     const m2_tube = computed(() => params.value.m_rear_assembly * (params.value.m_tube_percentage / 100.0));
     const m3_fixed_cw = computed(() => params.value.m_rear_assembly - m2_tube.value);
-
-    // NYTT: Beräkna och exponera geometriska värden
-    const pivotToSpindleDistance = computed(() => {
-        const L = params.value.L1;
-        // Standard Baerwald null-punkter
-        const R1 = 66.0;
-        const R2 = 120.9;
-        return (R1 * R2 * (R1 + R2)) / (L*L - R1*R1 - (L*L - R2*R2)*(R1/R2));
-    });
-
-    const overhang = computed(() => {
-        const L = params.value.L1;
-        const D = pivotToSpindleDistance.value;
-        // Approximation: Overhang = L - D, men mer exakt via Pythagoras
-        // Detta är en förenkling, men tillräckligt bra för visualisering
-        return L - Math.sqrt(L*L - ((L*L-D*D)/(2*D))**2);
-    });
     
+    // NYTT: Byt namn för tydlighet och hämta data direkt
+    const currentTonearm = computed(() => {
+        if (!selectedTonearmId.value) return null;
+        const arm = availableTonearms.value.find(t => t.id == selectedTonearmId.value);
+        return arm ? { ...arm, has_integrated_headshell: arm.headshell_connector === 'integrated' } : null;
+    });
+
     const calculatedResults = computed(() => {
-        // ... (befintlig kod är oförändrad) ...
         if (params.value.calculationMode === 'direct') {
             const M_eff = params.value.directEffectiveMass;
             const F = 1000 / (2 * Math.PI * Math.sqrt(Math.max(1, M_eff * params.value.compliance)));
@@ -109,30 +97,22 @@ export const useTonearmStore = defineStore('tonearm', () => {
     });
 
     const diagnosis = computed(() => {
-        // ... (befintlig kod är oförändrad) ...
         const F = calculatedResults.value.F;
         if (calculatedResults.value.isUnbalanced && params.value.calculationMode === 'detailed') {
-            return { status: 'danger', title: 'Unbalanced System', recommendations: ['Arm cannot be balanced with current settings.', 'Increase counterweight mass or reduce front mass.'] };
+            return { status: 'danger', title: 'Unbalanced System', recommendations: ['Arm cannot be balanced with current settings.'] };
         }
         if (F >= 8 && F <= 11) return { status: 'ideal', title: 'Ideal Match', recommendations: ['Resonance is in the ideal zone. Excellent compatibility.'] };
         if ((F > 7 && F < 8) || (F > 11 && F < 12)) return { status: 'warning', title: 'Acceptable Match', recommendations: ['Generally fine, but monitor for sensitivity to footfalls or motor rumble.'] };
-        if (F <= 7) return { status: 'danger', title: 'Low Resonance (High Risk)', recommendations: ['High risk of amplifying rumble and skipping from footfalls.', 'Use a lighter cartridge/headshell or a lower compliance cartridge.'] };
-        if (F >= 12) return { status: 'danger', title: 'High Resonance (High Risk)', recommendations: ['Resonance may interfere with audible bass frequencies.', 'Use a heavier cartridge/headshell or a higher compliance cartridge.'] };
+        if (F <= 7) return { status: 'danger', title: 'Low Resonance (High Risk)', recommendations: ['High risk of amplifying rumble and skipping from footfalls.'] };
+        if (F >= 12) return { status: 'danger', title: 'High Resonance (High Risk)', recommendations: ['Resonance may interfere with audible bass frequencies.'] };
         return { status: 'none', title: 'Enter Parameters', recommendations: ['Adjust sliders to see results.'] };
-    });
-
-    const currentTonearm = computed(() => {
-        // ... (befintlig kod är oförändrad) ...
-        if (!selectedTonearmId.value) return null;
-        const arm = availableTonearms.value.find(t => t.id == selectedTonearmId.value);
-        return arm ? { ...arm, has_integrated_headshell: arm.headshell_connector === 'integrated' } : null;
     });
 
     return {
         params, availableTonearms, availablePickups, selectedTonearmId, selectedPickupId,
         isLoading, error, initialize, loadTonearmPreset, loadCartridgePreset, setCalculationMode,
         m1, m2_tube, m3_fixed_cw,
-        pivotToSpindleDistance, overhang, // Exponera de nya
-        calculatedResults, diagnosis, currentTonearm
+        currentTonearm, // Exponera denna
+        calculatedResults, diagnosis,
     };
 });
