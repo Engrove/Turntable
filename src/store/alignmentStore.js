@@ -9,7 +9,7 @@ const R2_IEC = 146.05;  // Outer groove radius
 // Definierar nollpunkter för de vanligaste geometrierna
 const ALIGNMENT_GEOMETRIES = {
   Baerwald: {
-    name: "Löfgren A / Baerwald (IEC RIAA)",
+    name: "Löfgren A / Baerwald",
     description: "Calculated to minimize RMS distortion across the entire playing surface. A popular all-around choice.",
     nulls: {
       inner: 66.0,
@@ -17,7 +17,7 @@ const ALIGNMENT_GEOMETRIES = {
     }
   },
   LofgrenB: {
-    name: "Löfgren B (IEC RIAA)",
+    name: "Löfgren B",
     description: "Calculated to minimize the absolute peak distortion, but with higher average distortion than Baerwald.",
     nulls: {
       inner: 70.3,
@@ -25,7 +25,7 @@ const ALIGNMENT_GEOMETRIES = {
     }
   },
   StevensonA: {
-    name: "Stevenson A (IEC RIAA)",
+    name: "Stevenson A",
     description: "Optimized for the lowest distortion at the inner groove, where distortion is typically most audible.",
     nulls: {
       inner: 60.325,
@@ -39,19 +39,16 @@ export const useAlignmentStore = defineStore('alignment', () => {
   const isLoading = ref(false);
   const error = ref(null);
   
-  // Användarens primära inputs
   const userInput = ref({
-    pivotToSpindle: 222.0, // Ett vanligt startvärde (t.ex. Rega)
+    pivotToSpindle: 222.0,
     alignmentType: 'Baerwald',
   });
 
-  // Data från JSON-filer
   const availableTonearms = ref([]);
   const selectedTonearmId = ref(null);
 
   // --- GETTERS ---
 
-  // Beräknar de optimala värdena baserat på P2S och vald geometri
   const calculatedValues = computed(() => {
     try {
       const D = userInput.value.pivotToSpindle;
@@ -67,20 +64,13 @@ export const useAlignmentStore = defineStore('alignment', () => {
       const r1 = geometry.nulls.inner;
       const r2 = geometry.nulls.outer;
 
-      // Robusta beräkningar för överhäng och offsetvinkel baserat på nollpunkter och P2S
-      const A = (r2 - r1) / 2.0;
-      const B = (r2 + r1) / 2.0;
-      
-      if (D <= A) {
-        return { error: "Pivot-to-Spindle distance is too short for these null points." };
-      }
-
-      const C = B**2 / (D**2 - A**2);
-      const offsetAngleRad = Math.asin(Math.sqrt(C));
+      // Beräkningar för överhäng och offsetvinkel baserat på P2S
+      const overhang = (r1 * r2) / D;
+      const termForAngle = (r1 + r2) / (overhang + 2*D);
+      const offsetAngleRad = Math.asin(termForAngle);
       const offsetAngleDeg = offsetAngleRad * (180 / Math.PI);
       
-      const effectiveLength = Math.sqrt(D**2 - A**2) / Math.cos(offsetAngleRad);
-      const overhang = effectiveLength - D;
+      const effectiveLength = D + overhang;
 
       return {
         overhang: overhang,
@@ -100,9 +90,42 @@ export const useAlignmentStore = defineStore('alignment', () => {
     }
   });
 
+  // NY GETTER: Beräknar data för spårningsfels-grafen
+  const trackingErrorData = computed(() => {
+    const calc = calculatedValues.value;
+    if (calc.error) return { labels: [], datasets: [] };
+    
+    const D = userInput.value.pivotToSpindle;
+    const Le = calc.effectiveLength;
+    const beta = calc.offsetAngle * (Math.PI / 180); // Offset Angle in radians
+
+    const points = [];
+    for (let R = R1_IEC; R <= R2_IEC; R += 1) { // Beräkna för varje mm av spelytan
+        const termForAlpha = R / (2 * Le) + (Le / (2 * R));
+        if (Math.abs(termForAlpha) > 1) continue; // Undvik ogiltiga Math.acos-värden
+
+        const alpha = Math.acos(termForAlpha);
+        const trackingError = (beta - alpha) * (180 / Math.PI); // i grader
+        points.push({ x: R, y: trackingError });
+    }
+
+    return {
+      datasets: [
+        {
+          label: `Tracking Error (°), ${userInput.value.alignmentType.replace('A', '')}`,
+          data: points,
+          borderColor: '#3498db',
+          borderWidth: 2.5,
+          pointRadius: 0,
+          tension: 0.1,
+        }
+      ]
+    };
+  });
+
   // --- ACTIONS ---
   async function initialize() {
-    if (availableTonearms.value.length > 0) return; // Körs bara en gång
+    if (availableTonearms.value.length > 0) return;
     isLoading.value = true;
     error.value = null;
     try {
@@ -146,8 +169,9 @@ export const useAlignmentStore = defineStore('alignment', () => {
     userInput,
     availableTonearms,
     selectedTonearmId,
-    ALIGNMENT_GEOMETRIES, // Exponerar geometrierna för UI
+    ALIGNMENT_GEOMETRIES,
     calculatedValues,
+    trackingErrorData, // Exponerar den nya datan
     initialize,
     setAlignment,
     loadTonearmPreset,
