@@ -5,8 +5,6 @@ import { useHead } from '@unhead/vue';
 import { useAlignmentStore } from '@/store/alignmentStore.js';
 import AlignmentInputPanel from '@/components/AlignmentInputPanel.vue';
 import AlignmentResultsPanel from '@/components/AlignmentResultsPanel.vue';
-import TrackingErrorChart from '@/components/TrackingErrorChart.vue';
-import AlignmentProtractor from '@/components/AlignmentProtractor.vue'; // Ny import
 
 const store = useAlignmentStore();
 
@@ -31,9 +29,6 @@ onMounted(() => {
   <div class="tool-view">
     <div class="tool-header">
       <h1>Alignment Calculator</h1>
-      <div class="header-buttons">
-        <!-- Knappar för print, reset, etc. kommer att läggas till här senare -->
-      </div>
     </div>
     <p class="tool-description">
       An interactive tool to calculate optimal tonearm alignment, visualize tracking error, and generate custom-fit protractors for printing.
@@ -51,23 +46,16 @@ onMounted(() => {
       <AlignmentInputPanel />
       <AlignmentResultsPanel />
       
-      <AlignmentProtractor
-        v-if="!store.calculatedValues.error"
-        :pivot-to-spindle="store.userInput.pivotToSpindle"
-        :effective-length="store.calculatedValues.effectiveLength"
-        :overhang="store.calculatedValues.overhang"
-        :offset-angle="store.calculatedValues.offsetAngle"
-        :nulls="store.calculatedValues.nulls"
-        :alignment-type="store.userInput.alignmentType"
-      />
+      <!-- Under Construction Panel -->
+      <div class="under-construction-panel">
+        <div class="icon-wrapper">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+        </div>
+        <h3>Visualizations Under Construction</h3>
+        <p>The protractor visualization and tracking error chart are currently being rebuilt to provide a better and more accurate experience. Thank you for your patience!</p>
+      </div>
 
-      <TrackingErrorChart 
-        :chartData="store.trackingErrorData" 
-        :nullPoints="store.calculatedValues.nulls"
-        v-if="!store.calculatedValues.error"
-      />
     </div>
-
   </div>
 </template>
 
@@ -107,15 +95,39 @@ onMounted(() => {
   color: var(--danger-text);
   border-color: #f5c6cb;
 }
-.status-container h2 {
-  margin: 0;
-  color: var(--header-color);
-}
 .main-grid {
   display: grid;
   grid-template-columns: 400px 1fr;
   gap: 2rem;
   align-items: start;
+}
+
+.under-construction-panel {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 3rem 2rem;
+  background-color: var(--warning-color);
+  border: 1px solid #ffeeba;
+  border-radius: 8px;
+  color: var(--warning-text);
+}
+.icon-wrapper {
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.under-construction-panel h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--warning-text);
+  font-size: 1.5rem;
+}
+.under-construction-panel p {
+  margin: 0;
+  max-width: 60ch;
 }
 
 @media (max-width: 900px) {
