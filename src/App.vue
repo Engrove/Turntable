@@ -1,12 +1,11 @@
 <!-- src/App.vue -->
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { RouterLink, RouterView, useRouter } from 'vue-router';
 
 const router = useRouter();
 const isMenuExpanded = ref(false);
 const isMobile = ref(false);
-// NYTT: Byt ut boolean mot en state-sträng för bannern
 const bannerState = ref('none'); // Möjliga värden: 'none', 'in-progress', 'updated'
 
 const toggleMenu = () => {
@@ -24,11 +23,17 @@ const checkScreenSize = () => {
   }
 };
 
+// En computed property för att lägga till en klass när bannern är dold, för att justera mobilmenyn
+const bannerClass = computed(() => {
+  return bannerState.value === 'none' ? 'banner-hidden' : '';
+});
+
+
 onMounted(() => {
   checkScreenSize();
   window.addEventListener('resize', checkScreenSize);
 
-  // NY OCH UTÖKAD LOGIK: Hanterar tvåstegs-bannern
+  // Logik för att hantera uppdateringsbannern
   const deployTimestampStr = import.meta.env.VITE_DEPLOY_TIMESTAMP;
   if (deployTimestampStr) {
     const deployTime = new Date(deployTimestampStr).getTime();
@@ -38,26 +43,21 @@ onMounted(() => {
     const timeSinceDeploy = now - deployTime;
 
     if (timeSinceDeploy < thirtyMinutesInMillis) {
-      // Fas 1: Visa röd "in progress"-banner
       bannerState.value = 'in-progress';
       
-      // Sätt en timer för att byta till grön banner efter 30 min
       const timeToGreen = thirtyMinutesInMillis - timeSinceDeploy;
       setTimeout(() => {
         bannerState.value = 'updated';
       }, timeToGreen);
 
-      // Sätt en andra timer för att dölja den gröna bannern efter totalt 60 min
       const timeToHide = sixtyMinutesInMillis - timeSinceDeploy;
       setTimeout(() => {
         bannerState.value = 'none';
       }, timeToHide);
 
     } else if (timeSinceDeploy < sixtyMinutesInMillis) {
-      // Fas 2: Visa grön "updated"-banner
       bannerState.value = 'updated';
       
-      // Sätt en timer för att dölja bannern när 60 min har gått
       const timeRemaining = sixtyMinutesInMillis - timeSinceDeploy;
       setTimeout(() => {
         bannerState.value = 'none';
@@ -80,8 +80,7 @@ const routeIcons = {
 </script>
 
 <template>
-  <div class="app-layout" :class="{ 'mobile-view': isMobile }">
-    <!-- NY: Dynamisk uppdateringsbanner -->
+  <div class="app-layout" :class="{ 'mobile-view': isMobile, [bannerClass]: isMobile }">
     <transition name="banner-fade">
       <div v-if="bannerState !== 'none'" class="update-banner" :class="bannerState">
         <p v-if="bannerState === 'in-progress'">
@@ -215,7 +214,6 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .menu-toggle:hover { background-color: var(--bg-hover); color: #fff; }
 .sidebar.is-expanded .menu-toggle { transform: rotate(180deg); }
 
-/* NY OCH UTÖKAD CSS FÖR BANNER */
 .update-banner {
   position: fixed;
   top: 0;
@@ -264,14 +262,10 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
   .sidebar { width: var(--sidebar-width-expanded); transform: translateX(-100%); transition: transform 0.3s ease; }
   .sidebar.is-expanded { transform: translateX(0); }
   .sidebar-header h3, .nav-text { opacity: 1; }
-  .mobile-menu-trigger { position: fixed; top: 1rem; left: 1rem; z-index: 1001; background-color: rgba(255, 255, 255, 0.8); backdrop-filter: blur(5px); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.5rem; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  .mobile-menu-trigger { position: fixed; top: 1rem; left: 1rem; z-index: 1001; background-color: rgba(255, 255, 255, 0.8); backdrop-filter: blur(5px); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.5rem; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: top 0.5s ease; }
   .mobile-menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 999; }
-  .app-layout.mobile-view .mobile-menu-trigger {
-    transition: top 0.5s ease;
+  .app-layout.mobile-view:not(.banner-hidden) .mobile-menu-trigger {
     top: calc(1rem + 48px);
-  }
-  .app-layout.mobile-view.banner-hidden .mobile-menu-trigger {
-    top: 1rem;
   }
   .update-banner p {
     font-size: 0.9rem;
