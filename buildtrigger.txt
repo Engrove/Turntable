@@ -1,0 +1,17 @@
+# Netlify Build Trigger
+
+This file is used to manually trigger Netlify deployments.
+
+Due to the [build.ignore] configuration in netlify.toml, Netlify will ONLY build and deploy the site when this specific file (buildtrigger.txt) is modified and pushed to the repository.
+
+You can make any code changes in your project and push them. Those changes will NOT trigger a build until you also modify this file.
+
+To trigger a new deployment:
+1. Open this file.
+2. Make any small change (e.g., add a new line, a space, or update the date below).
+3. Save, commit, and push this file.
+
+This helps conserve build minutes by giving you full control over deployments.
+
+Last triggered: 2025-07-14 20:00:00 UTC
+Change here >>>
