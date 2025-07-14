@@ -1,12 +1,11 @@
 <!-- src/views/HomeView.vue -->
 <script setup>
 import { RouterLink } from 'vue-router';
-// NYTT (4a): Importera useHead
 import { useHead } from '@unhead/vue';
 
 const githubUrl = 'https://github.com/Engrove/Turntable';
 
-// NYTT (4a): Sätt sid-specifika meta-taggar
+// NYTT: Sid-specifika meta-taggar för SEO och social delning.
 useHead({
   title: 'Engrove Audio Toolkit | Home',
   meta: [
@@ -68,10 +67,6 @@ useHead({
       <p>
         While every effort is made to verify accuracy, there is no guarantee of the absolute correctness of the data or calculations. Users are encouraged to cross-reference the results with their own measurements and practical experience. The ultimate responsibility for any physical build or component matching rests with the user.
       </p>
-      <br>
-      <center>
-        <a href="https://dashboard.simpleanalytics.com/engrove.netlify.app?utm_source=engrove.netlify.app&utm_content=badge&affiliate=kurof" referrerpolicy="origin" target="_blank"><picture><source srcset="https://simpleanalyticsbadges.com/engrove.netlify.app?mode=dark" media="(prefers-color-scheme: dark)" /><img src="https://simpleanalyticsbadges.com/engrove.netlify.app?mode=light" loading="lazy" referrerpolicy="no-referrer" crossorigin="anonymous" /></picture></a>
-      </center>
     </footer>
   </div>
 </template>
