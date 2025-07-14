@@ -1,11 +1,12 @@
 {
-  "timestamp": "2025-07-12T13:00:00.000Z",
+  "timestamp": "2025-07-14T18:30:00.000Z",
   "source_data_count": 442,
   "analysis_data_count": 52,
   "global_fallback": {
     "priority": 99,
     "conditions": {},
     "median_ratio": 1.71,
+    "r_squared": 0.235,
     "sample_size": 52
   },
   "segmented_rules": [
@@ -17,6 +18,7 @@
         "stylus_family": "Advanced Line-Contact"
       },
       "median_ratio": 1.685,
+      "r_squared": 0.989,
       "sample_size": 5
     },
     {
@@ -26,7 +28,8 @@
         "cantilever_class": "Aluminum",
         "stylus_family": "Elliptical"
       },
-      "median_ratio": 1.70,
+      "median_ratio": 1.7,
+      "r_squared": 0.001,
       "sample_size": 18
     },
     {
@@ -36,16 +39,8 @@
         "cantilever_class": "Aluminum"
       },
       "median_ratio": 1.84,
+      "r_squared": 0.017,
       "sample_size": 28
-    },
-    {
-      "priority": 2,
-      "conditions": {
-        "type": "MC",
-        "cantilever_class": "Exotic/High-Performance"
-      },
-      "median_ratio": 1.69,
-      "sample_size": 8
     },
     {
       "priority": 2,
@@ -54,15 +49,18 @@
         "cantilever_class": "Aluminum"
       },
       "median_ratio": 2.23,
+      "r_squared": 0.811,
       "sample_size": 11
     },
     {
-      "priority": 3,
+      "priority": 2,
       "conditions": {
-        "type": "MC"
+        "type": "MC",
+        "cantilever_class": "Exotic/High-Performance"
       },
-      "median_ratio": 2.15,
-      "sample_size": 20
+      "median_ratio": 1.69,
+      "r_squared": 0.976,
+      "sample_size": 8
     },
     {
       "priority": 3,
@@ -70,7 +68,17 @@
         "type": "MM"
       },
       "median_ratio": 1.78,
+      "r_squared": 0.015,
       "sample_size": 30
+    },
+    {
+      "priority": 3,
+      "conditions": {
+        "type": "MC"
+      },
+      "median_ratio": 2.15,
+      "r_squared": 0.738,
+      "sample_size": 20
     },
     {
       "priority": 3,
@@ -78,6 +86,7 @@
         "type": "MI"
       },
       "median_ratio": 1.71,
+      "r_squared": 0.0,
       "sample_size": 5
     }
   ]
