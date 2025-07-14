@@ -71,11 +71,10 @@ export const useTonearmStore = defineStore('tonearm', () => {
     const m2_tube = computed(() => params.value.m_rear_assembly * (params.value.m_tube_percentage / 100.0));
     const m3_fixed_cw = computed(() => params.value.m_rear_assembly - m2_tube.value);
     
-    // NYTT: Byt namn för tydlighet och hämta data direkt
+    // Denna getter är kvar för att InputPanel ska kunna se om headshell är integrerat
     const currentTonearm = computed(() => {
         if (!selectedTonearmId.value) return null;
-        const arm = availableTonearms.value.find(t => t.id == selectedTonearmId.value);
-        return arm ? { ...arm, has_integrated_headshell: arm.headshell_connector === 'integrated' } : null;
+        return availableTonearms.value.find(t => t.id == selectedTonearmId.value) || null;
     });
 
     const calculatedResults = computed(() => {
@@ -112,7 +111,7 @@ export const useTonearmStore = defineStore('tonearm', () => {
         params, availableTonearms, availablePickups, selectedTonearmId, selectedPickupId,
         isLoading, error, initialize, loadTonearmPreset, loadCartridgePreset, setCalculationMode,
         m1, m2_tube, m3_fixed_cw,
-        currentTonearm, // Exponera denna
+        currentTonearm,
         calculatedResults, diagnosis,
     };
 });
