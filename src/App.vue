@@ -6,7 +6,8 @@ import { RouterLink, RouterView, useRouter } from 'vue-router';
 const router = useRouter();
 const isMenuExpanded = ref(false);
 const isMobile = ref(false);
-const showUpdateBanner = ref(false); // NY: State för bannern
+// NYTT: Byt ut boolean mot en state-sträng för bannern
+const bannerState = ref('none'); // Möjliga värden: 'none', 'in-progress', 'updated'
 
 const toggleMenu = () => {
   isMenuExpanded.value = !isMenuExpanded.value;
@@ -27,20 +28,39 @@ onMounted(() => {
   checkScreenSize();
   window.addEventListener('resize', checkScreenSize);
 
-  // NY LOGIK: Hantera uppdateringsbannern
+  // NY OCH UTÖKAD LOGIK: Hanterar tvåstegs-bannern
   const deployTimestampStr = import.meta.env.VITE_DEPLOY_TIMESTAMP;
   if (deployTimestampStr) {
     const deployTime = new Date(deployTimestampStr).getTime();
     const now = new Date().getTime();
     const thirtyMinutesInMillis = 30 * 60 * 1000;
+    const sixtyMinutesInMillis = 60 * 60 * 1000;
     const timeSinceDeploy = now - deployTime;
 
     if (timeSinceDeploy < thirtyMinutesInMillis) {
-      showUpdateBanner.value = true;
-      // Sätt en timer för att dölja bannern när 30 min har gått
-      const timeRemaining = thirtyMinutesInMillis - timeSinceDeploy;
+      // Fas 1: Visa röd "in progress"-banner
+      bannerState.value = 'in-progress';
+      
+      // Sätt en timer för att byta till grön banner efter 30 min
+      const timeToGreen = thirtyMinutesInMillis - timeSinceDeploy;
       setTimeout(() => {
-        showUpdateBanner.value = false;
+        bannerState.value = 'updated';
+      }, timeToGreen);
+
+      // Sätt en andra timer för att dölja den gröna bannern efter totalt 60 min
+      const timeToHide = sixtyMinutesInMillis - timeSinceDeploy;
+      setTimeout(() => {
+        bannerState.value = 'none';
+      }, timeToHide);
+
+    } else if (timeSinceDeploy < sixtyMinutesInMillis) {
+      // Fas 2: Visa grön "updated"-banner
+      bannerState.value = 'updated';
+      
+      // Sätt en timer för att dölja bannern när 60 min har gått
+      const timeRemaining = sixtyMinutesInMillis - timeSinceDeploy;
+      setTimeout(() => {
+        bannerState.value = 'none';
       }, timeRemaining);
     }
   }
@@ -61,10 +81,14 @@ const routeIcons = {
 
 <template>
   <div class="app-layout" :class="{ 'mobile-view': isMobile }">
-    <!-- NY: Uppdateringsbanner -->
+    <!-- NY: Dynamisk uppdateringsbanner -->
     <transition name="banner-fade">
-      <div v-if="showUpdateBanner" class="update-banner">
-        <p>
+      <div v-if="bannerState !== 'none'" class="update-banner" :class="bannerState">
+        <p v-if="bannerState === 'in-progress'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg>
+          An update is in progress. The site may be refreshed automatically.
+        </p>
+        <p v-if="bannerState === 'updated'">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
           The site has just been updated! Refresh the page to ensure you have the latest version.
         </p>
@@ -191,18 +215,31 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .menu-toggle:hover { background-color: var(--bg-hover); color: #fff; }
 .sidebar.is-expanded .menu-toggle { transform: rotate(180deg); }
 
-/* NY CSS FÖR BANNER */
+/* NY OCH UTÖKAD CSS FÖR BANNER */
 .update-banner {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  background-color: #27ae60;
   color: white;
   text-align: center;
   padding: 0.75rem;
   z-index: 2000;
   box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  transition: background-color 0.5s ease;
+}
+.update-banner.updated {
+  background-color: #27ae60; /* Grön */
+}
+.update-banner.in-progress {
+  background-color: #e74c3c; /* Röd */
+}
+.update-banner.in-progress svg {
+  animation: spin 2s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 .update-banner p {
   margin: 0;
@@ -229,9 +266,12 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
   .sidebar-header h3, .nav-text { opacity: 1; }
   .mobile-menu-trigger { position: fixed; top: 1rem; left: 1rem; z-index: 1001; background-color: rgba(255, 255, 255, 0.8); backdrop-filter: blur(5px); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.5rem; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
   .mobile-menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 999; }
-  /* Justera mobilvy för att inte krocka med bannern */
   .app-layout.mobile-view .mobile-menu-trigger {
-    top: calc(1rem + 48px); /* Justera för bannerns höjd */
+    transition: top 0.5s ease;
+    top: calc(1rem + 48px);
+  }
+  .app-layout.mobile-view.banner-hidden .mobile-menu-trigger {
+    top: 1rem;
   }
   .update-banner p {
     font-size: 0.9rem;
