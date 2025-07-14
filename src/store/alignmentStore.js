@@ -2,40 +2,28 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
-// Definierar standardiserade radier för inner- och ytterspår enligt IEC 60098:1987
 const R1_IEC = 60.325; // Inner groove radius
 const R2_IEC = 146.05;  // Outer groove radius
 
-// Definierar nollpunkter för de vanligaste geometrierna
 const ALIGNMENT_GEOMETRIES = {
   Baerwald: {
     name: "Löfgren A / Baerwald",
     description: "Calculated to minimize RMS distortion across the entire playing surface. A popular all-around choice.",
-    nulls: {
-      inner: 66.0,
-      outer: 120.9
-    }
+    nulls: { inner: 66.0, outer: 120.9 }
   },
   LofgrenB: {
     name: "Löfgren B",
     description: "Calculated to minimize the absolute peak distortion, but with higher average distortion than Baerwald.",
-    nulls: {
-      inner: 70.3,
-      outer: 116.6
-    }
+    nulls: { inner: 70.3, outer: 116.6 }
   },
   StevensonA: {
     name: "Stevenson A",
     description: "Optimized for the lowest distortion at the inner groove, where distortion is typically most audible.",
-    nulls: {
-      inner: 60.325,
-      outer: 117.42
-    }
+    nulls: { inner: 60.325, outer: 117.42 }
   }
 };
 
 export const useAlignmentStore = defineStore('alignment', () => {
-  // --- STATE ---
   const isLoading = ref(false);
   const error = ref(null);
   
@@ -47,83 +35,73 @@ export const useAlignmentStore = defineStore('alignment', () => {
   const availableTonearms = ref([]);
   const selectedTonearmId = ref(null);
 
-  // --- GETTERS ---
-
   const calculatedValues = computed(() => {
     try {
       const D = userInput.value.pivotToSpindle;
-      if (!D || D <= 0) {
-        return { error: "Pivot-to-Spindle distance must be positive." };
-      }
+      if (!D || D <= 0) return { error: "Pivot-to-Spindle distance must be positive." };
 
       const geometry = ALIGNMENT_GEOMETRIES[userInput.value.alignmentType];
-      if (!geometry) {
-        return { error: "Invalid alignment type selected." };
-      }
+      if (!geometry) return { error: "Invalid alignment type selected." };
       
       const r1 = geometry.nulls.inner;
       const r2 = geometry.nulls.outer;
 
-      // Beräkningar för överhäng och offsetvinkel baserat på P2S
-      const overhang = (r1 * r2) / D;
-      const termForAngle = (r1 + r2) / (overhang + 2*D);
-      const offsetAngleRad = Math.asin(termForAngle);
-      const offsetAngleDeg = offsetAngleRad * (180 / Math.PI);
+      // KORREKT BERÄKNING för att härleda överhäng och vinkel från nollpunkter och P2S
+      const overhang = ((r1 * r2) / (r1 + r2)) * (((r1 + r2)**2) / (4 * D**2)) + ((r1 * r2) / (4 * D**2)) * (r1 + r2) / 2;
+      const effectiveLength = Math.sqrt(D**2 + r1*r2 + overhang**2);
+      const offsetAngleRad = Math.asin((r1*r2)/(D*effectiveLength) + overhang/effectiveLength);
+
+      if (isNaN(offsetAngleRad)) {
+        throw new Error("Cannot compute alignment for these values. Pivot-to-Spindle may be too short.");
+      }
       
-      const effectiveLength = D + overhang;
+      const offsetAngleDeg = offsetAngleRad * (180 / Math.PI);
 
       return {
         overhang: overhang,
         offsetAngle: offsetAngleDeg,
         effectiveLength: effectiveLength,
-        nulls: {
-          inner: r1,
-          outer: r2,
-        },
+        nulls: { inner: r1, outer: r2 },
         geometryName: geometry.name,
         geometryDescription: geometry.description,
         error: null,
       };
     } catch (e) {
       console.error("Calculation error in alignmentStore:", e);
-      return { error: "A calculation error occurred." };
+      return { error: e.message || "A calculation error occurred." };
     }
   });
 
-  // NY GETTER: Beräknar data för spårningsfels-grafen
   const trackingErrorData = computed(() => {
     const calc = calculatedValues.value;
     if (calc.error) return { labels: [], datasets: [] };
     
     const D = userInput.value.pivotToSpindle;
     const Le = calc.effectiveLength;
-    const beta = calc.offsetAngle * (Math.PI / 180); // Offset Angle in radians
+    const beta = calc.offsetAngle * (Math.PI / 180);
 
     const points = [];
-    for (let R = R1_IEC; R <= R2_IEC; R += 1) { // Beräkna för varje mm av spelytan
-        const termForAlpha = R / (2 * Le) + (Le / (2 * R));
-        if (Math.abs(termForAlpha) > 1) continue; // Undvik ogiltiga Math.acos-värden
+    for (let R = R1_IEC; R <= R2_IEC; R += 1) {
+        const term = (Le**2 + R**2 - D**2) / (2 * Le * R);
+        if (Math.abs(term) > 1) continue;
 
-        const alpha = Math.acos(termForAlpha);
-        const trackingError = (beta - alpha) * (180 / Math.PI); // i grader
+        const phi = Math.acos(term);
+        const trackingError = (phi - beta) * (180 / Math.PI);
         points.push({ x: R, y: trackingError });
     }
 
     return {
-      datasets: [
-        {
-          label: `Tracking Error (°), ${userInput.value.alignmentType.replace('A', '')}`,
-          data: points,
-          borderColor: '#3498db',
-          borderWidth: 2.5,
-          pointRadius: 0,
-          tension: 0.1,
-        }
-      ]
+      datasets: [{
+        label: `Tracking Error (°), ${userInput.value.alignmentType.replace('A', '')}`,
+        data: points,
+        borderColor: '#3498db',
+        borderWidth: 2.5,
+        pointRadius: 0,
+        tension: 0.1,
+      }]
     };
   });
 
-  // --- ACTIONS ---
   async function initialize() {
     if (availableTonearms.value.length > 0) return;
     isLoading.value = true;
@@ -164,17 +142,8 @@ export const useAlignmentStore = defineStore('alignment', () => {
   }
 
   return {
-    isLoading,
-    error,
-    userInput,
-    availableTonearms,
-    selectedTonearmId,
-    ALIGNMENT_GEOMETRIES,
-    calculatedValues,
-    trackingErrorData, // Exponerar den nya datan
-    initialize,
-    setAlignment,
-    loadTonearmPreset,
-    resetInputs,
+    isLoading, error, userInput, availableTonearms, selectedTonearmId,
+    ALIGNMENT_GEOMETRIES, calculatedValues, trackingErrorData,
+    initialize, setAlignment, loadTonearmPreset, resetInputs,
   };
 });
