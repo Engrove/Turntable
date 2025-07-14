@@ -21,7 +21,7 @@ export const useEstimatorStore = defineStore('estimator', {
       chartConfig: null,
     },
     estimationRules: null,
-    staticEstimationRules: null, // NY: För regressionsregler från statisk compliance
+    staticEstimationRules: null,
     allPickups: [],
     availableCantileverClasses: [],
     availableStylusFamilies: [],
@@ -36,10 +36,9 @@ export const useEstimatorStore = defineStore('estimator', {
       this.error = null;
       this.debugLog = ['Initialization started.'];
       try {
-        // Ladda in båda regel-filerna parallellt
         const [rulesResponse, staticRulesResponse, pickupsResponse, classificationsResponse] = await Promise.all([
           fetch('/data/estimation_rules.json'),
-          fetch('/data/static_estimation_rules.json'), // NY: Ladda den nya filen
+          fetch('/data/static_estimation_rules.json'),
           fetch('/data/pickup_data.json'),
           fetch('/data/classifications.json')
         ]);
@@ -50,7 +49,6 @@ export const useEstimatorStore = defineStore('estimator', {
         this.estimationRules = await rulesResponse.json();
         this.debugLog.push('Parsed estimation_rules.json.');
 
-        // NY: Hantera den nya regelfilen
         if (!staticRulesResponse.ok) throw new Error(`Failed to load static_estimation_rules.json: ${staticRulesResponse.statusText}`);
         this.staticEstimationRules = await staticRulesResponse.json();
         this.debugLog.push('Parsed static_estimation_rules.json.');
@@ -84,7 +82,6 @@ export const useEstimatorStore = defineStore('estimator', {
         stylus_family: null,
         weight_g: null,
       };
-      // Återställ resultatet till initialt tillstånd
       this.result = {
         compliance_min: null,
         compliance_median: null,
@@ -100,68 +97,55 @@ export const useEstimatorStore = defineStore('estimator', {
       const { type, cantilever_class, stylus_family } = this.userInput;
       const rules = this.estimationRules.segmented_rules;
 
-      // Prioritet 1: Alla tre villkor matchar
       let bestRule = rules.find(r => r.conditions.type === type && r.conditions.cantilever_class === cantilever_class && r.conditions.stylus_family === stylus_family);
       if (bestRule) return bestRule;
 
-      // Prioritet 2: Två villkor matchar
       bestRule = rules.find(r => r.conditions.type === type && r.conditions.cantilever_class === cantilever_class && Object.keys(r.conditions).length === 2);
       if (bestRule) return bestRule;
 
-      // Prioritet 3: Endast typ matchar
       bestRule = rules.find(r => r.conditions.type === type && Object.keys(r.conditions).length === 1);
       if (bestRule) return bestRule;
 
       return this.estimationRules.global_fallback;
     },
 
-    // NY: Funktion för att hitta bästa regel för statisk compliance
     findBestStaticRule() {
       const { type, cantilever_class, stylus_family } = this.userInput;
-      if (!this.staticEstimationRules) return null; // Felsäkerhet
+      if (!this.staticEstimationRules) return null;
       const rules = this.staticEstimationRules.segmented_rules;
 
-      // Prioritet 1: Alla tre villkor matchar
       let bestRule = rules.find(r => r.conditions.type === type && r.conditions.cantilever_class === cantilever_class && r.conditions.stylus_family === stylus_family);
       if (bestRule) return bestRule;
 
-      // Prioritet 2: Två villkor matchar
       bestRule = rules.find(r => r.conditions.type === type && r.conditions.cantilever_class === cantilever_class && Object.keys(r.conditions).length === 2);
       if (bestRule) return bestRule;
 
-      // Prioritet 3: Endast typ matchar
       bestRule = rules.find(r => r.conditions.type === type && Object.keys(r.conditions).length === 1);
       if (bestRule) return bestRule;
 
       return this.staticEstimationRules.global_fallback;
     },
 
-    // NY: Funktion för att beräkna konfidens baserat på poängsystem
     _calculateStaticConfidence(rule) {
       if (!rule) return 0;
       let totalPoints = 0;
 
-      // 1. Poäng för specificitet (Prioritet)
       if (rule.priority === 1) totalPoints += 30;
       else if (rule.priority === 2) totalPoints += 20;
       else if (rule.priority === 3) totalPoints += 10;
-      // Global fallback (priority 99) ger 0 poäng
 
-      // 2. Poäng för sampelstorlek
       const size = rule.sample_size;
       if (size > 50) totalPoints += 20;
       else if (size > 20) totalPoints += 15;
       else if (size > 5) totalPoints += 10;
       else if (size >= 1) totalPoints += 5;
 
-      // 3. Poäng för R²-värde
       const r2 = rule.r_squared;
       if (r2 > 0.70) totalPoints += 25;
       else if (r2 > 0.50) totalPoints += 15;
       else if (r2 > 0.25) totalPoints += 10;
       else totalPoints += 5;
 
-      // Normalisera poängen (max 75) till en procentsats (0-100)
       return Math.round((totalPoints / 75) * 100);
     },
 
@@ -219,14 +203,16 @@ export const useEstimatorStore = defineStore('estimator', {
         const dataPoints = this.allPickups.filter(p => p.cu_static && p.cu_dynamic_10hz && Object.entries(rule.conditions).every(([key, value]) => p[key] === value))
                                            .map(p => ({ x: p.cu_static, y: p.cu_dynamic_10hz, model: p.model }));
 
+        // KORRIGERING: Skicka med både k och m till chartConfig
         this.result.chartConfig = {
           dataPoints,
-          medianRatio: rule.k,
+          k: rule.k,
+          m: rule.m,
           labels: {
             x: 'Static Compliance',
             y: 'Dynamic Compliance @ 10Hz',
             title: `10Hz vs Static Compliance for ${conditionsText} Pickups`,
-            lineLabel: `Regression Line (k=${rule.k.toFixed(2)})`
+            lineLabel: `Regression (y=${rule.k.toFixed(2)}x + ${rule.m.toFixed(2)})`
           }
         };
 
