@@ -1,11 +1,11 @@
 {
   "name": "engrove-audio-toolkit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": false,
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "VITE_DEPLOY_TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%M:%SZ') vite build",
+    "build": "node scripts/generate-sitemap.js && VITE_DEPLOY_TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%M:%SZ') vite build",
     "preview": "vite preview",
     "test": "vitest"
   },
