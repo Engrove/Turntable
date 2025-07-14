@@ -2,12 +2,13 @@
 <script setup>
 import { useTonearmStore } from '@/store/tonearmStore.js'
 import TonearmVisualizer from './TonearmVisualizer.vue'
+import TonearmGeometry from './TonearmGeometry.vue';
 import SensitivityCharts from './SensitivityCharts.vue';
 import CounterweightChart from './CounterweightChart.vue';
+
 const store = useTonearmStore()
 </script>
 <template>
-    <!-- Den yttre containern är borttagen så att panelerna kan flöda fritt -->
     <div class="results-container">
         <div class="results-panel panel">
             <h2>Calculated Results</h2>
@@ -38,25 +39,18 @@ const store = useTonearmStore()
             </div>
         </div>
 
-        <!-- Alla visualiseringar renderas nu här, under resultatpanelen -->
         <template v-if="store.params.calculationMode === 'detailed'">
-            <TonearmGeometry />
             <TonearmVisualizer />
+            <!-- NYTT: Skickar in den valda tonarmen som en prop -->
+            <TonearmGeometry :tonearm="store.currentTonearm" />
             <SensitivityCharts />
             <CounterweightChart />
         </template>
     </div>
 </template>
 <style scoped>
-/* Behållaren för alla resultat och grafer */
-.results-container {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-}
-.results-panel {
-    /* Ingen specifik styling behövs här, den ärver från .panel */
-}
+.results-container { display: flex; flex-direction: column; gap: 2rem; }
+.results-panel {}
 .result-item{display:flex;justify-content:space-between;align-items:center;padding:.75rem 0;border-bottom:1px solid var(--border-color)}.result-item:last-of-type{border-bottom:none}.result-item .label{font-weight:500;color:var(--label-color)}.result-item .value{font-weight:700;font-size:1.2rem}
 .value.resonance{font-size:1.5rem}.diagnosis{margin-top:1.5rem;padding:1rem;border-radius:6px;font-weight:500}.diagnosis.ideal{background-color:var(--ideal-color);color:var(--ideal-text)}.diagnosis.warning{background-color:var(--warning-color);color:var(--warning-text)}.diagnosis.danger{background-color:var(--danger-color);color:var(--danger-text)}.diagnosis.none{display:none;}.diagnosis-title{margin-top:0;margin-bottom:.5rem;font-size:1rem}.diagnosis ul{padding-left:1.25rem;margin:0}.diagnosis li{margin-bottom:.25rem}
 </style>
