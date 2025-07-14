@@ -73,32 +73,25 @@ export const useAlignmentStore = defineStore('alignment', () => {
     const r1 = geometry.nulls.inner;
     const r2 = geometry.nulls.outer;
 
-    // --- KORREKTA BERÄKNINGAR (Graeme Dennes' formler för precision) ---
     const Rp = r1 * r2;
     const Rg = (r1 + r2) / 2;
-
-    const term1 = D - (((r1 - Rg) ** 2) + (Rp ** 2 / D ** 2)) / (2 * D);
-    const term2 = Rg / term1;
     
-    if (isNaN(term1) || isNaN(term2)) {
+    // Använder Graeme Dennes' mer robusta formel för precision
+    const term1 = D - (((Rg - r1)**2) / (2*D));
+    const term2 = (Rp**2) / (2 * D * term1);
+    const effectiveLength = term1 + term2;
+    const overhang = (Rp / (2*D)) * (1 + (Rg**2 / (effectiveLength**2)));
+    const offsetAngleRad = Math.asin(overhang / ( (Rp / (D**2 - overhang**2)) + ((r1 + r2)/2) ));
+
+    if (isNaN(effectiveLength) || isNaN(overhang) || isNaN(offsetAngleRad)) {
       return {
-        error: "Invalid input. Pivot-to-spindle distance might be too small for this geometry.",
-        overhang: 0, offsetAngle: 0, effectiveLength: 0, nulls: { inner: 0, outer: 0 }
+        error: "Invalid input. Pivot-to-spindle distance might be too small or too large for this geometry.",
+        overhang: 0, offsetAngle: 0, effectiveLength: 0, nulls: { inner: r1, outer: r2 },
+        geometryName: geometry.name, geometryDescription: geometry.description
       };
     }
-
-    const offsetAngleRad = Math.atan(term2);
-    const effectiveLength = term1 / Math.cos(offsetAngleRad);
-    const overhang = effectiveLength - D;
+    
     const offsetAngleDeg = offsetAngleRad * (180 / Math.PI);
-    
-    // Ytterligare felkontroll
-    if (isNaN(effectiveLength) || D <= 0) {
-      return {
-        error: "Calculation resulted in invalid numbers. Check input values.",
-        overhang: 0, offsetAngle: 0, effectiveLength: 0, nulls: { inner: 0, outer: 0 }
-      };
-    }
     
     return {
       overhang: overhang,
@@ -119,21 +112,18 @@ export const useAlignmentStore = defineStore('alignment', () => {
     const { effectiveLength, offsetAngle } = calculatedValues.value;
     const D = userInput.value.pivotToSpindle;
     const Le = effectiveLength;
-    const offsetRad = offsetAngle * (Math.PI / 180);
+    const betaDeg = offsetAngle;
 
     const points = [];
-    // Beräkna punkter från 60 mm till 147 mm
-    for (let radius = 60; radius <= 147; radius += 0.5) {
-      // --- KORREKT FORMEL FÖR TRACKING ERROR ---
-      // Beräkna först tracking angle (alfa) vid given radie
-      const cosAlpha = (D**2 + radius**2 - Le**2) / (2 * D * radius);
+    for (let R = 60; R <= 147; R += 0.5) {
+      // Robust AES-formel för tracking error
+      const cosTheta = (D**2 + R**2 - Le**2) / (2 * D * R);
 
-      // Argumentet för asin måste vara mellan -1 och 1
-      if (cosAlpha >= -1 && cosAlpha <= 1) {
-          const alphaRad = Math.acos(cosAlpha);
-          // Beräkna sedan vinkelfelet (beta - alfa)
-          const trackingErrorRad = Math.asin(radius / Le * Math.sin(offsetRad)) - alphaRad;
-          points.push({ x: radius, y: trackingErrorRad * (180 / Math.PI) });
+      if (cosTheta >= -1 && cosTheta <= 1) {
+        const thetaRad = Math.acos(cosTheta);
+        const thetaDeg = thetaRad * (180 / Math.PI);
+        const trackingErrorDeg = betaDeg - (90 - thetaDeg);
+        points.push({ x: R, y: trackingErrorDeg });
       }
     }
     
@@ -147,12 +137,11 @@ export const useAlignmentStore = defineStore('alignment', () => {
           borderWidth: 2,
           pointRadius: 0,
           tension: 0.1,
-          fill: true
+          fill: 'origin' // Fyller kurvan till noll-linjen
         },
       ],
     };
   });
-
 
   return {
     isLoading,
@@ -160,7 +149,7 @@ export const useAlignmentStore = defineStore('alignment', () => {
     availableTonearms,
     selectedTonearmId,
     userInput,
-    ALIGNMENT_GEOMETRIES, // Exponera för input panelen
+    ALIGNMENT_GEOMETRIES,
     calculatedValues,
     trackingErrorData,
     initialize,
