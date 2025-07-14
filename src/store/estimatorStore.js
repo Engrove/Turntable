@@ -100,15 +100,12 @@ export const useEstimatorStore = defineStore('estimator', {
       const { type, cantilever_class, stylus_family } = this.userInput;
       const rules = ruleset.segmented_rules;
 
-      // Prioritet 1: Alla tre villkor matchar
       let bestRule = rules.find(r => r.priority === 1 && r.conditions.type === type && r.conditions.cantilever_class === cantilever_class && r.conditions.stylus_family === stylus_family);
       if (bestRule) return bestRule;
 
-      // Prioritet 2: Två villkor matchar
       bestRule = rules.find(r => r.priority === 2 && r.conditions.type === type && r.conditions.cantilever_class === cantilever_class);
       if (bestRule) return bestRule;
 
-      // Prioritet 3: Endast typ matchar
       bestRule = rules.find(r => r.priority === 3 && r.conditions.type === type);
       if (bestRule) return bestRule;
 
@@ -152,7 +149,7 @@ export const useEstimatorStore = defineStore('estimator', {
         this.result.compliance_median = estimatedValue;
         this.result.compliance_min = estimatedValue * 0.9;
         this.result.compliance_max = estimatedValue * 1.1;
-        this.result.confidence = this._calculateRuleConfidence(rule); // KORRIGERING
+        this.result.confidence = this._calculateRuleConfidence(rule);
         this.result.sampleSize = rule.sample_size;
         this.result.description = `Using a rule for ${Object.values(rule.conditions).join(', ')}. The median conversion ratio is ${ratio.toFixed(2)}.`;
         
@@ -180,8 +177,11 @@ export const useEstimatorStore = defineStore('estimator', {
         const estimatedValue = (rule.k * this.userInput.cu_static) + rule.m;
         
         this.result.compliance_median = Math.max(1, estimatedValue);
-        this.result.compliance_min = null;
-        this.result.compliance_max = null;
+        
+        // NYTT: Beräkna ett dynamiskt intervall baserat på R²
+        const uncertaintyFactor = 0.1 + (0.15 * (1 - Math.max(0, rule.r_squared))); // Skapar ett intervall mellan ±10% och ±25%
+        this.result.compliance_min = Math.max(1, estimatedValue * (1 - uncertaintyFactor));
+        this.result.compliance_max = Math.max(1, estimatedValue * (1 + uncertaintyFactor));
 
         this.result.confidence = this._calculateRuleConfidence(rule);
         this.result.sampleSize = rule.sample_size;
