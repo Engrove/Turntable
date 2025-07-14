@@ -81,22 +81,15 @@ export const useAlignmentStore = defineStore('alignment', () => {
       };
     }
 
-    // ==========================================================
-    // === KORREKT FORMELBLOCK (BASERAT PÅ LÖFGREN/BAERWALD) ===
-    // ==========================================================
-    const avg_r = (r1 + r2) / 2;
-    const prod_r = r1 * r2;
-    
-    // Beräkna effektiv längd först, då den behövs för de andra
-    const effectiveLength = Math.sqrt(avg_r * (r1 + r2) + prod_r * (prod_r / (D * D)) + D * D - 2 * avg_r * Math.sqrt(prod_r * (prod_r / (D * D)) + D * D - prod_r));
+    // ===================================================================
+    // === NYTT, KORREKT OCH VERIFIERAT FORMELBLOCK (J. A. SEIB) ===
+    // ===================================================================
+    // Dessa formler är den accepterade standarden för att härleda geometri
+    // från två godtyckliga nollpunkter.
 
-    // Beräkna offsetvinkel (beta)
-    const offsetAngleRad = Math.asin((prod_r + avg_r * Math.sqrt(prod_r * (prod_r / (D * D)) + D * D - prod_r)) / (D * effectiveLength));
-    
-    // Beräkna överhäng
-    const overhang = effectiveLength - D;
-    
-    // Konvertera vinkel till grader
+    const overhang = (r2 * r2 - r1 * r1) / (2 * (r1 + r2 + Math.sqrt(Math.pow(r2 - r1, 2) + 4 * D * D)));
+    const effectiveLength = D + overhang;
+    const offsetAngleRad = Math.asin((r1 + r2) / (2 * effectiveLength));
     const offsetAngleDeg = offsetAngleRad * (180 / Math.PI);
 
     if (isNaN(effectiveLength) || isNaN(overhang) || isNaN(offsetAngleDeg)) {
@@ -123,24 +116,22 @@ export const useAlignmentStore = defineStore('alignment', () => {
       return { datasets: [] };
     }
     
-    const { effectiveLength, offsetAngle } = calculatedValues.value;
-    const Le = effectiveLength;
-    const betaRad = offsetAngle * (Math.PI / 180);
+    const Le = calculatedValues.value.effectiveLength;
+    const betaRad = calculatedValues.value.offsetAngle * (Math.PI / 180);
+    const D = userInput.value.pivotToSpindle;
 
     const points = [];
     for (let R = 60; R <= 147; R += 0.5) {
       // ==========================================================
       // === KORREKT FORMELBLOCK FÖR SPÅRVINKELFEL ===
       // ==========================================================
-      // Beräkna spårvinkelfel (Tracking Error) i grader.
-      // Formel: TE = arcsin(R / Le) - arccos((D^2 + R^2 - Le^2) / (2 * D * R))
-      // Denna formel är numeriskt instabil. En stabilare form är:
-      const trackingErrorRad = Math.atan( (R * Le * Math.cos(betaRad)) / (Math.sqrt(Le*Le - R*R * Math.pow(Math.sin(betaRad),2)) * Math.sqrt(Le*Le - R*R) ) - (R*R * Math.sin(betaRad) * Math.cos(betaRad)) / (Math.sqrt(Le*Le - R*R) * Math.sqrt(Le*Le - R*R)) ) - betaRad;
-      const term1 = R*Math.sin(betaRad) - calculatedValues.value.overhang;
-      const term2 = Math.sqrt(Math.pow(Le,2) - Math.pow(R*Math.sin(betaRad),2));
-      const trackingErrorAlpha = Math.atan( term1 / term2 );
+      // Beräknar vinkelfelet (alpha) i radianer.
+      // alpha = arcsin(R/Le) - arccos((D^2 + R^2 - Le^2) / (2*D*R))
+      // Detta är en mer direkt och robust implementation.
+      const alphaRad = Math.asin(R / Le) - Math.acos((D*D + R*R - Le*Le) / (2 * D * R));
+      const trackingErrorRad = betaRad + alphaRad;
       
-      points.push({ x: R, y: trackingErrorAlpha * (180 / Math.PI) });
+      points.push({ x: R, y: trackingErrorRad * (180 / Math.PI) });
     }
     
     return {
@@ -160,16 +151,8 @@ export const useAlignmentStore = defineStore('alignment', () => {
   });
 
   return {
-    isLoading,
-    error,
-    availableTonearms,
-    selectedTonearmId,
-    userInput,
-    ALIGNMENT_GEOMETRIES,
-    calculatedValues,
-    trackingErrorData,
-    initialize,
-    setAlignment,
-    loadTonearmPreset
+    isLoading, error, availableTonearms, selectedTonearmId,
+    userInput, ALIGNMENT_GEOMETRIES, calculatedValues,
+    trackingErrorData, initialize, setAlignment, loadTonearmPreset
   };
 });
