@@ -2,26 +2,23 @@
 
 import json
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
 from datetime import datetime
 import os
 
 # --- Konfiguration ---
-# Sökvägar relativa till projektets rotkatalog
-PICKUP_DATA_PATH = os.path.join('data', 'pickup_data.json')
-OUTPUT_RULES_PATH = os.path.join('public', 'estimation_rules.json')
+PICKUP_DATA_PATH = os.path.join('public', 'data', 'pickup_data.json')
+OUTPUT_RULES_PATH = os.path.join('public', 'data', 'estimation_rules.json')
+MIN_SAMPLE_SIZE_FOR_RULE = 3 # Kräv minst 3 datapunkter för att skapa en specifik regel
 
 def generate_rules():
     """
-    Huvudfunktion som läser in pickup-data, tränar en modell,
-    beräknar regler och skriver resultatet till en JSON-fil.
+    Huvudfunktion som läser in pickup-data, beräknar mediankvoter och R²-värden
+    för olika segment, och skriver resultatet till en JSON-fil.
     """
-    print("Startar generering av estimeringsregler...")
+    print("Startar generering av estimeringsregler för 100Hz -> 10Hz...")
 
-    # 1. Läs in och förbered data med pandas
     try:
         df_full = pd.read_json(PICKUP_DATA_PATH)
         print(f"Hämtade {len(df_full)} pickuper från '{PICKUP_DATA_PATH}'.")
@@ -29,94 +26,86 @@ def generate_rules():
         print(f"Fel vid inläsning av JSON-data: {e}")
         return
 
-    # Skapa en arbetskopia för analys, filtrera bort rader som saknar nödvändig data
+    # Filtrera bort rader som saknar nödvändig data för denna analys
     df_analysis = df_full.dropna(subset=['cu_dynamic_100hz', 'cu_dynamic_10hz']).copy()
-    print(f"Hittade {len(df_analysis)} pickuper med fullständiga compliance-värden för analys.")
+    print(f"Hittade {len(df_analysis)} pickuper med fullständiga 100Hz/10Hz-värden för analys.")
 
-    if len(df_analysis) == 0:
-        print("Ingen data tillgänglig för analys. Avbryter.")
+    if len(df_analysis) < MIN_SAMPLE_SIZE_FOR_RULE:
+        print("Inte tillräckligt med data för att skapa meningsfulla regler. Avbryter.")
         return
 
     # Beräkna konverteringsration
     df_analysis['ratio'] = df_analysis['cu_dynamic_10hz'] / df_analysis['cu_dynamic_100hz']
 
-    # 2. Träna en Random Forest-modell för att hitta "Feature Importance"
-    # Använd fler features för att ge en bättre modell, även för framtida bruk
-    features = ['cu_dynamic_100hz', 'weight_g', 'type', 'cantilever_class', 'stylus_family']
-    target = 'cu_dynamic_10hz'
+    # Funktion för att utföra regression och få R²
+    def get_r_squared(df_segment):
+        if len(df_segment) < MIN_SAMPLE_SIZE_FOR_RULE:
+            return 0.0 # Returnera ett lågt värde om det inte finns tillräckligt med data
+        
+        X = df_segment[['cu_dynamic_100hz']]
+        y = df_segment['cu_dynamic_10hz']
+        
+        model = LinearRegression()
+        model.fit(X, y)
+        y_pred = model.predict(X)
+        
+        return r2_score(y, y_pred)
 
-    # Ta bort rader där någon av våra features saknas (speciellt viktigt för kategoriska)
-    df_model = df_analysis.dropna(subset=features).copy()
-    print(f"Använder {len(df_model)} kompletta rader för att träna modellen.")
-
-    X = df_model[features]
-    y = df_model[target]
-
-    # Skapa en preprocessor för att hantera kategoriska och numeriska data
-    categorical_features = ['type', 'cantilever_class', 'stylus_family']
-    numeric_features = ['cu_dynamic_100hz', 'weight_g']
-
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ('num', 'passthrough', numeric_features),
-            ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)
-        ])
-
-    # Skapa en pipeline med preprocessor och modellen
-    model = Pipeline(steps=[('preprocessor', preprocessor),
-                            ('regressor', RandomForestRegressor(n_estimators=100, random_state=42))])
-
-    # Träna modellen
-    model.fit(X, y)
-    print("Modell tränad framgångsrikt.")
-
-    # Extrahera feature importance
-    try:
-        regressor = model.named_steps['regressor']
-        ohe_feature_names = model.named_steps['preprocessor'].named_transformers_['cat'].get_feature_names_out(categorical_features)
-        all_feature_names = numeric_features + list(ohe_feature_names)
-        importances = regressor.feature_importances_
-        feature_importance_dict = dict(zip(all_feature_names, importances))
-    except Exception as e:
-        print(f"Kunde inte extrahera feature importance: {e}")
-        feature_importance_dict = {}
-
-    # 3. Beräkna segmenterade median-konverteringsfaktorer
-    # Vi fokuserar på de mest relevanta kategorierna: 'type' och 'cantilever_class'
-    df_rules = df_analysis.dropna(subset=['type', 'cantilever_class']).copy()
-    grouped = df_rules.groupby(['type', 'cantilever_class'])
-
+    # Skapa segmenterade regler
     segmented_rules = []
-    for (pickup_type, cantilever), group in grouped:
-        if len(group) > 0: # Inkludera endast grupper med minst 1 medlem
-            rule = {
-                'conditions': {
-                    'type': pickup_type,
-                    'cantilever_class': cantilever
-                },
-                'median_ratio': round(group['ratio'].median(), 4),
-                'sample_size': len(group)
-            }
-            segmented_rules.append(rule)
-    print(f"Genererade {len(segmented_rules)} segmenterade regler.")
+    rule_keys = [
+        ['type', 'cantilever_class', 'stylus_family'], # Prio 1
+        ['type', 'cantilever_class'],                 # Prio 2
+        ['type']                                      # Prio 3
+    ]
 
-    # 4. Beräkna global fallback-median
+    # Använd en uppsättning för att undvika dubbletter av regler
+    created_rules = set()
+
+    for i, keys in enumerate(rule_keys):
+        priority = i + 1
+        grouped = df_analysis.groupby(keys)
+        for name, group in grouped:
+            # Skapa en unik nyckel för regeln för att undvika dubbletter
+            # (t.ex. en Prio 2-regel kan vara identisk med en Prio 3-regel om det bara finns en cantilever_class för en viss typ)
+            rule_key = tuple(sorted(group[keys].iloc[0].items()))
+            if rule_key in created_rules:
+                continue
+            
+            if len(group) >= MIN_SAMPLE_SIZE_FOR_RULE:
+                r2 = get_r_squared(group)
+                rule = {
+                    'priority': priority,
+                    'conditions': group[keys].iloc[0].to_dict(),
+                    'median_ratio': round(group['ratio'].median(), 4),
+                    'r_squared': round(r2, 4),
+                    'sample_size': len(group)
+                }
+                segmented_rules.append(rule)
+                created_rules.add(rule_key)
+
+    print(f"Genererade {len(segmented_rules)} unika, segmenterade regler.")
+
+    # Beräkna global fallback
+    global_r2 = get_r_squared(df_analysis)
     global_fallback = {
+        'priority': 99,
+        'conditions': {},
         'median_ratio': round(df_analysis['ratio'].median(), 4),
+        'r_squared': round(global_r2, 4),
         'sample_size': len(df_analysis)
     }
 
-    # 5. Sammanställ all information till en JSON-struktur
+    # Sammanställ all information
     output_data = {
         'timestamp': datetime.now().isoformat(),
         'source_data_count': len(df_full),
         'analysis_data_count': len(df_analysis),
-        'feature_importance': feature_importance_dict,
         'global_fallback': global_fallback,
-        'segmented_rules': sorted(segmented_rules, key=lambda x: x['sample_size'], reverse=True) # Sortera efter relevans
+        'segmented_rules': sorted(segmented_rules, key=lambda x: (x['priority'], -x['sample_size']))
     }
 
-    # 6. Skriv till output-filen
+    # Skriv till output-filen
     try:
         os.makedirs(os.path.dirname(OUTPUT_RULES_PATH), exist_ok=True)
         with open(OUTPUT_RULES_PATH, 'w') as f:
@@ -127,5 +116,4 @@ def generate_rules():
 
 
 if __name__ == '__main__':
-    # Detta gör att skriptet kan köras från terminalen med "python scripts/generate_rules.py"
     generate_rules()
