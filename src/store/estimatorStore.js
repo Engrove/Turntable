@@ -93,41 +93,30 @@ export const useEstimatorStore = defineStore('estimator', {
       };
     },
 
-    findBestRule() {
+    findBestRule(isStatic = false) {
+      const ruleset = isStatic ? this.staticEstimationRules : this.estimationRules;
+      if (!ruleset) return null;
+
       const { type, cantilever_class, stylus_family } = this.userInput;
-      const rules = this.estimationRules.segmented_rules;
+      const rules = ruleset.segmented_rules;
 
-      let bestRule = rules.find(r => r.conditions.type === type && r.conditions.cantilever_class === cantilever_class && r.conditions.stylus_family === stylus_family);
+      // Prioritet 1: Alla tre villkor matchar
+      let bestRule = rules.find(r => r.priority === 1 && r.conditions.type === type && r.conditions.cantilever_class === cantilever_class && r.conditions.stylus_family === stylus_family);
       if (bestRule) return bestRule;
 
-      bestRule = rules.find(r => r.conditions.type === type && r.conditions.cantilever_class === cantilever_class && Object.keys(r.conditions).length === 2);
+      // Prioritet 2: Två villkor matchar
+      bestRule = rules.find(r => r.priority === 2 && r.conditions.type === type && r.conditions.cantilever_class === cantilever_class);
       if (bestRule) return bestRule;
 
-      bestRule = rules.find(r => r.conditions.type === type && Object.keys(r.conditions).length === 1);
+      // Prioritet 3: Endast typ matchar
+      bestRule = rules.find(r => r.priority === 3 && r.conditions.type === type);
       if (bestRule) return bestRule;
 
-      return this.estimationRules.global_fallback;
+      return ruleset.global_fallback;
     },
 
-    findBestStaticRule() {
-      const { type, cantilever_class, stylus_family } = this.userInput;
-      if (!this.staticEstimationRules) return null;
-      const rules = this.staticEstimationRules.segmented_rules;
-
-      let bestRule = rules.find(r => r.conditions.type === type && r.conditions.cantilever_class === cantilever_class && r.conditions.stylus_family === stylus_family);
-      if (bestRule) return bestRule;
-
-      bestRule = rules.find(r => r.conditions.type === type && r.conditions.cantilever_class === cantilever_class && Object.keys(r.conditions).length === 2);
-      if (bestRule) return bestRule;
-
-      bestRule = rules.find(r => r.conditions.type === type && Object.keys(r.conditions).length === 1);
-      if (bestRule) return bestRule;
-
-      return this.staticEstimationRules.global_fallback;
-    },
-
-    _calculateStaticConfidence(rule) {
-      if (!rule) return 0;
+    _calculateRuleConfidence(rule) {
+      if (!rule || rule.r_squared === undefined) return 0;
       let totalPoints = 0;
 
       if (rule.priority === 1) totalPoints += 30;
@@ -146,7 +135,7 @@ export const useEstimatorStore = defineStore('estimator', {
       else if (r2 > 0.25) totalPoints += 10;
       else totalPoints += 5;
 
-      return Math.round((totalPoints / 75) * 100);
+      return Math.min(100, Math.round((totalPoints / 75) * 100));
     },
 
     calculateEstimate() {
@@ -156,14 +145,14 @@ export const useEstimatorStore = defineStore('estimator', {
       }
 
       if (this.userInput.cu_dynamic_100hz) {
-        const rule = this.findBestRule();
+        const rule = this.findBestRule(false);
         const ratio = rule.median_ratio;
         const estimatedValue = this.userInput.cu_dynamic_100hz * ratio;
 
         this.result.compliance_median = estimatedValue;
         this.result.compliance_min = estimatedValue * 0.9;
         this.result.compliance_max = estimatedValue * 1.1;
-        this.result.confidence = Math.min(99, Math.round(rule.sample_size * 2.5));
+        this.result.confidence = this._calculateRuleConfidence(rule); // KORRIGERING
         this.result.sampleSize = rule.sample_size;
         this.result.description = `Using a rule for ${Object.values(rule.conditions).join(', ')}. The median conversion ratio is ${ratio.toFixed(2)}.`;
         
@@ -182,7 +171,7 @@ export const useEstimatorStore = defineStore('estimator', {
         };
 
       } else if (this.userInput.cu_static) {
-        const rule = this.findBestStaticRule();
+        const rule = this.findBestRule(true);
         if (!rule) {
             this.result.description = "Static estimation rules could not be loaded. Please try again.";
             return;
@@ -194,7 +183,7 @@ export const useEstimatorStore = defineStore('estimator', {
         this.result.compliance_min = null;
         this.result.compliance_max = null;
 
-        this.result.confidence = this._calculateStaticConfidence(rule);
+        this.result.confidence = this._calculateRuleConfidence(rule);
         this.result.sampleSize = rule.sample_size;
         
         const conditionsText = Object.keys(rule.conditions).length > 0 ? Object.values(rule.conditions).join(', ') : 'All Types';
