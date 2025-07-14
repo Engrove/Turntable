@@ -7,128 +7,240 @@ const props = defineProps({
   effectiveLength: Number,
   overhang: Number,
   offsetAngle: Number,
-  nulls: Object
+  nulls: Object,
+  alignmentType: String
 });
 
-const viewBoxWidth = 500;
-const viewBoxHeight = 350;
-const center_x = viewBoxWidth / 2 - 20;
-const center_y = viewBoxHeight / 2 + 100;
+// === GEOMETRI & KONSTANTER ===
+const P2S = computed(() => props.pivotToSpindle || 0);
+const EL = computed(() => props.effectiveLength || 0);
 
-const p2s = computed(() => props.pivotToSpindle || 0);
-const el = computed(() => props.effectiveLength || 0);
-const overhang = computed(() => props.overhang || 0);
-
-const scaleFactor = computed(() => {
-  const totalSpan = p2s.value + overhang.value + 50; // P2S + overhang + marginal
-  return viewBoxWidth / totalSpan * 0.9;
-});
-
-// --- Koordinater med korrekt skala och orientering ---
-const spindle_x = 0;
-const pivot_x = computed(() => p2s.value * scaleFactor.value);
-const effectiveLength_scaled = computed(() => el.value * scaleFactor.value);
-
-const arcPath = computed(() => {
-  const r = effectiveLength_scaled.value;
-  if (!el.value) return "";
-  const startAngleRad = Math.asin(58 / el.value);
-  const endAngleRad = Math.asin(148 / el.value);
-  const start_y = r * Math.sin(startAngleRad);
-  const start_x = pivot_x.value - r * Math.cos(startAngleRad);
-  const end_y = r * Math.sin(endAngleRad);
-  const end_x = pivot_x.value - r * Math.cos(endAngleRad);
-  return `M ${start_x} ${-start_y} A ${r} ${r} 0 0 1 ${end_x} ${-end_y}`;
-});
-
-const getNullPointCoords = (radius) => {
-  const D = p2s.value;
-  const Le = el.value;
-  if (!D || !Le || radius === null) return { x: 0, y: 0, angle: 0 };
+// === SVG-VIEWBOX & SKALNING ===
+// Dynamisk viewBox för att säkerställa att allt passar
+const viewBox = computed(() => {
+  const padding = 50; // Marginal runt om
+  const width = P2S.value + padding * 2;
+  const height = EL.value + padding * 2;
+  const minX = -EL.value - padding;
+  const minY = -height / 2;
   
+  // Justera om pivoten är långt bort
+  const dynamicWidth = P2S.value + EL.value + padding * 2;
+  
+  return `${minX} ${minY} ${dynamicWidth} ${height}`;
+});
+
+// === KOORDINATBERÄKNINGAR ===
+// Spindeln är vår origo (0, 0)
+const spindle = { x: 0, y: 0 };
+const pivot = computed(() => ({ x: P2S.value, y: 0 }));
+
+// Beräkna positionen för varje nollpunkt relativt spindeln
+const getNullPointCoords = (radius) => {
+  if (!P2S.value || !EL.value || !radius) return { x: 0, y: 0, tangentAngle: 0 };
+
+  const D = P2S.value;
+  const Le = EL.value;
   const R = radius;
-  const x = (D * D - Le * Le + R * R) / (2 * D);
-  const y = Math.sqrt(Math.max(0, R * R - x * x));
 
-  const cartridgeAngle = Math.acos((D*D + Le*Le - R*R)/(2*D*Le)) * (180/Math.PI);
-  const stylusAngle = Math.acos((D*D + R*R - Le*Le)/(2*D*R)) * (180/Math.PI);
-  const rotationAngle = 180 - stylusAngle - cartridgeAngle;
+  // Beräkna vinkeln (gamma) vid pivoten med cosinussatsen
+  const cosGamma = (D**2 + Le**2 - R**2) / (2 * D * Le);
+  if (cosGamma < -1 || cosGamma > 1) return { x: 0, y: 0, tangentAngle: 0 }; // Omöjlig geometri
+  const gamma = Math.acos(cosGamma);
 
-  return { 
-    x: x * scaleFactor.value, 
-    y: -y * scaleFactor.value,
-    angle: rotationAngle
-  };
+  // Beräkna stylus-koordinater
+  const x = pivot.value.x - Le * Math.cos(gamma);
+  const y = -Le * Math.sin(gamma); // Negativ för att rita nedåt
+
+  // Beräkna vinkeln för den radiella linjen från spindeln
+  const radialAngleRad = Math.atan2(y, x);
+  const tangentAngle = radialAngleRad * (180 / Math.PI) + 90;
+
+  return { x, y, tangentAngle };
 };
 
-const innerNullCoords = computed(() => getNullPointCoords(props.nulls.inner));
-const outerNullCoords = computed(() => getNullPointCoords(props.nulls.outer));
+const innerNull = computed(() => getNullPointCoords(props.nulls.inner));
+const outerNull = computed(() => getNullPointCoords(props.nulls.outer));
 
-const headshellAngle = computed(() => {
-  return -props.offsetAngle;
+// Beräkna svepbågen för stylusen
+const arcPath = computed(() => {
+  if (!EL.value) return "";
+  const r = EL.value;
+  const startAngle = Math.PI - Math.acos( (pivot.value.x - 58) / r );
+  const endAngle = Math.PI - Math.acos( (pivot.value.x - 147) / r);
+
+  const startX = pivot.value.x + r * Math.cos(startAngle);
+  const startY = pivot.value.y - r * Math.sin(startAngle);
+  const endX = pivot.value.x + r * Math.cos(endAngle);
+  const endY = pivot.value.y - r * Math.sin(endAngle);
+
+  return `M ${startX} ${startY} A ${r} ${r} 0 0 0 ${endX} ${endY}`;
 });
+
+// Beräkna tonarmens visuella position (pekar mot yttre nollpunkten)
+const armRotation = computed(() => {
+    const dx = outerNull.value.x - pivot.value.x;
+    const dy = outerNull.value.y - pivot.value.y;
+    return Math.atan2(dy, dx) * (180 / Math.PI);
+});
+
+const headshellAngle = computed(() => -props.offsetAngle);
 
 </script>
 
 <template>
-  <div class="protractor-panel panel">
-    <h3>Dynamic Protractor Visualization</h3>
+  <div class="protractor-panel panel" id="protractor-section-for-print">
+    <div class="protractor-header">
+      <h3>Printable Protractor ({{ alignmentType.replace('A','') }})</h3>
+      <div class="print-info">
+          <p><strong>Printing Instructions:</strong> Ensure your printer is set to <strong>100% scale (or "Actual Size")</strong> with no "fit to page" scaling. Verify the printed dimensions with a ruler before use.</p>
+      </div>
+    </div>
+    
     <div class="protractor-container">
-      <svg :viewBox="`0 0 ${viewBoxWidth} ${viewBoxHeight}`" preserveAspectRatio="xMidYMid meet">
-        <g :transform="`translate(${center_x}, ${center_y})`">
-          
-          <!-- Spindel -->
-          <g class="spindle" :transform="`translate(${spindle_x}, 0)`">
-            <circle cx="0" cy="0" r="3" fill="#34495e" />
-            <text x="0" y="-12">Spindle</text>
-          </g>
-          
-          <!-- Pivot -->
-          <g class="pivot" :transform="`translate(${pivot_x}, 0)`">
-            <circle cx="0" cy="0" r="5" fill="none" stroke="#34495e" stroke-width="2" />
-            <path d="M -3 0 L 3 0 M 0 -3 L 0 3" stroke="#34495e" stroke-width="1.5" />
-            <text x="0" y="-12">Pivot</text>
-          </g>
-          
-          <!-- Svepbåge -->
-          <path :d="arcPath" class="arc-path" fill="none" />
-          
-          <!-- Nollpunkter & Rutnät -->
-          <g class="null-point" :transform="`translate(${innerNullCoords.x}, ${innerNullCoords.y})`">
-            <g :transform="`rotate(${innerNullCoords.angle})`">
-              <path class="grid-lines" d="M -25 0 L 25 0 M -20 -5 L 20 -5 M -20 5 L 20 5 M -15 -10 L 15 -10 M -15 10 L 15 10 M 0 -15 L 0 15" />
-            </g>
-            <circle cx="0" cy="0" r="1" fill="#e74c3c" />
-          </g>
-          <g class="null-point" :transform="`translate(${outerNullCoords.x}, ${outerNullCoords.y})`">
-            <g :transform="`rotate(${outerNullCoords.angle})`">
-              <path class="grid-lines" d="M -25 0 L 25 0 M -20 -5 L 20 -5 M -20 5 L 20 5 M -15 -10 L 15 -10 M -15 10 L 15 10 M 0 -15 L 0 15" />
-            </g>
-            <circle cx="0" cy="0" r="1" fill="#e74c3c" />
-          </g>
-
-          <!-- Tonarm & Headshell -->
-          <g class="tonearm-sketch" :transform="`translate(${pivot_x}, 0)`">
-            <line :x1="outerNullCoords.x - pivot_x" :y1="outerNullCoords.y" x2="0" y2="0" stroke="#7f8c8d" stroke-width="5" />
-            <g :transform="`translate(${outerNullCoords.x - pivot_x}, ${outerNullCoords.y}) rotate(${headshellAngle})`">
-              <path d="M -15 -10 L 20 -10 L 20 10 L -15 10 Z" fill="#f8f9fa" stroke="#34495e" stroke-width="1.5" />
-              <circle cx="0" cy="0" r="1" fill="#3498db" />
-            </g>
-          </g>
-
+      <svg :viewBox="viewBox" preserveAspectRatio="xMidYMid meet">
+        <!-- Dimensioneringslinjal för verifiering -->
+        <g class="ruler">
+          <path d="M 0 -130 L 100 -130 M 0 -135 L 0 -125 M 100 -135 L 100 -125" stroke="#aaa" stroke-width="1"/>
+          <text x="50" y="-140">100mm Scale Reference</text>
         </g>
+        
+        <!-- Spindel & Pivot -->
+        <g class="spindle" :transform="`translate(${spindle.x}, ${spindle.y})`">
+          <circle cx="0" cy="0" r="3.5" stroke="#2c3e50" stroke-width="0.5" fill="none" />
+          <path d="M -2 0 L 2 0 M 0 -2 L 0 2" stroke="#2c3e50" stroke-width="0.5" />
+          <text x="0" y="15">Spindle</text>
+        </g>
+        <g class="pivot" :transform="`translate(${pivot.x}, ${pivot.y})`">
+          <circle cx="0" cy="0" r="1" fill="#2c3e50"/>
+          <text x="0" y="15">Pivot Point</text>
+        </g>
+
+        <!-- Svepbåge -->
+        <path :d="arcPath" class="arc-path" />
+
+        <!-- Nollpunkter & Rutnät -->
+        <g class="null-point inner" :transform="`translate(${innerNull.x}, ${innerNull.y})`">
+          <g :transform="`rotate(${innerNull.tangentAngle})`">
+            <path class="grid-lines" d="M 0 -20 L 0 20 M -20 0 L 20 0 M -15 -10 L 15 -10 M -15 10 L 15 10 M -10 -15 L 10 -15 M 10 -15 L 10 15 M -10 -15 L -10 15" />
+          </g>
+          <circle cx="0" cy="0" r="0.5" fill="red" />
+          <text x="0" y="-25">Inner Null: {{ nulls.inner.toFixed(1) }}mm</text>
+        </g>
+        <g class="null-point outer" :transform="`translate(${outerNull.x}, ${outerNull.y})`">
+           <g :transform="`rotate(${outerNull.tangentAngle})`">
+            <path class="grid-lines" d="M 0 -20 L 0 20 M -20 0 L 20 0 M -15 -10 L 15 -10 M -15 10 L 15 10 M -10 -15 L 10 -15 M 10 -15 L 10 15 M -10 -15 L -10 15" />
+          </g>
+          <circle cx="0" cy="0" r="0.5" fill="red" />
+          <text x="0" y="-25">Outer Null: {{ nulls.outer.toFixed(1) }}mm</text>
+        </g>
+
+        <!-- Visuell representation av tonarm (ej för utskrift) -->
+        <g class="tonearm-sketch" :transform="`translate(${pivot.x}, ${pivot.y}) rotate(${armRotation})`">
+            <line x1="0" y1="0" :x2="EL" y2="0" class="armtube" />
+            <g :transform="`translate(${EL}, 0) rotate(${headshellAngle})`">
+                <path class="headshell" d="M -2 -8 L 15 -8 L 18 0 L 15 8 L -2 8 Z" />
+                <circle cx="0" cy="0" r="1.5" class="stylus" />
+            </g>
+        </g>
+
       </svg>
     </div>
   </div>
 </template>
 
 <style scoped>
-.protractor-panel { grid-column: 1 / -1; margin-top: 1rem; }
-.protractor-panel h3 { margin-top: 0; color: var(--header-color); font-size: 1.25rem; }
-.protractor-container { width: 100%; background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 0.5rem; }
-svg { width: 100%; height: auto; }
-.spindle text, .pivot text, .null-label { text-anchor: middle; font-size: 8px; font-family: sans-serif; fill: #555; }
-.arc-path { stroke: #3498db; stroke-width: 2px; }
-.grid-lines { stroke: #e74c3c; stroke-width: 0.75; }
-.tonearm-sketch { opacity: 0.8; }
+.protractor-panel {
+  grid-column: 1 / -1;
+  margin-top: 1rem;
+}
+.protractor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.protractor-header h3 {
+  margin: 0;
+  color: var(--header-color);
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.print-info {
+  font-size: 0.8rem;
+  color: var(--label-color);
+  background-color: #e9ecef;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border-left: 3px solid var(--accent-color);
+}
+.print-info p {
+    margin: 0;
+}
+.protractor-container {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 1rem;
+}
+svg {
+  width: 100%;
+  height: auto;
+  font-family: sans-serif;
+  font-size: 10px;
+}
+.spindle text, .pivot text, .null-point text, .ruler text {
+  text-anchor: middle;
+  fill: #555;
+}
+.arc-path {
+  fill: none;
+  stroke: #3498db;
+  stroke-width: 1px;
+  stroke-dasharray: 4 4;
+}
+.grid-lines {
+  fill: none;
+  stroke: #aaa;
+  stroke-width: 0.5px;
+}
+.tonearm-sketch {
+    opacity: 0.2; /* Gör den svag så den inte stör protractorn */
+}
+.armtube {
+  stroke: #34495e;
+  stroke-width: 6px;
+  stroke-linecap: round;
+}
+.headshell {
+  fill: #7f8c8d;
+}
+.stylus {
+  fill: #c0392b;
+}
+
+@media print {
+  .protractor-panel {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+  }
+  .protractor-header {
+    display: none;
+  }
+  .protractor-container {
+    border: none;
+    padding: 0;
+  }
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+  .tonearm-sketch {
+    display: none; /* Göm den visuella armen vid utskrift */
+  }
+}
 </style>
