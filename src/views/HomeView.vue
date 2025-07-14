@@ -5,7 +5,6 @@ import { useHead } from '@unhead/vue';
 
 const githubUrl = 'https://github.com/Engrove/Turntable';
 
-// Sid-specifika meta-taggar för SEO och social delning.
 useHead({
   title: 'Engrove Audio Toolkit | Home',
   meta: [
@@ -27,12 +26,12 @@ useHead({
     </header>
 
     <section class="intro-section">
-      <p>
-        Welcome to the Engrove Toolkit! This is an open-source project born from a passion for DIY audio and the "95% overthinking" philosophy detailed in the 
-        <a href="https://www.lencoheaven.net/forum/index.php?topic=45949.0" target="_blank" rel="noopener noreferrer">Double Decker Madness Lenco Project</a> on Lenco Heaven.
+      <!-- NY, MER INBJUDANDE TEXT -->
+      <p class="intro-hook">
+        Want to easily see how your cartridge and tonearm match, or optimize your turntable without complex math? You've come to the right place!
       </p>
       <p>
-        I'm not a professional engineer, just a layman with ambitions and imagination. This toolkit is my attempt to transform complex audio theory into a dynamic, visual, and intuitive environment. The goal is to create tools that allow fellow enthusiasts to explore the trade-offs in audio design in real-time.
+        Hi! I'm a hifi enthusiast with a passion for vinyl and technology. This toolkit is my attempt to transform complex audio theory into a dynamic, visual, and intuitive environment. The goal is to create tools that allow fellow enthusiasts to explore the trade-offs in audio design in real-time.
       </p>
       <p class="note">
         This is a live project. Features are added and updated sporadically. If something isn't working, it might be under construction! Check out the <a :href="githubUrl" target="_blank" rel="noopener noreferrer">GitHub repository</a> for the latest updates.
@@ -42,25 +41,41 @@ useHead({
     <section class="tools-section">
       <h2>Available Tools</h2>
       <div class="tools-grid">
+        <!-- UPPDATERAT KORT-FORMAT -->
         <RouterLink to="/tonearm-calculator" class="tool-card">
-          <h3>Tonearm Resonance Calculator</h3>
-          <p>An interactive simulator for calculating a tonearm's effective mass and its resonant frequency. Visualize the critical relationship between all physical parameters of a tonearm's design.</p>
+          <img src="/images/preview-resonance.png" alt="Tonearm Resonance Calculator Preview" class="tool-preview-image"/>
+          <div class="card-content">
+            <h3>Tonearm Resonance Calculator</h3>
+            <p>Visualize the critical relationship between tonearm effective mass and cartridge compliance to find the perfect resonant frequency.</p>
+            <span class="card-action">Explore Calculator →</span>
+          </div>
         </RouterLink>
 
         <RouterLink to="/compliance-estimator" class="tool-card">
-          <h3>Compliance Estimator</h3>
-          <p>A data-driven tool to estimate a cartridge's dynamic compliance at 10Hz. Uses a statistical model for higher accuracy and provides transparent feedback on its confidence.</p>
+          <img src="/images/preview-compliance.png" alt="Compliance Estimator Preview" class="tool-preview-image"/>
+          <div class="card-content">
+            <h3>Compliance Estimator</h3>
+            <p>A data-driven tool to estimate a cartridge's dynamic compliance at 10Hz. Uses a statistical model for higher accuracy.</p>
+            <span class="card-action">Explore Estimator →</span>
+          </div>
         </RouterLink>
 
-        <!-- NYTT: Länkkort för Alignment Calculator -->
         <RouterLink to="/alignment-calculator" class="tool-card">
-          <h3>Alignment Calculator</h3>
-          <p>Generate printable protractors and visualize tracking error for various alignment geometries like Baerwald, Löfgren, and Stevenson.</p>
+          <img src="/images/preview-alignment.png" alt="Alignment Calculator Preview" class="tool-preview-image"/>
+          <div class="card-content">
+            <h3>Alignment Calculator</h3>
+            <p>Generate printable protractors and visualize tracking error for various alignment geometries like Baerwald, Löfgren, and Stevenson.</p>
+            <span class="card-action">Explore Calculator →</span>
+          </div>
         </RouterLink>
 
         <RouterLink to="/data-explorer" class="tool-card">
-          <h3>Component Database Explorer</h3>
-          <p>Search, filter, and explore the complete database of tonearms and cartridges. A tool for researching components and discovering suitable matches for your system.</p>
+          <img src="/images/preview-explorer.png" alt="Data Explorer Preview" class="tool-preview-image"/>
+          <div class="card-content">
+            <h3>Component Database Explorer</h3>
+            <p>Search, filter, and explore the complete database of tonearms and cartridges to research components for your system.</p>
+            <span class="card-action">Explore Database →</span>
+          </div>
         </RouterLink>
       </div>
     </section>
@@ -118,6 +133,16 @@ useHead({
   border: 1px solid var(--border-color);
 }
 
+/* NYTT: Styling för hook-texten */
+.intro-hook {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--header-color);
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
 .intro-section a {
   color: var(--accent-color);
   font-weight: 600;
@@ -153,16 +178,17 @@ p.note {
   text-align: left;
 }
 
+/* UPPDATERAD KORT-STYLING */
 .tool-card {
   display: flex;
   flex-direction: column;
   background-color: #fff;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 1.5rem;
   text-decoration: none;
   color: inherit;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden; /* För att bildens hörn ska vara runda */
 }
 
 .tool-card:hover {
@@ -170,16 +196,43 @@ p.note {
   box-shadow: 0 8px 20px rgba(0,0,0,0.08);
 }
 
-.tool-card h3 {
+.tool-preview-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  object-position: top center;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-content {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.card-content h3 {
   margin-top: 0;
   margin-bottom: 0.75rem;
   color: var(--accent-color);
 }
 
-.tool-card p {
+.card-content p {
   color: var(--label-color);
   line-height: 1.6;
   flex-grow: 1;
+  margin-bottom: 1rem;
+}
+
+.card-action {
+  font-weight: 600;
+  color: var(--accent-color);
+  align-self: flex-start;
+  transition: color 0.2s ease;
+}
+
+.tool-card:hover .card-action {
+  color: var(--header-color);
 }
 
 .home-footer {
