@@ -1,0 +1,90 @@
+{
+  "timestamp": "2025-07-14T12:00:00.000Z",
+  "source_data_count": 127,
+  "global_fallback": {
+    "priority": 99,
+    "conditions": {},
+    "k": 0.560,
+    "m": 4.740,
+    "r_squared": 0.642,
+    "sample_size": 127
+  },
+  "segmented_rules": [
+    {
+      "priority": 1,
+      "conditions": {
+        "type": "MM",
+        "cantilever_class": "Aluminum",
+        "stylus_family": "Elliptical"
+      },
+      "k": 0.507,
+      "m": 5.725,
+      "r_squared": 0.672,
+      "sample_size": 53
+    },
+    {
+      "priority": 1,
+      "conditions": {
+        "type": "MC",
+        "cantilever_class": "Aluminum",
+        "stylus_family": "Elliptical"
+      },
+      "k": 0.822,
+      "m": -2.885,
+      "r_squared": 0.865,
+      "sample_size": 12
+    },
+    {
+      "priority": 2,
+      "conditions": {
+        "type": "MM",
+        "cantilever_class": "Aluminum"
+      },
+      "k": 0.540,
+      "m": 5.043,
+      "r_squared": 0.629,
+      "sample_size": 106
+    },
+    {
+      "priority": 2,
+      "conditions": {
+        "type": "MC",
+        "cantilever_class": "Exotic/High-Performance"
+      },
+      "k": 0.357,
+      "m": 3.738,
+      "r_squared": 0.605,
+      "sample_size": 3
+    },
+    {
+      "priority": 3,
+      "conditions": {
+        "type": "MM"
+      },
+      "k": 0.560,
+      "m": 4.740,
+      "r_squared": 0.642,
+      "sample_size": 127
+    },
+    {
+      "priority": 3,
+      "conditions": {
+        "type": "MC"
+      },
+      "k": 0.658,
+      "m": -0.518,
+      "r_squared": 0.701,
+      "sample_size": 16
+    },
+    {
+      "priority": 3,
+      "conditions": {
+        "type": "MI"
+      },
+      "k": 0.052,
+      "m": 16.866,
+      "r_squared": 0.009,
+      "sample_size": 32
+    }
+  ]
+}
