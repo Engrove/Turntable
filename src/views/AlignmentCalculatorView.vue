@@ -1,7 +1,13 @@
+<!-- src/views/AlignmentCalculatorView.vue -->
 <script setup>
+import { onMounted } from 'vue';
 import { useHead } from '@unhead/vue';
+import { useAlignmentStore } from '@/store/alignmentStore.js';
+import AlignmentInputPanel from '@/components/AlignmentInputPanel.vue';
+import AlignmentResultsPanel from '@/components/AlignmentResultsPanel.vue';
 
-// Sätt sid-specifika meta-taggar för SEO och sidtitel
+const store = useAlignmentStore();
+
 useHead({
   title: 'Tonearm Alignment Calculator | Engrove Audio Toolkit',
   meta: [
@@ -14,6 +20,10 @@ useHead({
   ],
 });
 
+onMounted(() => {
+  // Ladda datan för tonarms-presets när komponenten monteras
+  store.initialize();
+});
 </script>
 
 <template>
@@ -28,9 +38,17 @@ useHead({
       An interactive tool to calculate optimal tonearm alignment, visualize tracking error, and generate custom-fit protractors for printing.
     </p>
 
-    <div class="status-container">
-      <h2>Under Construction</h2>
-      <p>This new module is currently being built. Please check back later!</p>
+    <div v-if="store.isLoading" class="status-container">
+      <h2>Loading Database...</h2>
+    </div>
+    <div v-else-if="store.error" class="status-container error">
+      <h2>Failed to load data</h2>
+      <p>{{ store.error }}</p>
+    </div>
+
+    <div v-else class="main-grid">
+      <AlignmentInputPanel />
+      <AlignmentResultsPanel />
     </div>
 
   </div>
@@ -41,29 +59,25 @@ useHead({
   display: flex;
   flex-direction: column;
 }
-
 .tool-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding-bottom: 1.5rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   border-bottom: 1px solid var(--border-color);
 }
-
 .tool-header h1 {
   margin: 0;
   font-size: 1.75rem;
   color: var(--header-color);
 }
-
 .tool-description {
   margin-top: 0;
   margin-bottom: 2rem;
   color: var(--label-color);
   max-width: 80ch;
 }
-
 .status-container {
   padding: 4rem 2rem;
   text-align: center;
@@ -71,9 +85,25 @@ useHead({
   border: 1px solid var(--border-color);
   border-radius: 6px;
 }
-
+.status-container.error {
+  background-color: var(--danger-color);
+  color: var(--danger-text);
+  border-color: #f5c6cb;
+}
 .status-container h2 {
   margin: 0;
   color: var(--header-color);
+}
+.main-grid {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
