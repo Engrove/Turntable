@@ -1,6 +1,7 @@
 <!-- src/views/ComplianceEstimatorView.vue -->
 <script setup>
 import { ref, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useHead } from '@unhead/vue';
 import { useEstimatorStore } from '@/store/estimatorStore.js';
 import EstimatorInputPanel from '@/components/EstimatorInputPanel.vue';
@@ -8,11 +9,11 @@ import EstimatorResultsPanel from '@/components/EstimatorResultsPanel.vue';
 import EstimatorChart from '@/components/EstimatorChart.vue';
 import InfoPanel from '@/components/InfoPanel.vue';
 import HelpModal from '@/components/HelpModal.vue';
-// KORREKT IMPORT: Hämtar den namngivna 'html'-exporten och döper om den.
 import { html as complianceContent } from '@/content/complianceEstimator.md';
 
 const store = useEstimatorStore();
 const showHelp = ref(false);
+const router = useRouter(); // Importera router-instansen
 
 useHead({
   title: 'Cartridge Compliance Estimator | Engrove Audio Toolkit',
@@ -27,13 +28,19 @@ onMounted(() => {
   if (!store.estimationRules || !store.staticEstimationRules) {
     store.initialize();
   }
-  // Se till att estimeringen körs vid första laddning
   store.calculateEstimate();
 });
 
 watch(() => store.userInput, () => {
   store.calculateEstimate();
 }, { deep: true });
+
+// Funktion för att generera och navigera till rapporten
+function generateReport() {
+  const data = store.getReportData();
+  const encodedData = btoa(JSON.stringify(data));
+  router.push({ name: 'report', query: { data: encodedData } });
+}
 </script>
 
 <template>
@@ -55,14 +62,16 @@ watch(() => store.userInput, () => {
       <div class="tool-header">
         <h1>Compliance Estimator</h1>
         <div class="header-buttons">
+          <!-- ÅTERINFÖRDA KNAPPAR -->
+          <button @click="generateReport" class="report-button">Generate Report</button>
           <button @click="store.resetInput()" class="reset-button" title="Reset all fields">Reset Fields</button>
+          <!-- UPPDATERAD IKON -->
           <button @click="showHelp = true" class="icon-help-button" title="Help & Methodology">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
           </button>
         </div>
       </div>
       
-      <!-- Integration av den nya InfoPanel-komponenten -->
       <InfoPanel :content-html="complianceContent" @open-technical-help="showHelp = true" />
 
       <div class="estimator-grid">
@@ -153,9 +162,12 @@ watch(() => store.userInput, () => {
 .tool-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding-bottom: 0; margin-bottom: 0; border-bottom: none; }
 .tool-header h1 { margin: 0; font-size: 1.75rem; color: var(--header-color); }
 .header-buttons { display: flex; align-items: center; gap: 0.5rem; }
-.reset-button { padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600; color: var(--label-color); background-color: transparent; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; transition: all 0.2s ease; }
+.report-button, .reset-button, .icon-help-button { transition: all 0.2s ease; }
+.report-button { padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600; color: var(--accent-color); background-color: transparent; border: 1px solid var(--accent-color); border-radius: 6px; cursor: pointer; }
+.report-button:hover { background-color: var(--accent-color); color: white; }
+.reset-button { padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600; color: var(--label-color); background-color: transparent; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; }
 .reset-button:hover { background-color: #f8f9fa; border-color: #adb5bd; color: var(--text-color); }
-.icon-help-button { background: none; border: 1px solid transparent; border-radius: 50%; cursor: pointer; color: var(--label-color); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; transition: all 0.2s ease; padding: 0; }
+.icon-help-button { background: none; border: 1px solid transparent; border-radius: 50%; cursor: pointer; color: var(--label-color); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; }
 .icon-help-button:hover { background-color: #e9ecef; border-color: var(--border-color); color: var(--text-color); }
 .estimator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; align-items: start; margin-top: 2rem; }
 .data-summary-panel { margin-top: 2rem; padding: 1rem 1.5rem; background-color: #f8f9fa; grid-column: 1 / -1; border: 1px solid var(--border-color); border-radius: 8px;}
