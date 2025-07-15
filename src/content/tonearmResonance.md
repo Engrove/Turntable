@@ -21,9 +21,18 @@ Research and decades of experience have shown that there is a "safe" or ideal fr
 
 By keeping the resonance between approximately 8 and 12 Hz, you avoid the worst problems at both ends. The system becomes stable enough to handle warps without interfering with the audible music.
 
-**How This Tool Helps You**
+<hr>
 
-This tool is a "what-if" simulator. It uses the fundamental physics formulas for resonance (F = 1000 / (2π * √(M * C))) and effective mass (M_eff = I / L²). By allowing you to adjust all physical parameters—from the weight of a screw to the placement of the counterweight—you can instantly see how every small change affects the total effective mass and, consequently, the critical resonant frequency. It allows you to theoretically design a tonearm from scratch or verify that a cartridge you are considering is a good mechanical match for your existing tonearm.
+#### Full Technical Guide
+
+For a deeper dive into the core physics, formulas, and a detailed user guide for all parameters, please open the full technical help document.
+
+<button class="technical-help-link" onclick="triggerTechnicalHelp()">
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"></path><path d="M12 18h.01"></path><path d="M12 15c-2.28 0-4-1.72-4-4s1.72-4 4-4 4 1.72 4 4-1.72 4-4 4z"></path></svg>
+  Open Full Methodology & User Guide
+</button>
+
+<hr>
 
 #### Sources and Further Reading
 
