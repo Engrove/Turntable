@@ -1,14 +1,14 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import markdown from 'vite-plugin-markdown'
+// KORREKT IMPORT: Importera den namngivna exporten 'plugin' och döp om den till 'markdown'.
+import { plugin as markdown } from 'vite-plugin-markdown'
 import { fileURLToPath, URL } from 'node:url'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
-    // Konfigurerar pluginet att behandla Markdown-filer och exportera deras
-    // innehåll som en 'html'-egenskap. Detta är nyckeln till att lösa byggfelet.
+    // Använd den nu korrekt importerade funktionen för att konfigurera Markdown-hantering.
     markdown({
       mode: ['html'] 
     })
