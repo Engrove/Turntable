@@ -30,7 +30,7 @@ This tool goes a step further than the rough rules of thumb. By analyzing a larg
 
 For a deeper dive into the statistical models, the confidence score calculation, and a full FAQ, please open the full technical help document.
 
-<button class="technical-help-link" onclick="triggerTechnicalHelp()">
+<button class="technical-help-link" onclick="window.triggerTechnicalHelp()">
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"></path><path d="M12 18h.01"></path><path d="M12 15c-2.28 0-4-1.72-4-4s1.72-4 4-4 4 1.72 4 4-1.72 4-4 4z"></path></svg>
   Open Full Methodology & User Guide
 </button>
