@@ -12,7 +12,7 @@ import { html as resonanceContent } from '@/content/tonearmResonance.md';
 
 const store = useTonearmStore();
 const showHelp = ref(false);
-const router = useRouter(); // Importera router-instansen
+const router = useRouter();
 
 useHead({
   title: 'Tonearm Resonance Calculator | Engrove Audio Toolkit',
@@ -32,10 +32,10 @@ onMounted(() => {
   }
 });
 
-// Funktion för att generera och navigera till rapporten
 function generateReport() {
   const data = store.getReportData();
-  const encodedData = btoa(JSON.stringify(data));
+  // KORRIGERING: Använd encodeURIComponent för att göra Base64-strängen URL-säker.
+  const encodedData = encodeURIComponent(btoa(JSON.stringify(data)));
   router.push({ name: 'report', query: { data: encodedData } });
 }
 </script>
@@ -45,9 +45,7 @@ function generateReport() {
     <div class="tool-header">
       <h1>Tonearm Resonance Calculator</h1>
       <div class="header-buttons">
-          <!-- ÅTERINFÖRD KNAPP -->
           <button @click="generateReport" class="report-button">Generate Report</button>
-          <!-- UPPDATERAD IKON -->
           <button @click="showHelp = true" class="icon-help-button" title="Help & Methodology">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
           </button>
@@ -127,7 +125,7 @@ function generateReport() {
 .tool-view { display: flex; flex-direction: column; }
 .tool-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0; margin-bottom: 0; border-bottom: none; }
 .tool-header h1 { margin: 0; font-size: 1.75rem; color: var(--header-color); }
-.main-content { display: flex; flex-direction: column; gap: 2rem; margin-top: 2rem; }
+.main-content { display: flex; flex-direction: column; gap: 2rem; margin-top: 0; }
 .calculator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; }
 .header-buttons { display: flex; align-items: center; gap: 0.5rem; }
 .report-button, .icon-help-button { transition: all 0.2s ease; }
