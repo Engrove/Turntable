@@ -1,4 +1,4 @@
-import { ref, computed, watch } from 'pinia';
+import { ref, computed, watch } from 'vue'; // Korrigerat från 'pinia' till 'vue'
 import { defineStore } from 'pinia';
 import { useRouter } from 'vue-router';
 
@@ -115,7 +115,6 @@ export const useTonearmStore = defineStore('tonearm', () => {
         params.value.calculationMode = mode;
     };
 
-    // NY FUNKTION: Förbereder data för rapportvyn.
     const getReportData = () => {
       return {
         type: 'tonearm',
@@ -129,6 +128,6 @@ export const useTonearmStore = defineStore('tonearm', () => {
         params, m1, m2_tube, m3_fixed_cw, calculatedResults, diagnosis, isLoading, error,
         availableTonearms, availablePickups, selectedTonearmId, selectedPickupId, currentTonearm,
         initialize, loadTonearmPreset, loadCartridgePreset, setCalculationMode,
-        getReportData // Exporterar den nya funktionen
+        getReportData
     };
 });
