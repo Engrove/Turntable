@@ -75,7 +75,6 @@
         <p>Could not load report data. Please return to the previous page and try again.</p>
     </main>
 
-    <!-- NY DISCLAIMER-SEKTION -->
     <footer class="report-footer">
       <h3>Disclaimer</h3>
       <p>This report is provided as a design aid for theoretical exploration and educational purposes only. The calculations are based on established physical principles but are the product of a hobbyist project. Data is compiled from publicly available sources.</p>
@@ -97,7 +96,8 @@ const printReport = () => window.print();
 
 onMounted(() => {
   try {
-    const decodedData = JSON.parse(atob(route.query.data));
+    // KORRIGERING: Använd decodeURIComponent för att återställa den URL-säkra strängen.
+    const decodedData = JSON.parse(atob(decodeURIComponent(route.query.data)));
     reportData.value = decodedData;
     reportTitle.value = decodedData.type === 'tonearm' ? 'Tonearm Resonance Report' : 'Compliance Estimation Report';
   } catch (e) {
@@ -168,9 +168,11 @@ const confidenceClass = computed(() => {
 <style scoped>
 .report-wrapper {
   max-width: 800px;
-  margin: 0 auto;
+  margin: 2rem auto;
   padding: 2rem;
   background-color: #fff;
+  border: 1px solid #ccc;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
 .report-header {
@@ -189,6 +191,22 @@ const confidenceClass = computed(() => {
   margin: 0.5rem 0;
   color: #555;
   font-style: italic;
+}
+
+.print-button {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.print-button:hover {
+  background-color: #2980b9;
 }
 
 .report-section {
@@ -249,9 +267,9 @@ const confidenceClass = computed(() => {
   border-left-width: 5px;
   border-left-style: solid;
 }
-.diagnosis-box.ideal { background-color: var(--ideal-color); border-color: #155724; }
-.diagnosis-box.warning { background-color: var(--warning-color); border-color: #856404; }
-.diagnosis-box.danger { background-color: var(--danger-color); border-color: #721c24; }
+.diagnosis-box.ideal { background-color: var(--ideal-color); border-color: #155724; color: var(--ideal-text); }
+.diagnosis-box.warning { background-color: var(--warning-color); border-color: #856404; color: var(--warning-text); }
+.diagnosis-box.danger { background-color: var(--danger-color); border-color: #721c24; color: var(--danger-text); }
 .diagnosis-box h4 { margin: 0 0 0.5rem 0; }
 .diagnosis-box p { margin: 0; }
 
@@ -281,9 +299,11 @@ const confidenceClass = computed(() => {
   border-top: 2px solid #333;
   font-size: 0.8rem;
   color: #666;
-  text-align: center;
+  text-align: left;
 }
 .report-footer h3 {
     margin-top: 0;
+    text-align: center;
+    color: var(--header-color);
 }
 </style>
