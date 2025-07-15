@@ -9,7 +9,7 @@ const store = useEstimatorStore();
   <div class="input-panel panel">
     <h2>Cartridge Specifications</h2>
 
-    <!-- NYTT (1h): Fieldset för obligatoriska fält -->
+    <!-- Fieldset för obligatoriska fält -->
     <fieldset>
       <legend>Required Input</legend>
       <p class="fieldset-description">
@@ -55,7 +55,7 @@ const store = useEstimatorStore();
       </div>
     </fieldset>
     
-    <!-- NYTT (1h): Fieldset för valfria fält -->
+    <!-- Fieldset för valfria fält -->
     <fieldset>
         <legend>Optional Refinements</legend>
         <p class="fieldset-description">
@@ -82,7 +82,8 @@ const store = useEstimatorStore();
             </select>
         </div>
         
-        <div class="input-group">
+        <!-- BORTTAGET: Cartridge Weight (g) - eftersom det inte påverkar compliance-estimatet direkt -->
+        <!-- <div class="input-group">
             <label for="weight_g">Cartridge Weight (g)</label>
             <input
             id="weight_g"
@@ -94,7 +95,7 @@ const store = useEstimatorStore();
             step="0.1"
             v-model.number="store.userInput.weight_g"
             >
-      </div>
+      </div> -->
     </fieldset>
   </div>
 </template>
