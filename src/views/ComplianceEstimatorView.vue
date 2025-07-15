@@ -4,6 +4,7 @@ import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useHead } from '@unhead/vue';
 import { useEstimatorStore } from '@/store/estimatorStore.js';
+import { useReportStore } from '@/store/reportStore.js'; // Importera den nya storen
 import EstimatorInputPanel from '@/components/EstimatorInputPanel.vue';
 import EstimatorResultsPanel from '@/components/EstimatorResultsPanel.vue';
 import EstimatorChart from '@/components/EstimatorChart.vue';
@@ -12,6 +13,7 @@ import HelpModal from '@/components/HelpModal.vue';
 import { html as complianceContent } from '@/content/complianceEstimator.md';
 
 const store = useEstimatorStore();
+const reportStore = useReportStore(); // Använd den nya storen
 const showHelp = ref(false);
 const router = useRouter();
 
@@ -37,9 +39,8 @@ watch(() => store.userInput, () => {
 
 function generateReport() {
   const data = store.getReportData();
-  // KORRIGERING: Använd encodeURIComponent för att göra Base64-strängen URL-säker.
-  const encodedData = encodeURIComponent(btoa(JSON.stringify(data)));
-  router.push({ name: 'report', query: { data: encodedData } });
+  reportStore.setReportData(data);
+  router.push({ name: 'report' });
 }
 </script>
 
