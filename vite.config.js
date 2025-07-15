@@ -8,7 +8,10 @@ import Markdown from 'vite-plugin-markdown'
 export default defineConfig({
   plugins: [
     vue(),
-    Markdown.plugin()
+    // KORREKT KONFIGURATION: Anropa plugin() med mode 'html'
+    Markdown.plugin({
+      mode: ['html'] 
+    })
   ],
   resolve: {
     alias: {
