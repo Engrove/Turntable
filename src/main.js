@@ -1,22 +1,20 @@
-// src/main.js
-import { createApp } from 'vue';
-import { createPinia } from 'pinia';
-import { createHead } from '@unhead/vue'; // NYTT (4a)
-import App from './App.vue';
-import router from './router';
-import { useExplorerStore } from './store/explorerStore';
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import { createHead } from '@unhead/vue'
+import piniaPluginPersistedState from 'pinia-plugin-persistedstate' // Importera pluginet
 
-import './assets/main.css';
+import App from './App.vue'
+import router from './router'
 
-const app = createApp(App);
-const pinia = createPinia();
-const head = createHead(); // NYTT (4a)
+const app = createApp(App)
+const head = createHead()
+const pinia = createPinia()
 
-app.use(pinia);
-app.use(head); // NYTT (4a)
-app.use(router);
+// Använd pluginet
+pinia.use(piniaPluginPersistedState)
 
-const explorerStore = useExplorerStore();
-explorerStore.initialize();
+app.use(pinia) // Använd den konfigurerade Pinia-instansen
+app.use(router)
+app.use(head)
 
-app.mount('#app');
+app.mount('#app')
