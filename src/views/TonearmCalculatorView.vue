@@ -1,16 +1,18 @@
 <!-- src/views/TonearmCalculatorView.vue -->
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useHead } from '@unhead/vue';
 import { useTonearmStore } from '@/store/tonearmStore.js';
 import InputPanel from '@/components/InputPanel.vue';
 import ResultsPanel from '@/components/ResultsPanel.vue';
-import InfoPanel from '@/components/InfoPanel.vue'; // Importerar vår nya panel
-import HelpModal from '@/components/HelpModal.vue'; // Behåller den gamla modalen
-import { html as resonanceContent } from '@/content/tonearmResonance.md'; // Importerar texten
+import HelpModal from '@/components/HelpModal.vue';
+import InfoPanel from '@/components/InfoPanel.vue';
+import { html as resonanceContent } from '@/content/tonearmResonance.md';
 
 const store = useTonearmStore();
-const showHelp = ref(false); // Denna styr den *tekniska* modalen
+const showHelp = ref(false);
+const router = useRouter();
 
 useHead({
   title: 'Tonearm Resonance Calculator | Engrove Audio Toolkit',
@@ -24,6 +26,10 @@ useHead({
   ],
 });
 
+const printReport = () => {
+  window.print();
+};
+
 onMounted(() => {
   if (!store.availableTonearms.length) {
     store.initialize();
@@ -35,13 +41,16 @@ onMounted(() => {
   <div class="tool-view">
     <div class="tool-header">
       <h1>Tonearm Resonance Calculator</h1>
-      <!-- Denna knapp öppnar fortfarande den tekniska modalen direkt -->
-      <button @click="showHelp = true" class="icon-help-button" title="Help & Methodology">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-      </button>
+      <div class="header-buttons">
+          <button @click="printReport" class="print-report-btn" title="Print Report">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          </button>
+          <button @click="showHelp = true" class="icon-help-button" title="Help & Methodology">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          </button>
+      </div>
     </div>
 
-    <!-- Den nya InfoPanel-komponenten som lyssnar efter vår anpassade händelse -->
     <InfoPanel :content-html="resonanceContent" @open-technical-help="showHelp = true" />
 
     <div v-if="store.isLoading" class="status-container">
@@ -59,7 +68,6 @@ onMounted(() => {
       </div>
     </div>
     
-    <!-- Den gamla HelpModal-komponenten finns kvar och styrs som vanligt -->
     <HelpModal :isOpen="showHelp" @close="showHelp = false">
         <template #header>
             <h2>Methodology & User Guide</h2>
@@ -116,6 +124,8 @@ onMounted(() => {
 .main-content { display: flex; flex-direction: column; gap: 2rem; }
 .calculator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; }
 .header-buttons { display: flex; align-items: center; gap: 0.5rem; }
+.print-report-btn { background: none; border: 1px solid var(--border-color); border-radius: 50%; cursor: pointer; color: var(--label-color); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; transition: all 0.2s ease; padding: 0; }
+.print-report-btn:hover { background-color: #e9ecef; color: var(--text-color); }
 .icon-help-button { background: none; border: 1px solid transparent; border-radius: 50%; cursor: pointer; color: var(--label-color); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; transition: all 0.2s ease; padding: 0; }
 .icon-help-button:hover { background-color: #e9ecef; border-color: var(--border-color); color: var(--text-color); }
 </style>
