@@ -1,17 +1,18 @@
 <!-- src/views/TonearmCalculatorView.vue -->
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useHead } from '@unhead/vue';
 import { useTonearmStore } from '@/store/tonearmStore.js';
 import InputPanel from '@/components/InputPanel.vue';
 import ResultsPanel from '@/components/ResultsPanel.vue';
 import InfoPanel from '@/components/InfoPanel.vue';
 import HelpModal from '@/components/HelpModal.vue';
-// Korrekt import av den renderade HTML-koden från Markdown-filen
 import { html as resonanceContent } from '@/content/tonearmResonance.md';
 
 const store = useTonearmStore();
 const showHelp = ref(false);
+const router = useRouter(); // Importera router-instansen
 
 useHead({
   title: 'Tonearm Resonance Calculator | Engrove Audio Toolkit',
@@ -30,6 +31,13 @@ onMounted(() => {
     store.initialize();
   }
 });
+
+// Funktion för att generera och navigera till rapporten
+function generateReport() {
+  const data = store.getReportData();
+  const encodedData = btoa(JSON.stringify(data));
+  router.push({ name: 'report', query: { data: encodedData } });
+}
 </script>
 
 <template>
@@ -37,14 +45,15 @@ onMounted(() => {
     <div class="tool-header">
       <h1>Tonearm Resonance Calculator</h1>
       <div class="header-buttons">
-          <!-- Denna knapp kan på sikt tas bort om man vill, men behålls för konsekvensens skull -->
+          <!-- ÅTERINFÖRD KNAPP -->
+          <button @click="generateReport" class="report-button">Generate Report</button>
+          <!-- UPPDATERAD IKON -->
           <button @click="showHelp = true" class="icon-help-button" title="Help & Methodology">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
           </button>
       </div>
     </div>
 
-    <!-- Integration av den nya InfoPanel-komponenten -->
     <InfoPanel 
       :content-html="resonanceContent" 
       @open-technical-help="showHelp = true" 
@@ -65,7 +74,6 @@ onMounted(() => {
       </div>
     </div>
     
-    <!-- Den befintliga hjälp-modalen, nu anropad från InfoPanel -->
     <HelpModal :isOpen="showHelp" @close="showHelp = false">
         <template #header>
             <h2>Methodology & User Guide</h2>
@@ -117,11 +125,14 @@ onMounted(() => {
 .status-container.error { background-color: var(--danger-color); color: var(--danger-text); border-color: #f5c6cb; }
 .status-container h2 { margin: 0; color: var(--header-color); }
 .tool-view { display: flex; flex-direction: column; }
-.tool-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0; /* tas bort eftersom InfoPanel nu är direkt under */ margin-bottom: 0; border-bottom: none; /* tas bort eftersom InfoPanel nu är direkt under */ }
+.tool-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0; margin-bottom: 0; border-bottom: none; }
 .tool-header h1 { margin: 0; font-size: 1.75rem; color: var(--header-color); }
-.main-content { display: flex; flex-direction: column; gap: 2rem; }
+.main-content { display: flex; flex-direction: column; gap: 2rem; margin-top: 2rem; }
 .calculator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; }
 .header-buttons { display: flex; align-items: center; gap: 0.5rem; }
-.icon-help-button { background: none; border: 1px solid transparent; border-radius: 50%; cursor: pointer; color: var(--label-color); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; transition: all 0.2s ease; padding: 0; }
+.report-button, .icon-help-button { transition: all 0.2s ease; }
+.report-button { padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600; color: var(--accent-color); background-color: transparent; border: 1px solid var(--accent-color); border-radius: 6px; cursor: pointer; }
+.report-button:hover { background-color: var(--accent-color); color: white; }
+.icon-help-button { background: none; border: 1px solid transparent; border-radius: 50%; cursor: pointer; color: var(--label-color); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; }
 .icon-help-button:hover { background-color: #e9ecef; border-color: var(--border-color); color: var(--text-color); }
 </style>
