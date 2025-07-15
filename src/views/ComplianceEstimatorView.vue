@@ -118,7 +118,7 @@ watch(() => store.userInput, () => {
           <hr>
 
           <h4>The Hierarchical Rule System</h4>
-          <p>The estimator uses a pre-calculated set of rules generated from a database of cartridges. It attempts to find the most specific rule that matches your input, in the following order of priority:</p>
+          <p>For both methods, the estimator uses a pre-calculated set of rules generated from a database of cartridges. It attempts to find the most specific rule that matches your input, in the following order of priority:</p>
           <ol>
               <li><strong>Priority 1 (Most Specific):</strong> Looks for a rule matching the cartridge's <strong>Type, Cantilever Class, and Stylus Family</strong>.</li>
               <li><strong>Priority 2:</strong> If no match is found, it looks for a rule matching just the <strong>Type and Cantilever Class</strong>.</li>
