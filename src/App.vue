@@ -1,12 +1,17 @@
 <!-- src/App.vue -->
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue';
-import { RouterLink, RouterView, useRouter } from 'vue-router';
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 
 const router = useRouter();
+const route = useRoute(); // Använd useRoute för att få tillgång till den aktuella routen
+
 const isMenuExpanded = ref(false);
 const isMobile = ref(false);
-const bannerState = ref('none'); // Möjliga värden: 'none', 'in-progress', 'updated'
+const bannerState = ref('none'); 
+
+// Computed property som kollar om vi är på rapport-sidan
+const isReportPage = computed(() => route.meta.isReportPage);
 
 const toggleMenu = () => {
   isMenuExpanded.value = !isMenuExpanded.value;
@@ -78,7 +83,13 @@ const routeIcons = {
 </script>
 
 <template>
-  <div class="app-layout" :class="{ 'mobile-view': isMobile, [bannerClass]: isMobile }">
+  <!-- Om det är en rapportsida, rendera BARA RouterView -->
+  <div v-if="isReportPage">
+    <RouterView />
+  </div>
+
+  <!-- Annars, rendera hela den vanliga layouten -->
+  <div v-else class="app-layout" :class="{ 'mobile-view': isMobile, [bannerClass]: isMobile }">
     <transition name="banner-fade">
       <div v-if="bannerState !== 'none'" class="update-banner" :class="bannerState">
         <p v-if="bannerState === 'in-progress'">
@@ -129,7 +140,6 @@ const routeIcons = {
   </div>
 </template>
 
-<!-- Globala stilar, inklusive de nya för utskrift -->
 <style>
 :root {
   --sidebar-width-expanded: 250px;
@@ -273,46 +283,45 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .panel { background-color: var(--panel-bg); padding: 1.5rem; border-radius: 6px; border: 1px solid var(--border-color); }
 .panel h2 { margin-top: 0; color: var(--header-color); font-size: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1.5rem; }
 
-/* === NYA UTSKRIFTSSTILAR === */
 @media print {
-  /* Göm allt onödigt UI */
-  .sidebar, .mobile-menu-trigger, .tool-header .header-buttons, .update-banner,
-  .info-panel-container, .under-construction-panel, .print-button {
-    display: none !important;
+  /* Göm layout-element vid utskrift AV RAPPORTEN */
+  .app-layout {
+    display: none;
+  }
+  /* Säkerställ att rapporten (som inte är i app-layout) är synlig */
+  .report-wrapper {
+    display: block !important;
   }
   
   body { 
     background-color: #fff !important; 
     font-size: 10pt;
+    padding: 0;
   }
   
-  .app-layout, .content-area {
+  .report-wrapper {
     margin: 0 !important;
     padding: 0 !important;
-  }
-  
-  .tool-view, .tool-header, .report-wrapper {
-    margin: 0;
-    padding: 0;
-    border: none;
+    border: none !important;
+    box-shadow: none;
   }
 
-  .tool-header h1, .report-header h1 {
+  .print-button {
+    display: none !important;
+  }
+  
+  .report-header h1 {
     font-size: 16pt;
   }
   
-  .panel, .report-section {
-    box-shadow: none;
-    border: 1px solid #ccc;
-    page-break-inside: avoid; /* Försök undvika att bryta paneler över sidor */
+  .report-section {
+    page-break-inside: avoid;
   }
 
-  /* Sidhuvud och Sidfot (standard CSS för utskrift) */
   @page {
     size: A4;
-    margin: 1.5cm; /* Standardmarginaler för utskrift */
+    margin: 1.5cm; 
 
-    /* Toppsektion (Header) för varje sida */
     @top-left {
       content: "Engrove Audio Toolkit Report";
       font-size: 9pt;
@@ -324,14 +333,13 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
       color: #666;
     }
 
-    /* Bottensektion (Footer) för varje sida */
     @bottom-left {
       content: "Open Source Project @ engrove.netlify.app";
       font-size: 9pt;
       color: #666;
     }
     @bottom-right {
-      content: "Generated: " normal; /* Datum kommer att läggas till via JS */
+      content: "Generated: " normal; /* Datum hanteras via JS */
       font-size: 9pt;
       color: #666;
     }
