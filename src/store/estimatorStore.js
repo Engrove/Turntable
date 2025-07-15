@@ -1,5 +1,5 @@
+import { ref, computed } from 'vue'; // Korrigerat från 'pinia' till 'vue'
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
 
 export const useEstimatorStore = defineStore('estimator', () => {
 
@@ -203,7 +203,6 @@ export const useEstimatorStore = defineStore('estimator', () => {
       calculateEstimate();
     };
     
-    // NY FUNKTION
     const getReportData = () => {
       return {
         type: 'estimator',
@@ -216,6 +215,6 @@ export const useEstimatorStore = defineStore('estimator', () => {
         userInput, estimationRules, staticEstimationRules, availableCantileverClasses, 
         availableStylusFamilies, allPickups, isLoading, error, debugLog, result, 
         initialize, calculateEstimate, resetInput,
-        getReportData // Exporterar den nya funktionen
+        getReportData
     };
 });
