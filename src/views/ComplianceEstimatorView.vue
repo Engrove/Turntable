@@ -13,7 +13,7 @@ import { html as complianceContent } from '@/content/complianceEstimator.md';
 
 const store = useEstimatorStore();
 const showHelp = ref(false);
-const router = useRouter(); // Importera router-instansen
+const router = useRouter();
 
 useHead({
   title: 'Cartridge Compliance Estimator | Engrove Audio Toolkit',
@@ -35,10 +35,10 @@ watch(() => store.userInput, () => {
   store.calculateEstimate();
 }, { deep: true });
 
-// Funktion för att generera och navigera till rapporten
 function generateReport() {
   const data = store.getReportData();
-  const encodedData = btoa(JSON.stringify(data));
+  // KORRIGERING: Använd encodeURIComponent för att göra Base64-strängen URL-säker.
+  const encodedData = encodeURIComponent(btoa(JSON.stringify(data)));
   router.push({ name: 'report', query: { data: encodedData } });
 }
 </script>
@@ -62,10 +62,8 @@ function generateReport() {
       <div class="tool-header">
         <h1>Compliance Estimator</h1>
         <div class="header-buttons">
-          <!-- ÅTERINFÖRDA KNAPPAR -->
           <button @click="generateReport" class="report-button">Generate Report</button>
           <button @click="store.resetInput()" class="reset-button" title="Reset all fields">Reset Fields</button>
-          <!-- UPPDATERAD IKON -->
           <button @click="showHelp = true" class="icon-help-button" title="Help & Methodology">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
           </button>
@@ -169,7 +167,7 @@ function generateReport() {
 .reset-button:hover { background-color: #f8f9fa; border-color: #adb5bd; color: var(--text-color); }
 .icon-help-button { background: none; border: 1px solid transparent; border-radius: 50%; cursor: pointer; color: var(--label-color); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; }
 .icon-help-button:hover { background-color: #e9ecef; border-color: var(--border-color); color: var(--text-color); }
-.estimator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; align-items: start; margin-top: 2rem; }
+.estimator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; align-items: start; margin-top: 0; }
 .data-summary-panel { margin-top: 2rem; padding: 1rem 1.5rem; background-color: #f8f9fa; grid-column: 1 / -1; border: 1px solid var(--border-color); border-radius: 8px;}
 .data-summary-panel h3 { margin-top: 0; margin-bottom: 1rem; font-size: 1.1rem; color: var(--header-color); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
 .summary-items { display: flex; gap: 2rem; margin-bottom: 1rem; flex-wrap: wrap; }
