@@ -8,7 +8,8 @@ import EstimatorResultsPanel from '@/components/EstimatorResultsPanel.vue';
 import EstimatorChart from '@/components/EstimatorChart.vue';
 import InfoPanel from '@/components/InfoPanel.vue';
 import HelpModal from '@/components/HelpModal.vue';
-import complianceContent from '@/content/complianceEstimator.md';
+// KORREKT IMPORT: Hämtar den namngivna 'html'-exporten och döper om den.
+import { html as complianceContent } from '@/content/complianceEstimator.md';
 
 const store = useEstimatorStore();
 const showHelp = ref(false);
@@ -26,6 +27,8 @@ onMounted(() => {
   if (!store.estimationRules || !store.staticEstimationRules) {
     store.initialize();
   }
+  // Se till att estimeringen körs vid första laddning
+  store.calculateEstimate();
 });
 
 watch(() => store.userInput, () => {
@@ -59,6 +62,7 @@ watch(() => store.userInput, () => {
         </div>
       </div>
       
+      <!-- Integration av den nya InfoPanel-komponenten -->
       <InfoPanel :content-html="complianceContent" @open-technical-help="showHelp = true" />
 
       <div class="estimator-grid">
@@ -146,15 +150,15 @@ watch(() => store.userInput, () => {
 .status-container { padding: 2rem; text-align: center; background-color: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 6px; }
 .status-container.error { background-color: var(--danger-color); color: var(--danger-text); border-color: #f5c6cb; }
 .tool-view { display: flex; flex-direction: column; }
-.tool-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding-bottom: 1rem; margin-bottom: 0; border-bottom: 1px solid var(--border-color); }
+.tool-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding-bottom: 0; margin-bottom: 0; border-bottom: none; }
 .tool-header h1 { margin: 0; font-size: 1.75rem; color: var(--header-color); }
 .header-buttons { display: flex; align-items: center; gap: 0.5rem; }
 .reset-button { padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600; color: var(--label-color); background-color: transparent; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; transition: all 0.2s ease; }
 .reset-button:hover { background-color: #f8f9fa; border-color: #adb5bd; color: var(--text-color); }
 .icon-help-button { background: none; border: 1px solid transparent; border-radius: 50%; cursor: pointer; color: var(--label-color); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; transition: all 0.2s ease; padding: 0; }
 .icon-help-button:hover { background-color: #e9ecef; border-color: var(--border-color); color: var(--text-color); }
-.estimator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; align-items: start; }
-.data-summary-panel { margin-top: 2rem; padding: 1rem 1.5rem; background-color: #f8f9fa; grid-column: 1 / -1; }
+.estimator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; align-items: start; margin-top: 2rem; }
+.data-summary-panel { margin-top: 2rem; padding: 1rem 1.5rem; background-color: #f8f9fa; grid-column: 1 / -1; border: 1px solid var(--border-color); border-radius: 8px;}
 .data-summary-panel h3 { margin-top: 0; margin-bottom: 1rem; font-size: 1.1rem; color: var(--header-color); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
 .summary-items { display: flex; gap: 2rem; margin-bottom: 1rem; flex-wrap: wrap; }
 .summary-item { display: flex; flex-direction: column; }
