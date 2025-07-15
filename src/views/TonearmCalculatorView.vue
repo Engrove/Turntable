@@ -1,16 +1,16 @@
 <!-- src/views/TonearmCalculatorView.vue -->
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
 import { useHead } from '@unhead/vue';
 import { useTonearmStore } from '@/store/tonearmStore.js';
 import InputPanel from '@/components/InputPanel.vue';
 import ResultsPanel from '@/components/ResultsPanel.vue';
-import HelpModal from '@/components/HelpModal.vue';
+import InfoPanel from '@/components/InfoPanel.vue'; // Importerar vår nya panel
+import HelpModal from '@/components/HelpModal.vue'; // Behåller den gamla modalen
+import { html as resonanceContent } from '@/content/tonearmResonance.md'; // Importerar texten
 
 const store = useTonearmStore();
-const showHelp = ref(false);
-const router = useRouter();
+const showHelp = ref(false); // Denna styr den *tekniska* modalen
 
 useHead({
   title: 'Tonearm Resonance Calculator | Engrove Audio Toolkit',
@@ -24,10 +24,6 @@ useHead({
   ],
 });
 
-const printReport = () => {
-  window.print();
-};
-
 onMounted(() => {
   if (!store.availableTonearms.length) {
     store.initialize();
@@ -39,15 +35,14 @@ onMounted(() => {
   <div class="tool-view">
     <div class="tool-header">
       <h1>Tonearm Resonance Calculator</h1>
-      <div class="header-buttons">
-          <button @click="printReport" class="print-report-btn" title="Print Report">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-          </button>
-          <button @click="showHelp = true" class="icon-help-button" title="Help & Methodology">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-          </button>
-      </div>
+      <!-- Denna knapp öppnar fortfarande den tekniska modalen direkt -->
+      <button @click="showHelp = true" class="icon-help-button" title="Help & Methodology">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+      </button>
     </div>
+
+    <!-- Den nya InfoPanel-komponenten som lyssnar efter vår anpassade händelse -->
+    <InfoPanel :content-html="resonanceContent" @open-technical-help="showHelp = true" />
 
     <div v-if="store.isLoading" class="status-container">
       <h2>Loading Database...</h2>
@@ -64,6 +59,7 @@ onMounted(() => {
       </div>
     </div>
     
+    <!-- Den gamla HelpModal-komponenten finns kvar och styrs som vanligt -->
     <HelpModal :isOpen="showHelp" @close="showHelp = false">
         <template #header>
             <h2>Methodology & User Guide</h2>
@@ -76,7 +72,6 @@ onMounted(() => {
                 <li><strong>Direct Mode:</strong> If you already know your tonearm's effective mass, use this mode for a quick resonance calculation. This bypasses the detailed geometrical calculations.</li>
             </ul>
             <hr>
-
             <h4>Understanding the Visualizations (Detailed Mode)</h4>
             <p>The toolkit provides several interactive diagrams to give you immediate visual feedback:</p>
             <ul>
@@ -85,7 +80,6 @@ onMounted(() => {
                 <li><strong>Counterweight Mass vs. Required Distance:</strong> This graph specifically explores the relationship between the adjustable counterweight's mass (m4) and how far it needs to be from the pivot to balance the arm. It clearly illustrates the principle that a heavier counterweight can be placed much closer to the pivot, which is key to reducing effective mass.</li>
             </ul>
             <hr>
-
             <h4>The Core Physics</h4>
             <p>The tool is built on three fundamental principles:</p>
             <ol>
@@ -94,7 +88,6 @@ onMounted(() => {
                 <li><strong>System Resonance:</strong> The tonearm and cartridge compliance form a classic mass-spring system. The goal is to place its natural resonance frequency in the "sweet spot" (typically 8-12 Hz) to avoid amplifying low-frequency rumble from warps (<8 Hz) and interfering with audible bass frequencies (>12 Hz).</li>
             </ol>
             <hr>
-            
             <h4>Core Formulas Used</h4>
             <p>Adjustable Counterweight Distance (D or L4):</p>
             <code>D = ( (m1*L1) + (m2*L2) - (m3*L3) - (VTF*L1) ) / m4</code>
@@ -105,14 +98,9 @@ onMounted(() => {
             <p>Resonance Frequency (F):</p>
             <code>F = 1000 / (2π * √(M_eff * Compliance))</code>
             <hr>
-            
             <h4>Disclaimer and Limitations</h4>
-            <p>
-              This toolkit is provided as a design aid for theoretical exploration and educational purposes only. The calculations are based on established physical principles but are the product of a hobbyist project. Data is compiled from publicly available sources, including manufacturer specifications and community-driven databases.
-            </p>
-            <p>
-              While every effort is made to verify accuracy, there is no guarantee of the absolute correctness of the data or calculations. Users are encouraged to cross-reference the results with their own measurements and practical experience. The ultimate responsibility for any physical build or component matching rests with the user.
-            </p>
+            <p>This toolkit is provided as a design aid for theoretical exploration and educational purposes only. The calculations are based on established physical principles but are the product of a hobbyist project. Data is compiled from publicly available sources, including manufacturer specifications and community-driven databases.</p>
+            <p>While every effort is made to verify accuracy, there is no guarantee of the absolute correctness of the data or calculations. Users are encouraged to cross-reference the results with their own measurements and practical experience. The ultimate responsibility for any physical build or component matching rests with the user.</p>
         </template>
     </HelpModal>
   </div>
@@ -123,13 +111,11 @@ onMounted(() => {
 .status-container.error { background-color: var(--danger-color); color: var(--danger-text); border-color: #f5c6cb; }
 .status-container h2 { margin: 0; color: var(--header-color); }
 .tool-view { display: flex; flex-direction: column; }
-.tool-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1.5rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border-color); }
+.tool-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1.5rem; margin-bottom: 0; border-bottom: 1px solid var(--border-color); }
 .tool-header h1 { margin: 0; font-size: 1.75rem; color: var(--header-color); }
 .main-content { display: flex; flex-direction: column; gap: 2rem; }
 .calculator-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; }
 .header-buttons { display: flex; align-items: center; gap: 0.5rem; }
-.print-report-btn { background: none; border: 1px solid var(--border-color); border-radius: 50%; cursor: pointer; color: var(--label-color); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; transition: all 0.2s ease; padding: 0; }
-.print-report-btn:hover { background-color: #e9ecef; color: var(--text-color); }
 .icon-help-button { background: none; border: 1px solid transparent; border-radius: 50%; cursor: pointer; color: var(--label-color); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; transition: all 0.2s ease; padding: 0; }
 .icon-help-button:hover { background-color: #e9ecef; border-color: var(--border-color); color: var(--text-color); }
 </style>
