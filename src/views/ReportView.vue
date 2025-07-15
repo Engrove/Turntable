@@ -1,40 +1,29 @@
 <!-- src/views/ReportView.vue -->
 <script setup>
-// Script-sektionen är nu korrekt och behöver inga fler ändringar.
-// Den hämtar data från reportStore som nu är beständig.
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { computed } from 'vue';
 import { useReportStore } from '@/store/reportStore';
-import { useRouter } from 'vue-router'; // Importera för att kunna navigera
+import { useRouter } from 'vue-router';
 
+// Använd store direkt, undvik lokal ref för data.
 const reportStore = useReportStore();
-const router = useRouter(); // Använd router
+const router = useRouter();
 
-const reportData = ref(null);
-const reportTitle = ref("Report");
-const generationDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+// --- Computed Properties som direkt använder store ---
 
-const printReport = () => window.print();
+const reportData = computed(() => reportStore.reportData);
 
-function goHome() {
-    router.push({ name: 'home' });
-}
-
-onMounted(() => {
-  reportData.value = reportStore.reportData;
+const reportTitle = computed(() => {
   if (reportData.value) {
-    reportTitle.value = reportData.value.type === 'tonearm' 
-      ? 'Tonearm Resonance Report' 
+    return reportData.value.type === 'tonearm'
+      ? 'Tonearm Resonance Report'
       : 'Compliance Estimation Report';
-  } else {
-    reportTitle.value = "Error: No Report Data";
   }
+  return "Error: No Report Data";
 });
 
-// onUnmounted-hooken är inte längre nödvändig eftersom vi vill att datan
-// ska finnas kvar för en eventuell refresh. SessionStorage rensas när fliken stängs.
+const generationDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-// All computed-logik förblir densamma...
-const tonearmParamsDetailed = ref([
+const tonearmParamsDetailed = computed(() => [
   { key: 'm_headshell', label: 'Headshell Mass', unit: 'g' },
   { key: 'm_pickup', label: 'Cartridge Mass', unit: 'g' },
   { key: 'm_screws', label: 'Screws Mass', unit: 'g' },
@@ -44,18 +33,21 @@ const tonearmParamsDetailed = ref([
   { key: 'm_rear_assembly', label: 'Rear Assembly Mass', unit: 'g'},
   { key: 'm4_adj_cw', label: 'Adjustable CW Mass', unit: 'g' },
 ]);
-const tonearmParamsDirect = ref([
+
+const tonearmParamsDirect = computed(() => [
   { key: 'm_pickup', label: 'Cartridge Mass', unit: 'g' },
   { key: 'compliance', label: 'Compliance @ 10Hz', unit: 'cu' },
   { key: 'directEffectiveMass', label: 'Tonearm Effective Mass', unit: 'g' }
 ]);
-const estimatorParams = ref([
+
+const estimatorParams = computed(() => [
     { key: 'cu_dynamic_100hz', label: 'Compliance @ 100Hz' },
     { key: 'cu_static', label: 'Static Compliance' },
     { key: 'type', label: 'Pickup Type' },
     { key: 'cantilever_class', label: 'Cantilever Class' },
     { key: 'stylus_family', label: 'Stylus Family' },
 ]);
+
 const resultRange = computed(() => {
     if (!reportData.value || reportData.value.type !== 'estimator' || !reportData.value.result.compliance_median) return '--';
     const { compliance_min, compliance_median, compliance_max } = reportData.value.result;
@@ -64,11 +56,13 @@ const resultRange = computed(() => {
     }
     return compliance_median.toFixed(1);
 });
+
 const showMedianNote = computed(() => {
     if (!reportData.value || reportData.value.type !== 'estimator' || !reportData.value.result.compliance_median) return false;
     const { compliance_min, compliance_max } = reportData.value.result;
     return compliance_min && compliance_max && compliance_min.toFixed(1) !== compliance_max.toFixed(1);
 });
+
 const confidenceLevel = computed(() => {
     if (!reportData.value || reportData.value.type !== 'estimator') return 'N/A';
     const conf = reportData.value.result.confidence;
@@ -76,6 +70,7 @@ const confidenceLevel = computed(() => {
     if (conf >= 60) return 'Medium';
     return 'Low';
 });
+
 const confidenceClass = computed(() => {
     if (!reportData.value || reportData.value.type !== 'estimator') return '';
     const conf = reportData.value.result.confidence;
@@ -83,6 +78,14 @@ const confidenceClass = computed(() => {
     if (conf >= 60) return 'warning';
     return 'danger';
 });
+
+// --- Metoder ---
+
+const printReport = () => window.print();
+
+function goHome() {
+    router.push({ name: 'home' });
+}
 </script>
 
 <template>
@@ -174,11 +177,140 @@ const confidenceClass = computed(() => {
 </template>
 
 <style scoped>
-/* All existing styles remain the same */
-.report-wrapper { max-width: 800px; margin: 2rem auto; padding: 2rem; background-color: #fff; border: 1px solid #ccc; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+.report-wrapper {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+.report-header {
+    text-align: center;
+    border-bottom: 2px solid #333;
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+}
+.report-header h1 {
+    margin: 0;
+    font-size: 2rem;
+}
+.report-header p {
+    margin: 0.5rem 0 1.5rem 0;
+    color: #555;
+    font-style: italic;
+}
+.print-button {
+    padding: 0.75rem 1.5rem;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.print-button:hover {
+    background-color: #2980b9;
+}
+.report-section {
+    margin-bottom: 2.5rem;
+}
+.report-section h2 {
+    font-size: 1.5rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+.data-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+.data-group h3 {
+    font-size: 1.2rem;
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: var(--accent-color);
+}
+.data-group ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.data-group li {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+.data-group li:last-child {
+    border-bottom: none;
+}
+.final-result {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+.diagnosis-box {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border-radius: 6px;
+}
+.diagnosis-box h4 {
+    margin: 0 0 0.5rem 0;
+}
+.diagnosis-box p {
+    margin: 0;
+}
+.diagnosis-box.ideal { background-color: var(--ideal-color); color: var(--ideal-text); border: 1px solid #c3e6cb; }
+.diagnosis-box.warning { background-color: var(--warning-color); color: var(--warning-text); border: 1px solid #ffeeba; }
+.diagnosis-box.danger { background-color: var(--danger-color); color: var(--danger-text); border: 1px solid #f5c6cb; }
+.danger-text { color: var(--danger-text); font-weight: bold; }
+.main-result {
+    text-align: center;
+    padding: 1rem;
+    background-color: var(--panel-bg);
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+}
+.result-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    line-height: 1;
+}
+.result-value span {
+    display: block;
+    font-size: 1rem;
+    font-weight: normal;
+    color: var(--label-color);
+}
+.median-note {
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--label-color);
+    margin-top: 0.5rem;
+}
+.report-footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid #333;
+    font-size: 0.8rem;
+    color: #777;
+}
+.report-footer h3 {
+    font-size: 1rem;
+    margin-top: 0;
+}
 .error-box { padding: 2rem; text-align: center; background-color: var(--danger-color); color: var(--danger-text); border: 1px solid #f5c6cb; border-radius: 6px;}
 .error-box h2 { margin-top: 0; }
 .home-link { display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.5rem; background-color: var(--accent-color); color: white; text-decoration: none; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; }
-@media print { .print-button, .error-box .home-link { display: none; } }
-/* Other report styles... */
+@media print {
+    body, .report-wrapper { margin: 0; padding: 0; box-shadow: none; border: none; }
+    .print-button, .home-link { display: none; }
+}
+@media (max-width: 600px) {
+    .data-grid { grid-template-columns: 1fr; }
+}
 </style>
