@@ -23,7 +23,6 @@ const checkScreenSize = () => {
   }
 };
 
-// En computed property för att lägga till en klass när bannern är dold, för att justera mobilmenyn
 const bannerClass = computed(() => {
   return bannerState.value === 'none' ? 'banner-hidden' : '';
 });
@@ -33,7 +32,6 @@ onMounted(() => {
   checkScreenSize();
   window.addEventListener('resize', checkScreenSize);
 
-  // Logik för att hantera uppdateringsbannern
   const deployTimestampStr = import.meta.env.VITE_DEPLOY_TIMESTAMP;
   if (deployTimestampStr) {
     const deployTime = new Date(deployTimestampStr).getTime();
@@ -131,6 +129,7 @@ const routeIcons = {
   </div>
 </template>
 
+<!-- Globala stilar, inklusive de nya för utskrift -->
 <style>
 :root {
   --sidebar-width-expanded: 250px;
@@ -274,14 +273,68 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .panel { background-color: var(--panel-bg); padding: 1.5rem; border-radius: 6px; border: 1px solid var(--border-color); }
 .panel h2 { margin-top: 0; color: var(--header-color); font-size: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1.5rem; }
 
+/* === NYA UTSKRIFTSSTILAR === */
 @media print {
-  .sidebar, .mobile-menu-trigger, .tool-header .header-buttons, .update-banner { display: none !important; }
-  body { background-color: #fff !important; }
-  .app-layout { display: block; }
-  .content-area { margin-left: 0 !important; padding: 0 !important; }
-  .panel { box-shadow: none; border: 1px solid #ccc; }
-  .tool-view, .tool-header { margin: 0; padding: 0; border: none; }
-  .tool-header h1 { font-size: 18pt; margin-bottom: 2rem; }
-  .tool-description { display: none; }
+  /* Göm allt onödigt UI */
+  .sidebar, .mobile-menu-trigger, .tool-header .header-buttons, .update-banner,
+  .info-panel-container, .under-construction-panel, .print-button {
+    display: none !important;
+  }
+  
+  body { 
+    background-color: #fff !important; 
+    font-size: 10pt;
+  }
+  
+  .app-layout, .content-area {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .tool-view, .tool-header, .report-wrapper {
+    margin: 0;
+    padding: 0;
+    border: none;
+  }
+
+  .tool-header h1, .report-header h1 {
+    font-size: 16pt;
+  }
+  
+  .panel, .report-section {
+    box-shadow: none;
+    border: 1px solid #ccc;
+    page-break-inside: avoid; /* Försök undvika att bryta paneler över sidor */
+  }
+
+  /* Sidhuvud och Sidfot (standard CSS för utskrift) */
+  @page {
+    size: A4;
+    margin: 1.5cm; /* Standardmarginaler för utskrift */
+
+    /* Toppsektion (Header) för varje sida */
+    @top-left {
+      content: "Engrove Audio Toolkit Report";
+      font-size: 9pt;
+      color: #666;
+    }
+    @top-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font-size: 9pt;
+      color: #666;
+    }
+
+    /* Bottensektion (Footer) för varje sida */
+    @bottom-left {
+      content: "Open Source Project @ engrove.netlify.app";
+      font-size: 9pt;
+      color: #666;
+    }
+    @bottom-right {
+      content: "Generated: " normal; /* Datum kommer att läggas till via JS */
+      font-size: 9pt;
+      color: #666;
+    }
+  }
 }
 </style>
