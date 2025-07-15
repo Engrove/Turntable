@@ -17,11 +17,11 @@
             <ul>
               <li v-if="reportData.params.calculationMode === 'detailed'" v-for="param in tonearmParamsDetailed.filter(p => reportData.params[p.key] !== null)" :key="param.key">
                 <strong>{{ param.label }}:</strong>
-                <span>{{ reportData.params[param.key] }} {{ param.unit }}</span>
+                <span>{{ reportData.params[p.key] }} {{ param.unit }}</span>
               </li>
               <li v-if="reportData.params.calculationMode === 'direct'" v-for="param in tonearmParamsDirect.filter(p => reportData.params[p.key] !== null)" :key="param.key">
                 <strong>{{ param.label }}:</strong>
-                <span>{{ reportData.params[param.key] }} {{ param.unit }}</span>
+                <span>{{ reportData.params[p.key] }} {{ param.unit }}</span>
               </li>
             </ul>
           </div>
@@ -49,7 +49,7 @@
             <ul>
                <li v-for="param in estimatorParams.filter(p => reportData.userInput[p.key] !== null && reportData.userInput[p.key] !== '')" :key="param.key">
                 <strong>{{ param.label }}:</strong>
-                <span>{{ reportData.userInput[param.key] }}</span>
+                <span>{{ reportData.userInput[p.key] }}</span>
               </li>
             </ul>
           </div>
@@ -75,8 +75,11 @@
         <p>Could not load report data. Please return to the previous page and try again.</p>
     </main>
 
+    <!-- NY DISCLAIMER-SEKTION -->
     <footer class="report-footer">
-      <p><strong>Disclaimer:</strong> This report is a theoretical calculation for educational and hobbyist purposes. Always verify with real-world measurements. Engrove Audio Toolkit assumes no liability for its use.</p>
+      <h3>Disclaimer</h3>
+      <p>This report is provided as a design aid for theoretical exploration and educational purposes only. The calculations are based on established physical principles but are the product of a hobbyist project. Data is compiled from publicly available sources.</p>
+      <p>While every effort is made to verify accuracy, there is no guarantee of the absolute correctness of the data or calculations. Users are encouraged to cross-reference the results with their own measurements and practical experience. The ultimate responsibility for any physical build or component matching rests with the user.</p>
     </footer>
   </div>
 </template>
@@ -88,7 +91,7 @@ import { useRoute } from 'vue-router';
 const route = useRoute();
 const reportData = ref(null);
 const reportTitle = ref("Report");
-const generationDate = new Date().toLocaleString();
+const generationDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
 const printReport = () => window.print();
 
@@ -160,5 +163,127 @@ const confidenceClass = computed(() => {
     if (conf >= 60) return 'warning';
     return 'danger';
 });
-
 </script>
+
+<style scoped>
+.report-wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: #fff;
+}
+
+.report-header {
+  text-align: center;
+  border-bottom: 2px solid #333;
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+}
+
+.report-header h1 {
+  margin: 0;
+  color: #333;
+}
+
+.report-header p {
+  margin: 0.5rem 0;
+  color: #555;
+  font-style: italic;
+}
+
+.report-section {
+  margin-bottom: 2.5rem;
+}
+.report-section h2 {
+  font-size: 1.5rem;
+  color: var(--header-color);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.data-group h3 {
+  font-size: 1.2rem;
+  color: var(--accent-color);
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.data-group ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.data-group li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.data-group li strong {
+  color: var(--label-color);
+}
+
+.final-result {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.danger-text {
+  color: var(--danger-text);
+  font-weight: bold;
+}
+
+.diagnosis-box {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 6px;
+  border-left-width: 5px;
+  border-left-style: solid;
+}
+.diagnosis-box.ideal { background-color: var(--ideal-color); border-color: #155724; }
+.diagnosis-box.warning { background-color: var(--warning-color); border-color: #856404; }
+.diagnosis-box.danger { background-color: var(--danger-color); border-color: #721c24; }
+.diagnosis-box h4 { margin: 0 0 0.5rem 0; }
+.diagnosis-box p { margin: 0; }
+
+.main-result {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+.result-value {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: var(--header-color);
+}
+.result-value span {
+  font-size: 1.2rem;
+  font-weight: normal;
+  color: var(--label-color);
+  margin-left: 0.5rem;
+}
+.median-note {
+  font-style: italic;
+  color: #666;
+}
+
+.report-footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #333;
+  font-size: 0.8rem;
+  color: #666;
+  text-align: center;
+}
+.report-footer h3 {
+    margin-top: 0;
+}
+</style>
