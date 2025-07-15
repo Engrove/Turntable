@@ -7,7 +7,7 @@
       <button @click="printReport" class="print-button">Print or Save as PDF</button>
     </header>
 
-    <main class="report-content" v-if="reportData && !reportData.error">
+    <main class="report-content" v-if="reportData">
       <!-- Sektion för Tonarmskalkylatorn -->
       <section v-if="reportData.type === 'tonearm'" class="report-section">
         <h2>Tonearm Resonance Calculation</h2>
@@ -71,8 +71,12 @@
       </section>
     </main>
     <main v-else class="report-content">
-        <h2>Error</h2>
-        <p>Could not load report data. Please return to the previous page and try again.</p>
+        <div class="error-box">
+            <h2>Error: No Report Data Found</h2>
+            <p>The data for this report could not be found. This can happen if you refresh the report page or access it directly.</p>
+            <p>Please return to the previous tool and click "Generate Report" again.</p>
+            <a href="/" class="home-link">Return to Home</a>
+        </div>
     </main>
 
     <footer class="report-footer">
@@ -84,10 +88,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { useReportStore } from '@/store/reportStore';
 
-const route = useRoute();
+const reportStore = useReportStore();
 const reportData = ref(null);
 const reportTitle = ref("Report");
 const generationDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -95,19 +99,20 @@ const generationDate = new Date().toLocaleDateString('en-US', { year: 'numeric',
 const printReport = () => window.print();
 
 onMounted(() => {
-  try {
-    // KORRIGERING: Använd decodeURIComponent för att återställa den URL-säkra strängen.
-    const decodedData = JSON.parse(atob(decodeURIComponent(route.query.data)));
-    reportData.value = decodedData;
-    reportTitle.value = decodedData.type === 'tonearm' ? 'Tonearm Resonance Report' : 'Compliance Estimation Report';
-  } catch (e) {
-    console.error("Failed to parse report data:", e);
-    reportData.value = { error: "Invalid data provided." };
-    reportTitle.value = "Error";
+  reportData.value = reportStore.reportData;
+  if (reportData.value) {
+    reportTitle.value = reportData.value.type === 'tonearm' 
+      ? 'Tonearm Resonance Report' 
+      : 'Compliance Estimation Report';
+  } else {
+    reportTitle.value = "Error: No Report Data";
   }
 });
 
-// Tonearm-specifik data
+onUnmounted(() => {
+  reportStore.clearReportData();
+});
+
 const tonearmParamsDetailed = ref([
   { key: 'm_headshell', label: 'Headshell Mass', unit: 'g' },
   { key: 'm_pickup', label: 'Cartridge Mass', unit: 'g' },
@@ -124,7 +129,6 @@ const tonearmParamsDirect = ref([
   { key: 'directEffectiveMass', label: 'Tonearm Effective Mass', unit: 'g' }
 ]);
 
-// Estimator-specifik data
 const estimatorParams = ref([
     { key: 'cu_dynamic_100hz', label: 'Compliance @ 100Hz' },
     { key: 'cu_static', label: 'Static Compliance' },
@@ -166,144 +170,35 @@ const confidenceClass = computed(() => {
 </script>
 
 <style scoped>
-.report-wrapper {
-  max-width: 800px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background-color: #fff;
-  border: 1px solid #ccc;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-}
-
-.report-header {
-  text-align: center;
-  border-bottom: 2px solid #333;
-  padding-bottom: 1rem;
-  margin-bottom: 2rem;
-}
-
-.report-header h1 {
-  margin: 0;
-  color: #333;
-}
-
-.report-header p {
-  margin: 0.5rem 0;
-  color: #555;
-  font-style: italic;
-}
-
-.print-button {
-  margin-top: 1rem;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: bold;
-  background-color: var(--accent-color);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-.print-button:hover {
-  background-color: #2980b9;
-}
-
-.report-section {
-  margin-bottom: 2.5rem;
-}
-.report-section h2 {
-  font-size: 1.5rem;
-  color: var(--header-color);
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.data-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-}
-
-.data-group h3 {
-  font-size: 1.2rem;
-  color: var(--accent-color);
-  margin-top: 0;
-  margin-bottom: 1rem;
-}
-
-.data-group ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.data-group li {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #eee;
-}
-
-.data-group li strong {
-  color: var(--label-color);
-}
-
-.final-result {
-  font-weight: bold;
-  font-size: 1.1em;
-}
-
-.danger-text {
-  color: var(--danger-text);
-  font-weight: bold;
-}
-
-.diagnosis-box {
-  margin-top: 1rem;
-  padding: 1rem;
-  border-radius: 6px;
-  border-left-width: 5px;
-  border-left-style: solid;
-}
+.report-wrapper { max-width: 800px; margin: 2rem auto; padding: 2rem; background-color: #fff; border: 1px solid #ccc; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+.report-header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 1rem; margin-bottom: 2rem; }
+.report-header h1 { margin: 0; color: #333; }
+.report-header p { margin: 0.5rem 0; color: #555; font-style: italic; }
+.print-button { margin-top: 1rem; padding: 0.75rem 1.5rem; font-size: 1rem; font-weight: bold; background-color: var(--accent-color); color: white; border: none; border-radius: 6px; cursor: pointer; transition: background-color 0.2s; }
+.print-button:hover { background-color: #2980b9; }
+.report-section { margin-bottom: 2.5rem; }
+.report-section h2 { font-size: 1.5rem; color: var(--header-color); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
+.data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
+.data-group h3 { font-size: 1.2rem; color: var(--accent-color); margin-top: 0; margin-bottom: 1rem; }
+.data-group ul { list-style: none; padding: 0; margin: 0; }
+.data-group li { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #eee; }
+.data-group li strong { color: var(--label-color); }
+.final-result { font-weight: bold; font-size: 1.1em; }
+.danger-text { color: var(--danger-text); font-weight: bold; }
+.diagnosis-box { margin-top: 1rem; padding: 1rem; border-radius: 6px; border-left-width: 5px; border-left-style: solid; }
 .diagnosis-box.ideal { background-color: var(--ideal-color); border-color: #155724; color: var(--ideal-text); }
 .diagnosis-box.warning { background-color: var(--warning-color); border-color: #856404; color: var(--warning-text); }
 .diagnosis-box.danger { background-color: var(--danger-color); border-color: #721c24; color: var(--danger-text); }
 .diagnosis-box h4 { margin: 0 0 0.5rem 0; }
 .diagnosis-box p { margin: 0; }
-
-.main-result {
-  text-align: center;
-  margin-bottom: 1rem;
-}
-.result-value {
-  font-size: 2.5rem;
-  font-weight: bold;
-  color: var(--header-color);
-}
-.result-value span {
-  font-size: 1.2rem;
-  font-weight: normal;
-  color: var(--label-color);
-  margin-left: 0.5rem;
-}
-.median-note {
-  font-style: italic;
-  color: #666;
-}
-
-.report-footer {
-  margin-top: 3rem;
-  padding-top: 1.5rem;
-  border-top: 2px solid #333;
-  font-size: 0.8rem;
-  color: #666;
-  text-align: left;
-}
-.report-footer h3 {
-    margin-top: 0;
-    text-align: center;
-    color: var(--header-color);
-}
+.main-result { text-align: center; margin-bottom: 1rem; }
+.result-value { font-size: 2.5rem; font-weight: bold; color: var(--header-color); }
+.result-value span { font-size: 1.2rem; font-weight: normal; color: var(--label-color); margin-left: 0.5rem; }
+.median-note { font-style: italic; color: #666; }
+.report-footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 2px solid #333; font-size: 0.8rem; color: #666; text-align: left; }
+.report-footer h3 { margin-top: 0; text-align: center; color: var(--header-color); }
+.error-box { padding: 2rem; text-align: center; background-color: var(--danger-color); color: var(--danger-text); border: 1px solid #f5c6cb; border-radius: 6px;}
+.error-box h2 { margin-top: 0; }
+.home-link { display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.5rem; background-color: var(--accent-color); color: white; text-decoration: none; font-weight: bold; border-radius: 6px; }
+@media print { .print-button, .error-box .home-link { display: none; } }
 </style>
