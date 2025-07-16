@@ -6,7 +6,6 @@ name = "engrove"
 # The date of the Workers runtime version to use.
 compatibility_date = "2025-07-16"
 
-# [pages]-sektionen är nu borttagen. Istället specificerar vi byggkonfigurationen direkt.
-# Detta är den föredragna metoden som Cloudflare Pages nu letar efter.
-[pages_build_output_dir]
-main = "dist"
+# This property tells Cloudflare Pages which directory contains the finished site.
+# It should be a simple string.
+pages_build_output_dir = "dist"
