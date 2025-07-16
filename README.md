@@ -1,6 +1,6 @@
 # Engrove Audio Toolkit
 
-[![Cloudflare Pages Deploy Status](https://static.cloudflareinsights.com/workers/pages/button/engrove.svg)](https://engrove.pages.dev/)
+[![Cloudflare Pages Deploy Status](https://api.cloudflare.com/client/v4/accounts/10e80551b97f870ecfb101a5984ddc1a/pages/projects/engrove/deployments/badges/project-deploy-status)](https://engrove.pages.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 An open-source collection of interactive web-based tools for the DIY audio enthusiast. Designed to bring complex audio theory into a dynamic, visual, and intuitive environment.
