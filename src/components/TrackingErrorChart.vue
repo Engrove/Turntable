@@ -15,6 +15,12 @@ const props = defineProps({
     type: Object,
     required: true,
     default: () => ({ inner: 0, outer: 0 })
+  },
+  // NY PROP för att veta armtyp
+  trackingMethod: {
+    type: String,
+    required: true,
+    default: 'pivoting'
   }
 });
 
@@ -26,55 +32,66 @@ const updateChart = () => {
 
   chartInstance.data.datasets = props.chartData.datasets;
   
-  // Funktion för att bestämma etikettens position
-  const getLabelPosition = (yValue) => {
-    // Om Y-värdet är i den övre 20% av skalan, flytta ner etiketten. Annars upp.
-    const yMax = chartInstance.scales.y.max;
-    const yMin = chartInstance.scales.y.min;
-    return yValue > (yMax - (yMax - yMin) * 0.2) ? 'start' : 'end';
-  };
+  // Nollställ annotationer
+  chartInstance.options.plugins.annotation.annotations.innerNull = {};
+  chartInstance.options.plugins.annotation.annotations.outerNull = {};
 
-  // Funktion för att bestämma Y-justering
-  const getYAdjust = (position) => (position === 'start' ? 15 : -15);
-  
-  const innerNullValue = props.nullPoints.inner;
-  const outerNullValue = props.nullPoints.outer;
+  // NY LOGIK: Visa bara nollpunkter för pivoterande armar
+  if (props.trackingMethod === 'pivoting' && props.nullPoints.inner && props.nullPoints.outer) {
+    const activeDataset = props.chartData.datasets.find(ds => ds.borderWidth === 4);
+    const activeColor = activeDataset ? activeDataset.borderColor : 'rgba(231, 76, 60, 0.9)';
 
-  const innerPosition = getLabelPosition(chartInstance.data.datasets[0]?.data.find(p => p.x >= innerNullValue)?.y ?? 0);
-  const outerPosition = getLabelPosition(chartInstance.data.datasets[0]?.data.find(p => p.x >= outerNullValue)?.y ?? 0);
-  
-  chartInstance.options.plugins.annotation.annotations.innerNull = {
-    type: 'line',
-    scaleID: 'x',
-    value: innerNullValue,
-    borderColor: 'rgba(231, 76, 60, 0.7)',
-    borderWidth: 1.5,
-    borderDash: [6, 6],
-    label: {
-      content: `Null ${innerNullValue.toFixed(1)}mm`,
-      display: true,
-      position: innerPosition,
-      font: { size: 10 },
-      backgroundColor: 'rgba(231, 76, 60, 0.7)',
-      yAdjust: getYAdjust(innerPosition),
+    const getLabelPosition = (yValue) => {
+      if (!yValue) return 'end';
+      const yMax = chartInstance.scales.y.max;
+      const yMin = chartInstance.scales.y.min;
+      return yValue > (yMax - (yMax - yMin) * 0.2) ? 'start' : 'end';
+    };
+    const getYAdjust = (position) => (position === 'start' ? 15 : -15);
+    
+    let innerYValue = 0;
+    let outerYValue = 0;
+    if (activeDataset && activeDataset.data) {
+        innerYValue = activeDataset.data.find(p => p.x >= props.nullPoints.inner)?.y ?? 0;
+        outerYValue = activeDataset.data.find(p => p.x >= props.nullPoints.outer)?.y ?? 0;
     }
-  };
-  chartInstance.options.plugins.annotation.annotations.outerNull = {
-    type: 'line',
-    scaleID: 'x',
-    value: outerNullValue,
-    borderColor: 'rgba(231, 76, 60, 0.7)',
-    borderWidth: 1.5,
-    borderDash: [6, 6],
-    label: {
-      content: `Null ${outerNullValue.toFixed(1)}mm`,
-      display: true,
-      position: outerPosition,
-      font: { size: 10 },
-      backgroundColor: 'rgba(231, 76, 60, 0.7)',
-      yAdjust: getYAdjust(outerPosition),
-    }
-  };
+    
+    const innerPosition = getLabelPosition(innerYValue);
+    const outerPosition = getLabelPosition(outerYValue);
+
+    chartInstance.options.plugins.annotation.annotations.innerNull = {
+      type: 'line',
+      scaleID: 'x',
+      value: props.nullPoints.inner,
+      borderColor: 'rgba(231, 76, 60, 0.7)',
+      borderWidth: 1.5,
+      borderDash: [6, 6],
+      label: {
+        content: `Null ${props.nullPoints.inner.toFixed(1)}mm`,
+        display: true,
+        position: innerPosition,
+        font: { size: 10, weight: 'bold' },
+        backgroundColor: activeColor,
+        yAdjust: getYAdjust(innerPosition),
+      }
+    };
+    chartInstance.options.plugins.annotation.annotations.outerNull = {
+      type: 'line',
+      scaleID: 'x',
+      value: props.nullPoints.outer,
+      borderColor: 'rgba(231, 76, 60, 0.7)',
+      borderWidth: 1.5,
+      borderDash: [6, 6],
+      label: {
+        content: `Null ${props.nullPoints.outer.toFixed(1)}mm`,
+        display: true,
+        position: outerPosition,
+        font: { size: 10, weight: 'bold' },
+        backgroundColor: activeColor,
+        yAdjust: getYAdjust(outerPosition),
+      }
+    };
+  }
 
   chartInstance.update();
 };
@@ -149,7 +166,7 @@ onMounted(() => {
   updateChart();
 });
 
-watch(() => [props.chartData, props.nullPoints], updateChart, { deep: true });
+watch(() => [props.chartData, props.nullPoints, props.trackingMethod], updateChart, { deep: true });
 </script>
 
 <template>
