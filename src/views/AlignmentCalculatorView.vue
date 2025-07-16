@@ -7,6 +7,7 @@ import AlignmentInputPanel from '@/components/AlignmentInputPanel.vue';
 import AlignmentResultsPanel from '@/components/AlignmentResultsPanel.vue';
 import InfoPanel from '@/components/InfoPanel.vue';
 import HelpModal from '@/components/HelpModal.vue';
+import TrackingErrorChart from '@/components/TrackingErrorChart.vue'; // Importerad
 import { html as alignmentContent } from '@/content/alignmentCalculator.md';
 
 const store = useAlignmentStore();
@@ -31,7 +32,6 @@ onMounted(() => {
     <div class="tool-header">
       <h1>Alignment Calculator</h1>
       <div class="header-buttons">
-        <!-- UPPDATERAD IKON -->
         <button @click="showHelp = true" class="icon-help-button" title="Help & Methodology">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
         </button>
@@ -43,14 +43,6 @@ onMounted(() => {
       @open-technical-help="showHelp = true"
     />
 
-    <div class="under-construction-panel">
-      <div class="icon-wrapper">
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
-      </div>
-      <h3>Visualizations Under Construction</h3>
-      <p>The protractor visualization and tracking error chart are currently being rebuilt to provide a better and more accurate experience. Thank you for your patience!</p>
-    </div>
-
     <div v-if="store.isLoading" class="status-container">
       <h2>Loading Database...</h2>
     </div>
@@ -61,7 +53,28 @@ onMounted(() => {
 
     <div v-else class="main-grid">
       <AlignmentInputPanel />
-      <AlignmentResultsPanel />
+      
+      <!-- Ny kolumn för resultat och diagram -->
+      <div class="results-and-visuals-column">
+        <AlignmentResultsPanel />
+
+        <!-- Nytt diagram, visas endast om det finns data -->
+        <TrackingErrorChart 
+          v-if="store.trackingErrorChartData.datasets.length > 0 && !store.calculatedValues.error"
+          :chartData="store.trackingErrorChartData"
+          :nullPoints="store.calculatedValues.nulls"
+          class="tracking-chart"
+        />
+
+        <!-- Befintlig panel med uppdaterad text -->
+        <div class="under-construction-panel">
+          <div class="icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+          </div>
+          <h3>Printable Protractor Coming Soon</h3>
+          <p>An interactive, printable protractor visualization is planned for a future update. Stay tuned!</p>
+        </div>
+      </div>
     </div>
 
     <HelpModal :isOpen="showHelp" @close="showHelp = false">
@@ -70,7 +83,6 @@ onMounted(() => {
       </template>
       <template #default>
         <p>This section will contain a more detailed breakdown of the alignment formulas, tracking error charts, and a full FAQ, as mentioned in the quick guide.</p>
-        <!-- Innehåll för denna modal kan läggas till här senare -->
       </template>
     </HelpModal>
 
@@ -89,9 +101,44 @@ onMounted(() => {
 .status-container.error { background-color: var(--danger-color); color: var(--danger-text); border-color: #f5c6cb; }
 
 .main-grid { display: grid; grid-template-columns: 400px 1fr; gap: 2rem; align-items: start; margin-top: 2rem; }
-.under-construction-panel { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 3rem 2rem; background-color: var(--warning-color); border: 1px solid #ffeeba; border-radius: 8px; color: var(--warning-text); }
-.icon-wrapper { background-color: rgba(255, 255, 255, 0.5); border-radius: 50%; padding: 1rem; margin-bottom: 1rem; }
-.under-construction-panel h3 { margin: 0 0 0.5rem 0; color: var(--warning-text); font-size: 1.5rem; }
-.under-construction-panel p { margin: 0; max-width: 60ch; }
+
+/* Nytt för att gruppera resultat och diagram */
+.results-and-visuals-column {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.tracking-chart {
+  margin-top: 0; /* Avståndet hanteras av gap i föräldern */
+}
+
+.under-construction-panel { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  text-align: center; 
+  padding: 3rem 2rem; 
+  background-color: var(--warning-color); 
+  border: 1px solid #ffeeba; 
+  border-radius: 8px; 
+  color: var(--warning-text); 
+}
+.icon-wrapper { 
+  background-color: rgba(255, 255, 255, 0.5); 
+  border-radius: 50%; 
+  padding: 1rem; 
+  margin-bottom: 1rem; 
+}
+.under-construction-panel h3 { 
+  margin: 0 0 0.5rem 0; 
+  color: var(--warning-text); 
+  font-size: 1.5rem; 
+}
+.under-construction-panel p { 
+  margin: 0; 
+  max-width: 60ch; 
+}
+
 @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
 </style>
