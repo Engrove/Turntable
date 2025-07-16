@@ -1,16 +1,16 @@
 <!-- src/App.vue -->
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue';
-import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
+import { RouterLink, RouterView, useRouter } from 'vue-router';
 
 const router = useRouter();
-const route = useRoute(); // Använd useRoute för att få tillgång till den aktuella routen
+const route = useRoute();
 
 const isMenuExpanded = ref(false);
 const isMobile = ref(false);
 const bannerState = ref('none'); 
 
-// Computed property som kollar om vi är på rapport-sidan
+// Denna computed property behövs inte längre för layouten, men kan vara användbar för annat
 const isReportPage = computed(() => route.meta.isReportPage);
 
 const toggleMenu = () => {
@@ -83,13 +83,8 @@ const routeIcons = {
 </script>
 
 <template>
-  <!-- Om det är en rapportsida, rendera BARA RouterView -->
-  <div v-if="isReportPage">
-    <RouterView />
-  </div>
-
-  <!-- Annars, rendera hela den vanliga layouten -->
-  <div v-else class="app-layout" :class="{ 'mobile-view': isMobile, [bannerClass]: isMobile }">
+  <!-- FÖRENKLING: Ta bort v-if/v-else. Alla sidor renderas nu inuti app-layout. -->
+  <div class="app-layout" :class="{ 'mobile-view': isMobile, [bannerClass]: isMobile }">
     <transition name="banner-fade">
       <div v-if="bannerState !== 'none'" class="update-banner" :class="bannerState">
         <p v-if="bannerState === 'in-progress'">
@@ -141,74 +136,26 @@ const routeIcons = {
 </template>
 
 <style>
-:root {
-  --sidebar-width-expanded: 250px;
-  --sidebar-width-collapsed: 70px;
-  --header-color: #2c3e50;
-  --accent-color: #3498db;
-  --text-light: #ecf0f1;
-  --text-muted: #bdc3c7;
-  --bg-hover: #34495e;
-  --panel-bg: #f8f9fa;
-  --border-color: #dee2e6;
-  --text-color: #212529;
-  --label-color: #495057;
-  --ideal-color: #d4edda;
-  --warning-color: #fff3cd;
-  --danger-color: #f8d7da;
-  --ideal-text: #155724;
-  --warning-text: #856404;
-  --danger-text: #721c24;
-}
+/* Allmänt */
+:root { --sidebar-width-expanded: 250px; --sidebar-width-collapsed: 70px; --header-color: #2c3e50; --accent-color: #3498db; --text-light: #ecf0f1; --text-muted: #bdc3c7; --bg-hover: #34495e; --panel-bg: #f8f9fa; --border-color: #dee2e6; --text-color: #212529; --label-color: #495057; --ideal-color: #d4edda; --warning-color: #fff3cd; --danger-color: #f8d7da; --ideal-text: #155724; --warning-text: #856404; --danger-text: #721c24; }
 html { scroll-behavior: smooth; }
 body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #e9ecef; }
 #app { width: 100%; }
 .app-layout { position: relative; }
 .content-area { padding: 2rem; transition: margin-left 0.3s ease; margin-left: var(--sidebar-width-collapsed); }
+.panel { background-color: var(--panel-bg); padding: 1.5rem; border-radius: 6px; border: 1px solid var(--border-color); }
+.panel h2 { margin-top: 0; color: var(--header-color); font-size: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1.5rem; }
+
+/* Sidebar */
 .sidebar { background-color: var(--header-color); color: var(--text-light); height: 100dvh; position: fixed; top: 0; left: 0; z-index: 1000; display: flex; flex-direction: column; width: var(--sidebar-width-collapsed); overflow: hidden; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .sidebar.is-expanded { width: var(--sidebar-width-expanded); }
-
-.sidebar-header {
-  padding: 0 1.25rem;
-  margin-top: 1rem;
-  margin-bottom: 2rem;
-  font-size: 1.2rem;
-  white-space: nowrap;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.sidebar.is-expanded .sidebar-header {
-  justify-content: flex-start;
-}
-.sidebar-header h3 {
-  margin: 0;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-.sidebar.is-expanded .sidebar-header h3 {
-  opacity: 1;
-}
-
-.main-nav {
-  flex-grow: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-.menu-toggle-wrap {
-  flex-shrink: 0;
-  display: flex;
-  justify-content: center;
-  padding: 1rem 0;
-  border-top: 1px solid var(--bg-hover);
-}
-.sidebar.is-expanded .menu-toggle-wrap {
-  justify-content: flex-end;
-  padding-right: 1rem;
-}
-
+.sidebar-header { padding: 0 1.25rem; margin-top: 1rem; margin-bottom: 2rem; font-size: 1.2rem; white-space: nowrap; height: 36px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sidebar.is-expanded .sidebar-header { justify-content: flex-start; }
+.sidebar-header h3 { margin: 0; opacity: 0; transition: opacity 0.3s ease; }
+.sidebar.is-expanded .sidebar-header h3 { opacity: 1; }
+.main-nav { flex-grow: 1; overflow-y: auto; overflow-x: hidden; }
+.menu-toggle-wrap { flex-shrink: 0; display: flex; justify-content: center; padding: 1rem 0; border-top: 1px solid var(--bg-hover); }
+.sidebar.is-expanded .menu-toggle-wrap { justify-content: flex-end; padding-right: 1rem; }
 .nav-link { display: flex; align-items: center; gap: 1.25rem; padding: 1rem; margin: 0.5rem; border-radius: 8px; color: var(--text-muted); text-decoration: none; transition: background-color 0.2s ease, color 0.2s ease; white-space: nowrap; }
 .sidebar.is-expanded .nav-link { padding-left: 1.5rem; }
 .nav-link:hover { background-color: var(--bg-hover); color: #fff; }
@@ -218,54 +165,20 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .sidebar.is-expanded .nav-icon { margin-left: 0; }
 .nav-text { opacity: 0; transition: opacity 0.2s ease; }
 .sidebar.is-expanded .nav-text { opacity: 1; }
-
 .menu-toggle { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0.5rem; border-radius: 50%; transition: background-color 0.2s ease, transform 0.3s ease-in-out; }
 .menu-toggle:hover { background-color: var(--bg-hover); color: #fff; }
 .sidebar.is-expanded .menu-toggle { transform: rotate(180deg); }
 
-.update-banner {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  color: white;
-  text-align: center;
-  padding: 0.75rem;
-  z-index: 2000;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  transition: background-color 0.5s ease;
-}
-.update-banner.updated {
-  background-color: #27ae60; /* Grön */
-}
-.update-banner.in-progress {
-  background-color: #e74c3c; /* Röd */
-}
-.update-banner.in-progress svg {
-  animation: spin 2s linear infinite;
-}
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-.update-banner p {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  font-weight: 500;
-}
-.banner-fade-enter-active,
-.banner-fade-leave-active {
-  transition: opacity 0.5s ease, transform 0.5s ease;
-}
-.banner-fade-enter-from,
-.banner-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-100%);
-}
+/* Uppdaterings-banner */
+.update-banner { position: fixed; top: 0; left: 0; width: 100%; color: white; text-align: center; padding: 0.75rem; z-index: 2000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); transition: background-color 0.5s ease; }
+.update-banner.updated { background-color: #27ae60; }
+.update-banner.in-progress { background-color: #e74c3c; animation: spin 2s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.update-banner p { margin: 0; display: flex; align-items: center; justify-content: center; gap: 0.75rem; font-weight: 500; }
+.banner-fade-enter-active, .banner-fade-leave-active { transition: opacity 0.5s ease, transform 0.5s ease; }
+.banner-fade-enter-from, .banner-fade-leave-to { opacity: 0; transform: translateY(-100%); }
 
+/* Mobilvyer */
 @media (max-width: 767px) {
   .content-area { margin-left: 0; padding: 1rem; padding-top: 5rem; }
   .sidebar { width: var(--sidebar-width-expanded); transform: translateX(-100%); transition: transform 0.3s ease; }
@@ -273,76 +186,23 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
   .sidebar-header h3, .nav-text { opacity: 1; }
   .mobile-menu-trigger { position: fixed; top: 1rem; left: 1rem; z-index: 1001; background-color: rgba(255, 255, 255, 0.8); backdrop-filter: blur(5px); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.5rem; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: top 0.5s ease; }
   .mobile-menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 999; }
-  .app-layout.mobile-view:not(.banner-hidden) .mobile-menu-trigger {
-    top: calc(1rem + 48px);
-  }
-  .update-banner p {
-    font-size: 0.9rem;
-  }
+  .app-layout.mobile-view:not(.banner-hidden) .mobile-menu-trigger { top: calc(1rem + 48px); }
+  .update-banner p { font-size: 0.9rem; }
 }
-.panel { background-color: var(--panel-bg); padding: 1.5rem; border-radius: 6px; border: 1px solid var(--border-color); }
-.panel h2 { margin-top: 0; color: var(--header-color); font-size: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1.5rem; }
 
+/* UPPDATERADE UTSKRIFTSREGLER */
 @media print {
-  /* Göm layout-element vid utskrift AV RAPPORTEN */
-  .app-layout {
-    display: none;
-  }
-  /* Säkerställ att rapporten (som inte är i app-layout) är synlig */
-  .report-wrapper {
-    display: block !important;
-  }
-  
-  body { 
-    background-color: #fff !important; 
-    font-size: 10pt;
-    padding: 0;
-  }
-  
-  .report-wrapper {
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    box-shadow: none;
-  }
-
-  .print-button {
+  /* Göm alla layout-element som inte är huvudinnehåll */
+  .sidebar, .mobile-menu-trigger, .update-banner {
     display: none !important;
   }
   
-  .report-header h1 {
-    font-size: 16pt;
+  /* Se till att huvudinnehållet tar upp hela sidan */
+  .content-area {
+    margin-left: 0 !important;
+    padding: 0 !important;
   }
   
-  .report-section {
-    page-break-inside: avoid;
-  }
-
-  @page {
-    size: A4;
-    margin: 1.5cm; 
-
-    @top-left {
-      content: "Engrove Audio Toolkit Report";
-      font-size: 9pt;
-      color: #666;
-    }
-    @top-right {
-      content: "Page " counter(page) " of " counter(pages);
-      font-size: 9pt;
-      color: #666;
-    }
-
-    @bottom-left {
-      content: "Open Source Project @ engrove.netlify.app";
-      font-size: 9pt;
-      color: #666;
-    }
-    @bottom-right {
-      content: "Generated: " normal; /* Datum hanteras via JS */
-      font-size: 9pt;
-      color: #666;
-    }
-  }
+  /* Resten av den sid-specifika utskrifts-stylingen hanteras i ReportView.vue */
 }
 </style>
