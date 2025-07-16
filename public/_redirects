@@ -1,0 +1,5 @@
+# Detta är en kommentar. Raden nedan är den enda som behövs.
+# Den instruerar Cloudflare att för alla inkommande förfrågningar som inte hittar en fil,
+# skicka istället index.html så att Vue Router kan ta över.
+
+/*    /index.html   200
