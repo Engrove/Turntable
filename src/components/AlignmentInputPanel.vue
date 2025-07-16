@@ -5,7 +5,6 @@ import { useAlignmentStore } from '@/store/alignmentStore.js';
 
 const store = useAlignmentStore();
 
-// Logik för att hantera val av tonarm i presets
 const selectedTonearmManufacturer = ref(null);
 const tonearmManufacturers = computed(() => [...new Set(store.availableTonearms.map(t => t.manufacturer))].sort());
 const filteredTonearms = computed(() => {
@@ -13,7 +12,9 @@ const filteredTonearms = computed(() => {
   return store.availableTonearms.filter(t => t.manufacturer === selectedTonearmManufacturer.value);
 });
 
-// Nollställ modellvalet om tillverkaren ändras
+// NYTT: Beräknad egenskap för att se om den valda armen är en standard pivoterande arm.
+const isPivotingArm = computed(() => store.calculatedValues.trackingMethod === 'pivoting');
+
 watch(selectedTonearmManufacturer, () => {
   store.selectedTonearmId = null;
 });
@@ -21,7 +22,6 @@ watch(selectedTonearmManufacturer, () => {
 function resetTonearmSelection() {
   selectedTonearmManufacturer.value = null;
   store.loadTonearmPreset(null);
-  store.userInput.pivotToSpindle = 222.0; 
 }
 </script>
 
@@ -29,7 +29,6 @@ function resetTonearmSelection() {
   <div class="input-panel panel">
     <h2>Setup & Controls</h2>
 
-    <!-- Hela innehållet renderas nu endast när storen är redo -->
     <template v-if="!store.isLoading">
       <fieldset>
         <legend>1. Tonearm Setup</legend>
@@ -55,17 +54,20 @@ function resetTonearmSelection() {
         <div class="input-group">
           <label for="p2s">Pivot-to-Spindle Distance (mm)</label>
           <div class="input-control">
-            <input type="range" id="p2s" min="180" max="350" step="0.1" v-model.number="store.userInput.pivotToSpindle" @input="store.calculateAlignment">
-            <input type="number" class="value-display" step="0.1" v-model.number="store.userInput.pivotToSpindle" @change="store.calculateAlignment">
+            <input type="range" id="p2s" min="180" max="350" step="0.1" v-model.number="store.userInput.pivotToSpindle" @input="store.calculateAlignment" :disabled="!isPivotingArm">
+            <input type="number" class="value-display" step="0.1" v-model.number="store.userInput.pivotToSpindle" @change="store.calculateAlignment" :disabled="!isPivotingArm">
           </div>
         </div>
       </fieldset>
 
       <fieldset>
         <legend>2. Alignment Geometry</legend>
-        <p class="fieldset-description">
+        <!-- NYTT: Visa beskrivning endast för pivoterande armar -->
+        <p v-if="isPivotingArm" class="fieldset-description">
           Choose the alignment geometry you want to use. Each offers a different trade-off in tracking error across the record.
         </p>
+        
+        <!-- NYTT: Inaktivera knappar och visa meddelande för icke-pivoterande armar -->
         <div class="mode-switch">
           <button
             v-for="(geo, key) in store.ALIGNMENT_GEOMETRIES"
@@ -73,26 +75,49 @@ function resetTonearmSelection() {
             :class="{ active: store.userInput.alignmentType === key }"
             @click="store.setAlignment(key)"
             :title="geo.description"
+            :disabled="!isPivotingArm"
           >
             {{ key.replace('A', '') }}
           </button>
         </div>
-        <div class="geometry-info">
+        
+        <div v-if="isPivotingArm" class="geometry-info">
             <strong>{{ store.calculatedValues.geometryName }}:</strong>
             <span>{{ store.calculatedValues.geometryDescription }}</span>
+        </div>
+
+        <div v-else class="non-pivoting-info">
+            <strong>{{ store.calculatedValues.geometryName }} Arm Detected</strong>
+            <span>This is a tangential tracking tonearm. Standard alignment geometries do not apply.</span>
         </div>
       </fieldset>
     </template>
 
-    <!-- Visas medan store laddar -->
     <div v-else class="loading-placeholder">
       <p>Loading presets...</p>
     </div>
-
   </div>
 </template>
 
 <style scoped>
+/* Befintlig CSS är oförändrad, förutom denna nya klass */
+.non-pivoting-info {
+    background-color: var(--ideal-color);
+    border: 1px solid var(--ideal-text);
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--ideal-text);
+    margin-bottom: 1rem;
+    text-align: center;
+}
+.non-pivoting-info strong {
+    display: block;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+
 .input-panel {
   display: flex;
   flex-direction: column;
@@ -188,6 +213,10 @@ input[type="number"].value-display {
     border-radius: 4px;
     border: 1px solid var(--border-color);
 }
+input:disabled {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+}
 .mode-switch {
   display: flex;
   width: 100%;
@@ -214,6 +243,11 @@ input[type="number"].value-display {
   background-color: var(--accent-color);
   color: white;
   z-index: 2;
+}
+.mode-switch button:disabled {
+  background-color: #e9ecef;
+  color: #adb5bd;
+  cursor: not-allowed;
 }
 .geometry-info {
     background-color: #e9ecef;
