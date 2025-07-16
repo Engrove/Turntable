@@ -53,13 +53,11 @@ export const useAlignmentStore = defineStore('alignment', {
     loadTonearmPreset(id) {
       this.selectedTonearmId = id;
       if (id === null) {
-        // Återställ till manuellt läge
         this.calculatedValues.trackingMethod = 'pivoting';
       } else {
         const tonearm = this.availableTonearms.find(t => t.id == id);
         if (tonearm) {
           this.userInput.pivotToSpindle = tonearm.pivot_to_spindle_mm || 222.0;
-          // KORRIGERING: Uppdatera alltid trackingMethod när en preset laddas.
           this.calculatedValues.trackingMethod = tonearm.tracking_method || 'pivoting';
         }
       }
@@ -73,7 +71,7 @@ export const useAlignmentStore = defineStore('alignment', {
 
     calculateAlignment() {
       const D = this.userInput.pivotToSpindle;
-      this.calculatedValues.error = (!D || D <= 0) ? "Pivot to Spindle distance must be a positive number." : null;
+      this.calculatedValues.error = (!D || D <= 0) ? "Pivot-to-Spindle distance must be a positive number." : null;
       if (this.calculatedValues.error) {
         this.trackingErrorChartData.datasets = [];
         return;
@@ -84,45 +82,48 @@ export const useAlignmentStore = defineStore('alignment', {
       } else {
         this.calculateForPivotingArm(D);
       }
-      this.updateTrackingErrorChartData(D);
+      this.updateTrackingErrorChartData();
     },
 
     calculateForPivotingArm(D) {
-      let overhang, offsetAngleRad;
+      let overhang, offsetAngleRad, innerNull, outerNull;
+
       switch (this.userInput.alignmentType) {
-        case 'LofgrenA': {
-          const term1 = R1 + R2;
-          const term2 = R1 * R2;
-          overhang = term2 / term1;
-          const sinOffset = term1 / (2 * (D + overhang));
-          offsetAngleRad = Math.asin(sinOffset);
+        case 'LofgrenA':
+          innerNull = R1 * Math.sqrt((14 * R1**2 + 11 * R1 * R2 + 14 * R2**2) / (14 * R1**2 + 39 * R1 * R2 + 14 * R2**2));
+          outerNull = R2 * Math.sqrt((14 * R1**2 + 11 * R1 * R2 + 14 * R2**2) / (14 * R1**2 - 9 * R1 * R2 + 14 * R2**2));
           break;
-        }
-        case 'LofgrenB': {
-          const C1 = (R2 - R1) / 2;
-          const C2 = (R2 * R1) * Math.log(R2 / R1) / (R2 - R1);
-          overhang = (C1 * C2) / (C1 + C2);
-          const sinOffset = (C1 + C2) / (D + overhang);
-          offsetAngleRad = Math.asin(sinOffset);
+        case 'StevensonA':
+          innerNull = R1 / (1 - (R1 / (2 * R2)) + Math.sqrt(1 - (R1 / R2) + (R1**2 / (4 * R2**2))));
+          outerNull = R1 / (1 - (R1 / (2 * R2)) - Math.sqrt(1 - (R1 / R2) + (R1**2 / (4 * R2**2))));
           break;
-        }
-        case 'StevensonA': {
-           const term1 = R1 + R2;
-           const term2 = R1 * R2;
-           overhang = (2 * term2) / term1;
-           const sinOffset = (term1 / 2) / (D + overhang);
-           offsetAngleRad = Math.asin(sinOffset);
-           break;
-        }
+        case 'LofgrenB':
+          const logRatio = Math.log(R2 / R1);
+          innerNull = (R2 - R1) / logRatio;
+          outerNull = Math.sqrt(R1 * R2);
+          break;
+        default:
+          return;
+      }
+      
+      // Dessa formler är universella när nollpunkterna är kända
+      overhang = ((innerNull + outerNull) * (R1**2 + R1*R2 + R2**2 - innerNull*outerNull)) / (2 * (R1**2 + R1*R2 + R2**2));
+      offsetAngleRad = Math.acos((D**2 - (innerNull**2 + outerNull**2)/2) / (D**2 - (innerNull - outerNull)**2 / 2));
+      
+      // Fallback om acos-argumentet är ogiltigt
+      if (isNaN(offsetAngleRad)) {
+        const R = (innerNull + outerNull) / 2;
+        offsetAngleRad = Math.asin((R / D) * (1 - (innerNull*outerNull)/(R*D)));
       }
       
       const effectiveLength = D + overhang;
+
       this.calculatedValues = {
         ...this.calculatedValues,
         overhang,
         offsetAngle: offsetAngleRad * (180 / Math.PI),
         effectiveLength,
-        nulls: this.calculateNulls(D, effectiveLength, offsetAngleRad),
+        nulls: { inner: innerNull, outer: outerNull },
         geometryName: this.ALIGNMENT_GEOMETRIES[this.userInput.alignmentType]?.name || '',
         geometryDescription: this.ALIGNMENT_GEOMETRIES[this.userInput.alignmentType]?.description || ''
       };
@@ -140,75 +141,50 @@ export const useAlignmentStore = defineStore('alignment', {
       };
     },
 
-    calculateNulls(D, L, beta) {
-        if (!D || !L || isNaN(beta)) return { inner: 0, outer: 0 };
-        const termForNulls = Math.sqrt(L**2 - D**2);
-        return {
-          inner: (D**2 - termForNulls**2) / (2 * (D - termForNulls * Math.cos(beta))),
-          outer: (D**2 - termForNulls**2) / (2 * (D + termForNulls * Math.cos(beta)))
-        };
-    },
-
     calculateTrackingError(radius, L, D, offsetRad) {
       const term = (radius**2 + L**2 - D**2) / (2 * radius * L);
       if (term < -1 || term > 1) return NaN;
       return (Math.asin(term) - offsetRad) * (180 / Math.PI);
     },
 
-    updateTrackingErrorChartData(D) {
+    updateTrackingErrorChartData() {
       if (this.calculatedValues.error) {
-        this.trackingErrorChartData = { datasets: [] };
-        return;
+        this.trackingErrorChartData = { datasets: [] }; return;
       }
       if (this.calculatedValues.trackingMethod !== 'pivoting') {
-        const tangentialData = Array.from({ length: 175 }, (_, i) => ({ x: 60 + i * 0.5, y: 0 }));
-        this.trackingErrorChartData = {
-          datasets: [{
-            label: 'Tangential Arm',
-            data: tangentialData,
-            borderColor: '#2ecc71',
-            borderWidth: 4,
-            pointRadius: 0,
-            tension: 0.1,
-          }]
-        };
+        const data = Array.from({ length: 175 }, (_, i) => ({ x: 60 + i * 0.5, y: 0 }));
+        this.trackingErrorChartData = { datasets: [{ label: 'Tangential Arm', data, borderColor: '#2ecc71', borderWidth: 4, pointRadius: 0, tension: 0.1 }] };
         return;
       }
-      
-      const geometries = ['LofgrenA', 'LofgrenB', 'StevensonA'];
+
       const colors = { LofgrenA: '#3498db', LofgrenB: '#2ecc71', StevensonA: '#e74c3c' };
-      const datasets = geometries.map(type => {
-        let overhang, offsetAngleRad, effectiveLength;
+      const D = this.userInput.pivotToSpindle;
+
+      const datasets = Object.keys(this.ALIGNMENT_GEOMETRIES).map(type => {
+        let tempOverhang, tempOffsetRad, tempInnerNull, tempOuterNull;
+
         switch (type) {
-            case 'LofgrenA': {
-              const term1 = R1 + R2;
-              const term2 = R1 * R2;
-              overhang = term2 / term1;
-              effectiveLength = D + overhang;
-              offsetAngleRad = Math.asin(term1 / (2 * effectiveLength));
+            case 'LofgrenA':
+              tempInnerNull = R1 * Math.sqrt((14 * R1**2 + 11 * R1 * R2 + 14 * R2**2) / (14 * R1**2 + 39 * R1 * R2 + 14 * R2**2));
+              tempOuterNull = R2 * Math.sqrt((14 * R1**2 + 11 * R1 * R2 + 14 * R2**2) / (14 * R1**2 - 9 * R1 * R2 + 14 * R2**2));
               break;
-            }
-            case 'LofgrenB': {
-              const C1 = (R2 - R1) / 2;
-              const C2 = (R2 * R1) * Math.log(R2 / R1) / (R2 - R1);
-              overhang = (C1 * C2) / (C1 + C2);
-              effectiveLength = D + overhang;
-              offsetAngleRad = Math.asin((C1 + C2) / effectiveLength);
+            case 'StevensonA':
+              tempInnerNull = R1 / (1 - (R1 / (2 * R2)) + Math.sqrt(1 - (R1 / R2) + (R1**2 / (4 * R2**2))));
+              tempOuterNull = R1 / (1 - (R1 / (2 * R2)) - Math.sqrt(1 - (R1 / R2) + (R1**2 / (4 * R2**2))));
               break;
-            }
-            case 'StevensonA': {
-               const term1 = R1 + R2;
-               const term2 = R1 * R2;
-               overhang = (2 * term2) / term1;
-               effectiveLength = D + overhang;
-               offsetAngleRad = Math.asin((term1 / 2) / effectiveLength);
-               break;
-            }
+            case 'LofgrenB':
+              tempInnerNull = (R2 - R1) / Math.log(R2 / R1);
+              tempOuterNull = Math.sqrt(R1 * R2);
+              break;
         }
 
+        tempOverhang = ((tempInnerNull + tempOuterNull) * (R1**2 + R1*R2 + R2**2 - tempInnerNull*tempOuterNull)) / (2 * (R1**2 + R1*R2 + R2**2));
+        tempOffsetRad = Math.acos((D**2 - (tempInnerNull**2 + tempOuterNull**2)/2) / (D**2 - (tempInnerNull - tempOuterNull)**2 / 2));
+        const tempEffectiveLength = D + tempOverhang;
+        
         const dataPoints = Array.from({ length: 175 }, (_, i) => {
             const r = 60 + i * 0.5;
-            return { x: r, y: this.calculateTrackingError(r, effectiveLength, D, offsetAngleRad) };
+            return { x: r, y: this.calculateTrackingError(r, tempEffectiveLength, D, tempOffsetRad) };
         });
 
         return {
@@ -225,4 +201,3 @@ export const useAlignmentStore = defineStore('alignment', {
     },
   },
 });
-// src/store/alignmentStore.js
