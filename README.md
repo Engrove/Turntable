@@ -1,6 +1,6 @@
 # Engrove Audio Toolkit
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/4d71a3dc-4b8a-4d08-95c1-f8d47151b193/deploy-status)](https://app.netlify.com/sites/engrove/deploys)
+[![Cloudflare Pages Deploy Status](https://static.cloudflareinsights.com/workers/pages/button/engrove.svg)](https://engrove.pages.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 An open-source collection of interactive web-based tools for the DIY audio enthusiast. Designed to bring complex audio theory into a dynamic, visual, and intuitive environment.
@@ -9,7 +9,9 @@ An open-source collection of interactive web-based tools for the DIY audio enthu
 
 ### **Live Application**
 
-**Explore the full toolkit live at: [engrove.netlify.app](https://engrove.netlify.app/)**
+**Explore the full toolkit live at: [engrove.pages.dev](https://engrove.pages.dev/)**
+
+*(A mirror is also available at `engrove.netlify.app` for comparison.)*
 
 ---
 
@@ -39,8 +41,8 @@ To run this project locally, you will need [Node.js](https://nodejs.org/) instal
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/Engrove/Turntable.git
-    cd Turntable
+    git clone https://github.com/Engrove/engrove.git
+    cd engrove
     ```
 
 2.  **Install dependencies:**
@@ -53,6 +55,18 @@ To run this project locally, you will need [Node.js](https://nodejs.org/) instal
     npm run dev
     ```
     The application will be available at `http://localhost:5173/`.
+
+### Deployment
+
+This project uses a manual trigger system to control deployments on Netlify and Cloudflare Pages, helping to conserve build resources.
+
+A new deployment is **only** triggered when the file `buildtrigger.txt` is modified and pushed to the `main` branch. Any other code changes pushed to the repository will **not** start a new build.
+
+**To deploy your changes:**
+1.  Make all your code changes and commit them.
+2.  Open the `buildtrigger.txt` file.
+3.  Make a small, trivial change (e.g., update the timestamp or add a space).
+4.  Save, commit, and push this file. This final commit will trigger the deployment process on both hosting platforms.
 
 ### License
 
