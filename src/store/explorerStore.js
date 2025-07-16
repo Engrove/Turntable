@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
-import { useTonearmStore } from './tonearmStore';
-import { usePickupStore } from './pickupStore';
+import { useTonearmStore } from './tonearmStore.js';
+import { usePickupStore } from './pickupStore.js'; // KORRIGERING: Korrekt filnamn med .js
 
 export const useExplorerStore = defineStore('explorer', {
   state: () => ({
@@ -16,7 +16,7 @@ export const useExplorerStore = defineStore('explorer', {
     allTonearms: [],
     allPickups: [],
     pickupClassifications: {},
-    tonearmClassifications: {}, // NY
+    tonearmClassifications: {},
     isLoading: true,
     error: null,
   }),
