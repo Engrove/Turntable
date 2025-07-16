@@ -1,16 +1,16 @@
 <!-- src/App.vue -->
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue';
-import { RouterLink, RouterView, useRouter } from 'vue-router';
+// KORRIGERING: Lade till 'useRoute' i importen från 'vue-router'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 
 const router = useRouter();
-const route = useRoute();
+const route = useRoute(); // Denna rad fungerar nu korrekt
 
 const isMenuExpanded = ref(false);
 const isMobile = ref(false);
 const bannerState = ref('none'); 
 
-// Denna computed property behövs inte längre för layouten, men kan vara användbar för annat
 const isReportPage = computed(() => route.meta.isReportPage);
 
 const toggleMenu = () => {
@@ -83,7 +83,6 @@ const routeIcons = {
 </script>
 
 <template>
-  <!-- FÖRENKLING: Ta bort v-if/v-else. Alla sidor renderas nu inuti app-layout. -->
   <div class="app-layout" :class="{ 'mobile-view': isMobile, [bannerClass]: isMobile }">
     <transition name="banner-fade">
       <div v-if="bannerState !== 'none'" class="update-banner" :class="bannerState">
@@ -136,7 +135,7 @@ const routeIcons = {
 </template>
 
 <style>
-/* Allmänt */
+/* Allmänna stilar */
 :root { --sidebar-width-expanded: 250px; --sidebar-width-collapsed: 70px; --header-color: #2c3e50; --accent-color: #3498db; --text-light: #ecf0f1; --text-muted: #bdc3c7; --bg-hover: #34495e; --panel-bg: #f8f9fa; --border-color: #dee2e6; --text-color: #212529; --label-color: #495057; --ideal-color: #d4edda; --warning-color: #fff3cd; --danger-color: #f8d7da; --ideal-text: #155724; --warning-text: #856404; --danger-text: #721c24; }
 html { scroll-behavior: smooth; }
 body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #e9ecef; }
@@ -169,16 +168,17 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .menu-toggle:hover { background-color: var(--bg-hover); color: #fff; }
 .sidebar.is-expanded .menu-toggle { transform: rotate(180deg); }
 
-/* Uppdaterings-banner */
+/* Banner för uppdatering */
 .update-banner { position: fixed; top: 0; left: 0; width: 100%; color: white; text-align: center; padding: 0.75rem; z-index: 2000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); transition: background-color 0.5s ease; }
 .update-banner.updated { background-color: #27ae60; }
-.update-banner.in-progress { background-color: #e74c3c; animation: spin 2s linear infinite; }
+.update-banner.in-progress { background-color: #e74c3c; }
+.update-banner.in-progress svg { animation: spin 2s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .update-banner p { margin: 0; display: flex; align-items: center; justify-content: center; gap: 0.75rem; font-weight: 500; }
 .banner-fade-enter-active, .banner-fade-leave-active { transition: opacity 0.5s ease, transform 0.5s ease; }
 .banner-fade-enter-from, .banner-fade-leave-to { opacity: 0; transform: translateY(-100%); }
 
-/* Mobilvyer */
+/* Mobilanpassning */
 @media (max-width: 767px) {
   .content-area { margin-left: 0; padding: 1rem; padding-top: 5rem; }
   .sidebar { width: var(--sidebar-width-expanded); transform: translateX(-100%); transition: transform 0.3s ease; }
@@ -190,19 +190,11 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
   .update-banner p { font-size: 0.9rem; }
 }
 
-/* UPPDATERADE UTSKRIFTSREGLER */
+/* Utskriftsregler */
 @media print {
-  /* Göm alla layout-element som inte är huvudinnehåll */
-  .sidebar, .mobile-menu-trigger, .update-banner {
-    display: none !important;
-  }
-  
-  /* Se till att huvudinnehållet tar upp hela sidan */
-  .content-area {
-    margin-left: 0 !important;
-    padding: 0 !important;
-  }
-  
-  /* Resten av den sid-specifika utskrifts-stylingen hanteras i ReportView.vue */
+  body { background-color: #fff !important; }
+  .sidebar, .mobile-menu-trigger, .update-banner { display: none !important; }
+  .content-area { margin-left: 0 !important; padding: 0 !important; }
+  /* Specifik styling för rapportutskrift hanteras nu i ReportView.vue */
 }
 </style>
