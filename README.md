@@ -5,7 +5,7 @@
 
 An open-source collection of interactive web-based tools for the DIY audio enthusiast. Designed to bring complex audio theory into a dynamic, visual, and intuitive environment.
 
----
+--- 
 
 ### **Live Application**
 
