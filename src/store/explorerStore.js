@@ -4,7 +4,7 @@ import { useEstimatorStore } from '@/store/estimatorStore.js';
 
 export const useExplorerStore = defineStore('explorer', {
   state: () => ({
-    dataType: 'tonearms', // 'tonearms' or 'cartridges'
+    dataType: 'tonearms',
     searchTerm: '',
     filters: {},
     numericFilters: {},
@@ -123,20 +123,20 @@ export const useExplorerStore = defineStore('explorer', {
   },
 
   actions: {
+    // KORRIGERING: Förenklad initialize-metod.
     async initialize() {
       this.isLoading = true;
       this.error = null;
       try {
         const tonearmStore = useTonearmStore();
         const estimatorStore = useEstimatorStore();
-        
-        // Parallell-laddning av alla nödvändiga stores
-        await Promise.all([
-          tonearmStore.initialize(),
-          estimatorStore.initialize(),
-        ]);
-        
-        // Hämta data från de korrekt initierade storesen
+
+        // Förutsätter att de andra storesen redan har initierats av vyn.
+        // Hämtar bara den data som redan finns.
+        if (tonearmStore.availableTonearms.length === 0 || estimatorStore.allPickups.length === 0) {
+          throw new Error('Dependent stores are not ready.');
+        }
+
         this.allTonearms = tonearmStore.availableTonearms;
         this.allPickups = estimatorStore.allPickups;
         this.pickupClassifications = estimatorStore.classifications;
@@ -147,7 +147,7 @@ export const useExplorerStore = defineStore('explorer', {
 
         this.isLoading = false;
       } catch (e) {
-        this.error = `Database initialization failed: ${e.message}`;
+        this.error = `Explorer store failed to initialize: ${e.message}`;
         console.error(e);
         this.isLoading = false;
       }
