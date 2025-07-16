@@ -4,7 +4,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useHead } from '@unhead/vue';
 import { useTonearmStore } from '@/store/tonearmStore.js';
-import { useReportStore } from '@/store/reportStore.js'; // Importera den nya storen
+import { useReportStore } from '@/store/reportStore.js';
 import InputPanel from '@/components/InputPanel.vue';
 import ResultsPanel from '@/components/ResultsPanel.vue';
 import InfoPanel from '@/components/InfoPanel.vue';
@@ -12,7 +12,7 @@ import HelpModal from '@/components/HelpModal.vue';
 import { html as resonanceContent } from '@/content/tonearmResonance.md';
 
 const store = useTonearmStore();
-const reportStore = useReportStore(); // Använd den nya storen
+const reportStore = useReportStore();
 const showHelp = ref(false);
 const router = useRouter();
 
@@ -29,6 +29,7 @@ useHead({
 });
 
 onMounted(() => {
+  // Initiera bara om datan inte redan finns
   if (!store.availableTonearms.length) {
     store.initialize();
   }
@@ -46,18 +47,14 @@ function generateReport() {
     <div class="tool-header">
       <h1>Tonearm Resonance Calculator</h1>
       <div class="header-buttons">
-          <button @click="generateReport" class="report-button">Generate Report</button>
-          <button @click="showHelp = true" class="icon-help-button" title="Help & Methodology">
+          <button @click="generateReport" class="report-button" :disabled="isLoading">Generate Report</button>
+          <button @click="showHelp = true" class="icon-help-button" :disabled="isLoading">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
           </button>
       </div>
     </div>
 
-    <InfoPanel 
-      :content-html="resonanceContent" 
-      @open-technical-help="showHelp = true" 
-    />
-
+    <!-- Huvudvillkoret som löser alla problem -->
     <div v-if="store.isLoading" class="status-container">
       <h2>Loading Database...</h2>
     </div>
@@ -65,8 +62,12 @@ function generateReport() {
       <h2>Failed to load data</h2>
       <p>{{ store.error }}</p>
     </div>
-
+    
     <div v-else class="main-content">
+      <InfoPanel 
+        :content-html="resonanceContent" 
+        @open-technical-help="showHelp = true" 
+      />
       <div class="calculator-grid">
         <InputPanel />
         <ResultsPanel />
@@ -132,6 +133,8 @@ function generateReport() {
 .report-button, .icon-help-button { transition: all 0.2s ease; }
 .report-button { padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600; color: var(--accent-color); background-color: transparent; border: 1px solid var(--accent-color); border-radius: 6px; cursor: pointer; }
 .report-button:hover { background-color: var(--accent-color); color: white; }
+.report-button:disabled { opacity: 0.5; cursor: not-allowed; }
 .icon-help-button { background: none; border: 1px solid transparent; border-radius: 50%; cursor: pointer; color: var(--label-color); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; }
-.icon-help-button:hover { background-color: #e9ecef; border-color: var(--border-color); color: var(--text-color); }
+.icon-help-button:hover:not(:disabled) { background-color: #e9ecef; border-color: var(--border-color); color: var(--text-color); }
+.icon-help-button:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>
