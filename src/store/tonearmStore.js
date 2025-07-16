@@ -1,140 +1,140 @@
 // src/store/tonearmStore.js
 import { defineStore } from 'pinia';
-import { fetchJsonData } from '@/services/dataLoader.js';
-// KORREKT IMPORT AV 'ref' ÄR AVGÖRANDE
-import { computed, reactive, ref } from 'vue';
+// BORTTAGET: Beroendet av pickupStore tas bort. Denna store hanterar bara tonarmar.
 
-export const useTonearmStore = defineStore('tonearm', () => {
-  // === STATE ===
-  const params = reactive({
-    m_headshell: 6.5, m_pickup: 6.5, m_screws: 0.5,
-    m_rear_assembly: 75, m_tube_percentage: 20, m4_adj_cw: 100,
-    L1: 229, L2: 30, L3_fixed_cw: 20,
-    vtf: 1.75, compliance: 12,
-    calculationMode: 'detailed',
-    directEffectiveMass: 12,
-  });
-
-  const availableTonearms = ref([]);
-  const availablePickups = ref([]);
-  const selectedTonearmId = ref(null);
-  const selectedPickupId = ref(null);
-  const isLoading = ref(true);
-  const error = ref(null);
-
-  // === GETTERS (som computed properties) ===
-  const m1 = computed(() => params.m_headshell + params.m_pickup + params.m_screws);
-  const m2_tube = computed(() => params.m_rear_assembly * (params.m_tube_percentage / 100.0));
-  const m3_fixed_cw = computed(() => params.m_rear_assembly - m2_tube.value);
-  
-  const currentTonearm = computed(() => availableTonearms.value.find(arm => arm.id == selectedTonearmId.value) || null);
-  
-  const calculatedResults = computed(() => {
-    if (params.calculationMode === 'direct') {
-        const M_eff = params.directEffectiveMass;
-        if (params.compliance <= 0 || M_eff <= 0) return { M_eff, F: NaN, isUnbalanced: false };
-        const F = 1000 / (2 * Math.PI * Math.sqrt(M_eff * params.compliance));
-        return { M_eff, F, isUnbalanced: false };
-    }
+export const useTonearmStore = defineStore('tonearm', {
+  state: () => ({
+    // befintliga states
+    availableTonearms: [],
+    availablePickups: [], // Detta kan tas bort, men vi låter det vara för att undvika fler fel om något refererar till det.
+    isLoading: true,
+    error: null,
     
-    if (params.m4_adj_cw <= 0) {
-        return { L4_adj_cw: -1, M_eff: NaN, F: NaN, isUnbalanced: true };
+    // Användarparametrar
+    params: {
+        calculationMode: 'detailed',
+        m_headshell: 6.5, m_pickup: 6.5, m_screws: 0.5,
+        m_rear_assembly: 75.0, m_tube_percentage: 20, m4_adj_cw: 100.0,
+        L1: 229.0, L2: 30.0, L3_fixed_cw: 25.0,
+        vtf: 1.75, compliance: 12.0,
+        directEffectiveMass: 10.0,
+    },
+    selectedTonearmId: null,
+    selectedPickupId: null,
+  }),
+
+  getters: {
+    m1: (state) => state.params.m_headshell + state.params.m_pickup + state.params.m_screws,
+    m2_tube: (state) => state.params.m_rear_assembly * (state.params.m_tube_percentage / 100.0),
+    m3_fixed_cw: (state) => state.params.m_rear_assembly * (1 - state.params.m_tube_percentage / 100.0),
+    currentTonearm: (state) => state.availableTonearms.find(t => t.id == state.selectedTonearmId) || null,
+    currentPickup: (state) => state.availablePickups.find(p => p.id == state.selectedPickupId) || null,
+
+    calculatedResults(state) {
+        if (state.params.calculationMode === 'direct') {
+             const M_eff = state.params.directEffectiveMass;
+             if (M_eff > 0 && state.params.compliance > 0) {
+                 const F = 1000 / (2 * Math.PI * Math.sqrt(M_eff * state.params.compliance));
+                 return { M_eff, F, isUnbalanced: false };
+             }
+             return { M_eff: 0, F: 0, isUnbalanced: true };
+        }
+
+        const m1 = this.m1;
+        const L4_numerator = (m1 * state.params.L1) + (this.m2_tube * state.params.L2) - (this.m3_fixed_cw * state.params.L3_fixed_cw) - (state.params.vtf * state.params.L1);
+        
+        if (state.params.m4_adj_cw <= 0 || L4_numerator < 0) {
+            return { M_eff: 0, F: 0, L4_adj_cw: 0, isUnbalanced: true };
+        }
+        
+        const L4_adj_cw = L4_numerator / state.params.m4_adj_cw;
+        const I_tot = (m1 * state.params.L1**2) + (this.m2_tube * state.params.L2**2) + (this.m3_fixed_cw * state.params.L3_fixed_cw**2) + (state.params.m4_adj_cw * L4_adj_cw**2);
+        const M_eff = I_tot / (state.params.L1**2);
+        
+        if (M_eff <= 0 || state.params.compliance <= 0) {
+            return { M_eff: M_eff, F: 0, L4_adj_cw: L4_adj_cw, isUnbalanced: true };
+        }
+        
+        const F = 1000 / (2 * Math.PI * Math.sqrt(M_eff * state.params.compliance));
+        return { M_eff, F, L4_adj_cw, isUnbalanced: false };
+    },
+    diagnosis(state) {
+        const freq = this.calculatedResults.F;
+        if (this.calculatedResults.isUnbalanced) {
+            return { status: 'danger', title: 'Unbalanced System', recommendations: ['The tonearm cannot be balanced with the current parameters. Adjust counterweight mass or position.'] };
+        }
+        if (freq >= 8 && freq <= 11) return { status: 'ideal', title: 'Ideal Match', recommendations: ['Excellent compatibility. The system resonance is in the ideal range.'] };
+        if (freq > 11 && freq <= 14) return { status: 'warning', title: 'Leans Towards Brightness', recommendations: ['Acceptable, but resonance may slightly emphasize low bass frequencies. Consider a slightly heavier headshell or a higher compliance cartridge.'] };
+        if (freq < 8 && freq >= 7) return { status: 'warning', title: 'Slightly Sub-Optimal', recommendations: ['Acceptable, but may be sensitive to warped records. Consider a lighter headshell or a lower compliance cartridge.'] };
+        if (freq > 14) return { status: 'danger', title: 'Poor Match (Too High)', recommendations: ['Resonance is in the audible bass range, likely causing a "boomy" sound. A higher compliance cartridge or heavier tonearm/headshell is strongly recommended.'] };
+        if (freq < 7) return { status: 'danger', title: 'Poor Match (Too Low)', recommendations: ['Resonance is in the warp/rumble frequency range, which can cause tracking issues. A lower compliance cartridge or lighter tonearm/headshell is strongly recommended.'] };
+        return { status: 'none', title: '', recommendations: [] };
     }
-    const numerator = (m1.value * params.L1) + (m2_tube.value * params.L2) - (m3_fixed_cw.value * params.L3_fixed_cw) - (params.vtf * params.L1);
-    const L4_adj_cw = (numerator >= 0) ? numerator / params.m4_adj_cw : -1;
+  },
+
+  actions: {
+    async initialize() {
+        if (this.availableTonearms.length > 0) {
+            this.isLoading = false;
+            return;
+        }
+        this.isLoading = true;
+        this.error = null;
+        try {
+            // Laddar bara tonarmsdata
+            const tonearmResponse = await fetch('/data/tonearm_data.json');
+            if (!tonearmResponse.ok) throw new Error('Failed to fetch tonearm data');
+            this.availableTonearms = await tonearmResponse.json();
+        } catch (e) {
+            this.error = `Database initialization failed: ${e.message}`;
+            console.error(e);
+        } finally {
+            this.isLoading = false;
+        }
+    },
     
-    if (L4_adj_cw < 0) {
-        return { L4_adj_cw: -1, M_eff: NaN, F: NaN, isUnbalanced: true };
-    }
+    setCalculationMode(mode) { this.params.calculationMode = mode; },
 
-    const I1 = m1.value * (params.L1 ** 2);
-    const I2 = m2_tube.value * (params.L2 ** 2);
-    const I3 = m3_fixed_cw.value * (params.L3_fixed_cw ** 2);
-    const I4 = params.m4_adj_cw * (L4_adj_cw ** 2);
-    const Itot = I1 + I2 + I3 + I4;
-    const M_eff = Itot / (params.L1 ** 2);
-    if (params.compliance <= 0 || M_eff <= 0) return { L4_adj_cw, M_eff, F: NaN, isUnbalanced: false };
-    const F = 1000 / (2 * Math.PI * Math.sqrt(M_eff * params.compliance));
-    
-    return { L4_adj_cw, M_eff, F, isUnbalanced: false };
-  });
-  
-  const diagnosis = computed(() => {
-    if (!calculatedResults.value || isNaN(calculatedResults.value.F)) return { status: 'none', title: '', recommendations: [] };
-    if (calculatedResults.value.isUnbalanced) return { status: 'danger', title: 'Unbalanced System', recommendations: ['The tonearm cannot be balanced. Increase counterweight mass or reduce front mass.'] };
-    const f = calculatedResults.value.F;
-    if (f >= 8 && f <= 11) return { status: 'ideal', title: 'Ideal Match', recommendations: ['The tonearm and cartridge are an excellent match. The resonance is in the ideal range.'] };
-    if (f > 11 && f <= 12) return { status: 'warning', title: 'Acceptable, but Not Ideal', recommendations: ['This combination is usable, but could be improved. Consider minor adjustments to headshell or counterweight mass.'] };
-    if (f < 8 && f >= 7) return { status: 'warning', title: 'Acceptable, but risk of rumble', recommendations: ['The resonance is on the low side. This may cause issues with warped records. A lighter headshell or heavier cartridge could help.'] };
-    return { status: 'danger', title: 'Poor Match', recommendations: ['This combination is not recommended. The resonance frequency is outside the acceptable range.'] };
-  });
+    loadTonearmPreset(id) {
+        this.selectedTonearmId = id;
+        if (id === null) return;
+        const tonearm = this.currentTonearm;
+        if (tonearm) {
+            if (tonearm.effective_length_mm) this.params.L1 = tonearm.effective_length_mm;
+            if (tonearm.example_params_for_calculator) {
+                const params = tonearm.example_params_for_calculator;
+                this.params.m_rear_assembly = params.m_rear_assembly || this.params.m_rear_assembly;
+                this.params.m_tube_percentage = params.m_tube_percentage || this.params.m_tube_percentage;
+                this.params.L2 = params.L2 || this.params.L2;
+                this.params.L3_fixed_cw = params.L3_fixed_cw || this.params.L3_fixed_cw;
+                this.params.m_headshell = params.m_headshell || 0;
+            }
+        }
+    },
 
-  // === ACTIONS ===
-  async function initialize() {
-    isLoading.value = true;
-    error.value = null;
-    try {
-      const [tonearmData, pickupData] = await Promise.all([
-        fetchJsonData('/data/tonearm_data.json'),
-        fetchJsonData('/data/pickup_data.json')
-      ]);
-      availableTonearms.value = tonearmData;
-      availablePickups.value = pickupData;
-    } catch (err) {
-      error.value = `Failed to load database: ${err.message}`;
-    } finally {
-      isLoading.value = false;
-    }
-  }
+    loadCartridgePreset(id) {
+        this.selectedPickupId = id;
+        if (id === null) return;
+        const pickup = this.availablePickups.find(p => p.id == id);
+        if (pickup) {
+            this.params.m_pickup = pickup.weight_g || this.params.m_pickup;
+            this.params.compliance = pickup.cu_dynamic_10hz || this.params.compliance;
+            if (pickup.tracking_force_min_g && pickup.tracking_force_max_g) {
+                this.params.vtf = (pickup.tracking_force_min_g + pickup.tracking_force_max_g) / 2;
+            }
+        }
+    },
 
-  function loadTonearmPreset(id) {
-    selectedTonearmId.value = id;
-    const arm = availableTonearms.value.find(a => a.id == id);
-    if (arm) {
-      params.L1 = arm.effective_length_mm;
-      const calc = arm.example_params_for_calculator || {};
-      params.m_rear_assembly = calc.m_rear_assembly || 75;
-      params.m_tube_percentage = calc.m_tube_percentage || 20;
-      params.L2 = calc.L2 || 30;
-      params.L3_fixed_cw = calc.L3_fixed_cw || 20;
-      // KORRIGERING: Använd 'headshell_connector' för att avgöra.
-      params.m_headshell = arm.headshell_connector === 'integrated' ? 0 : (calc.m_headshell || 6.5);
-    }
-  }
-
-  function loadCartridgePreset(id) {
-    selectedPickupId.value = id;
-    const pickup = availablePickups.value.find(p => p.id == id);
-    if (pickup) {
-      params.m_pickup = pickup.weight_g;
-      params.vtf = (pickup.tracking_force_min_g + pickup.tracking_force_max_g) / 2 || 1.75;
-      params.compliance = pickup.cu_dynamic_10hz;
-    }
-  }
-
-  function setCalculationMode(mode) {
-    params.calculationMode = mode;
-  }
-  
-  function getReportData() {
-    return {
-      type: 'tonearm',
-      params: { ...params },
-      results: { ...calculatedResults.value },
-      diagnosis: { ...diagnosis.value },
-      m1: m1.value,
-      m2_tube: m2_tube.value,
-      m3_fixed_cw: m3_fixed_cw.value,
-      currentTonearm: currentTonearm.value ? { ...currentTonearm.value } : null
-    };
-  }
-  
-  return {
-    params,
-    availableTonearms, availablePickups, selectedTonearmId, selectedPickupId,
-    isLoading, error,
-    m1, m2_tube, m3_fixed_cw, currentTonearm,
-    calculatedResults, diagnosis,
-    initialize, loadTonearmPreset, loadCartridgePreset, setCalculationMode, getReportData
-  };
+    getReportData() {
+        return {
+            type: 'tonearm',
+            params: this.params,
+            results: this.calculatedResults,
+            diagnosis: this.diagnosis,
+            m1: this.m1,
+            m2_tube: this.m2_tube,
+            m3_fixed_cw: this.m3_fixed_cw,
+        };
+    },
+  },
 });
