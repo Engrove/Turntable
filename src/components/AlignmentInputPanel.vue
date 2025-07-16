@@ -21,7 +21,6 @@ watch(selectedTonearmManufacturer, () => {
 function resetTonearmSelection() {
   selectedTonearmManufacturer.value = null;
   store.loadTonearmPreset(null);
-  // Återgå till standard P2S istället för att lämna det på den senaste armens värde
   store.userInput.pivotToSpindle = 222.0; 
 }
 </script>
@@ -30,57 +29,65 @@ function resetTonearmSelection() {
   <div class="input-panel panel">
     <h2>Setup & Controls</h2>
 
-    <fieldset>
-      <legend>1. Tonearm Setup</legend>
-      <p class="fieldset-description">
-        Start by loading a preset or manually entering your tonearm's Pivot-to-Spindle distance.
-      </p>
+    <!-- Hela innehållet renderas nu endast när storen är redo -->
+    <template v-if="!store.isLoading">
+      <fieldset>
+        <legend>1. Tonearm Setup</legend>
+        <p class="fieldset-description">
+          Start by loading a preset or manually entering your tonearm's Pivot-to-Spindle distance.
+        </p>
 
-      <div class="preset-group">
-        <label>Load Tonearm Preset (Optional)</label>
-        <div class="preset-selectors">
-          <select v-model="selectedTonearmManufacturer" class="value-select manufacturer">
-            <option :value="null" disabled>Select Manufacturer</option>
-            <option v-for="man in tonearmManufacturers" :key="man" :value="man">{{ man }}</option>
-          </select>
-          <select v-model="store.selectedTonearmId" @change="store.loadTonearmPreset($event.target.value)" :disabled="!selectedTonearmManufacturer" class="value-select model">
-            <option :value="null" disabled>Select Model</option>
-            <option v-for="arm in filteredTonearms" :key="arm.id" :value="arm.id">{{ arm.model }}</option>
-          </select>
-          <button v-if="store.selectedTonearmId" @click="resetTonearmSelection" class="reset-preset-btn" title="Clear tonearm selection">✖</button>
+        <div class="preset-group">
+          <label>Load Tonearm Preset (Optional)</label>
+          <div class="preset-selectors">
+            <select v-model="selectedTonearmManufacturer" class="value-select manufacturer">
+              <option :value="null" disabled>Select Manufacturer</option>
+              <option v-for="man in tonearmManufacturers" :key="man" :value="man">{{ man }}</option>
+            </select>
+            <select v-model="store.selectedTonearmId" @change="store.loadTonearmPreset($event.target.value)" :disabled="!selectedTonearmManufacturer" class="value-select model">
+              <option :value="null" disabled>Select Model</option>
+              <option v-for="arm in filteredTonearms" :key="arm.id" :value="arm.id">{{ arm.model }}</option>
+            </select>
+            <button v-if="store.selectedTonearmId" @click="resetTonearmSelection" class="reset-preset-btn" title="Clear tonearm selection">✖</button>
+          </div>
         </div>
-      </div>
 
-      <div class="input-group">
-        <label for="p2s">Pivot-to-Spindle Distance (mm)</label>
-        <div class="input-control">
-          <input type="range" id="p2s" min="180" max="350" step="0.1" v-model.number="store.userInput.pivotToSpindle">
-          <input type="number" class="value-display" step="0.1" v-model.number="store.userInput.pivotToSpindle">
+        <div class="input-group">
+          <label for="p2s">Pivot-to-Spindle Distance (mm)</label>
+          <div class="input-control">
+            <input type="range" id="p2s" min="180" max="350" step="0.1" v-model.number="store.userInput.pivotToSpindle" @input="store.calculateAlignment">
+            <input type="number" class="value-display" step="0.1" v-model.number="store.userInput.pivotToSpindle" @change="store.calculateAlignment">
+          </div>
         </div>
-      </div>
-    </fieldset>
+      </fieldset>
 
-    <fieldset>
-      <legend>2. Alignment Geometry</legend>
-       <p class="fieldset-description">
-        Choose the alignment geometry you want to use. Each offers a different trade-off in tracking error across the record.
-      </p>
-      <div class="mode-switch">
-        <button
-          v-for="(geo, key) in store.ALIGNMENT_GEOMETRIES"
-          :key="key"
-          :class="{ active: store.userInput.alignmentType === key }"
-          @click="store.setAlignment(key)"
-          :title="geo.description"
-        >
-          {{ key.replace('A', '') }}
-        </button>
-      </div>
-       <div class="geometry-info">
-          <strong>{{ store.calculatedValues.geometryName }}:</strong>
-          <span>{{ store.calculatedValues.geometryDescription }}</span>
-      </div>
-    </fieldset>
+      <fieldset>
+        <legend>2. Alignment Geometry</legend>
+        <p class="fieldset-description">
+          Choose the alignment geometry you want to use. Each offers a different trade-off in tracking error across the record.
+        </p>
+        <div class="mode-switch">
+          <button
+            v-for="(geo, key) in store.ALIGNMENT_GEOMETRIES"
+            :key="key"
+            :class="{ active: store.userInput.alignmentType === key }"
+            @click="store.setAlignment(key)"
+            :title="geo.description"
+          >
+            {{ key.replace('A', '') }}
+          </button>
+        </div>
+        <div class="geometry-info">
+            <strong>{{ store.calculatedValues.geometryName }}:</strong>
+            <span>{{ store.calculatedValues.geometryDescription }}</span>
+        </div>
+      </fieldset>
+    </template>
+
+    <!-- Visas medan store laddar -->
+    <div v-else class="loading-placeholder">
+      <p>Loading presets...</p>
+    </div>
 
   </div>
 </template>
@@ -181,7 +188,6 @@ input[type="number"].value-display {
     border-radius: 4px;
     border: 1px solid var(--border-color);
 }
-
 .mode-switch {
   display: flex;
   width: 100%;
@@ -220,5 +226,11 @@ input[type="number"].value-display {
 }
 .geometry-info strong {
     color: var(--text-color);
+}
+.loading-placeholder {
+  text-align: center;
+  padding: 2rem;
+  color: var(--label-color);
+  font-style: italic;
 }
 </style>
