@@ -1,7 +1,8 @@
 // src/store/tonearmStore.js
 import { defineStore } from 'pinia';
 import { fetchJsonData } from '@/services/dataLoader.js';
-import { computed, reactive, watch } from 'vue';
+// KORREKT IMPORT AV 'ref' ÄR AVGÖRANDE
+import { computed, reactive, ref } from 'vue';
 
 export const useTonearmStore = defineStore('tonearm', () => {
   // === STATE ===
@@ -26,12 +27,13 @@ export const useTonearmStore = defineStore('tonearm', () => {
   const m2_tube = computed(() => params.m_rear_assembly * (params.m_tube_percentage / 100.0));
   const m3_fixed_cw = computed(() => params.m_rear_assembly - m2_tube.value);
   
-  const currentTonearm = computed(() => availableTonearms.value.find(arm => arm.id === selectedTonearmId.value) || null);
+  const currentTonearm = computed(() => availableTonearms.value.find(arm => arm.id == selectedTonearmId.value) || null);
   
   const calculatedResults = computed(() => {
     if (params.calculationMode === 'direct') {
         const M_eff = params.directEffectiveMass;
-        const F = 1000 / (2 * Math.PI * Math.sqrt(Math.max(1, M_eff * params.compliance)));
+        if (params.compliance <= 0 || M_eff <= 0) return { M_eff, F: NaN, isUnbalanced: false };
+        const F = 1000 / (2 * Math.PI * Math.sqrt(M_eff * params.compliance));
         return { M_eff, F, isUnbalanced: false };
     }
     
@@ -51,18 +53,20 @@ export const useTonearmStore = defineStore('tonearm', () => {
     const I4 = params.m4_adj_cw * (L4_adj_cw ** 2);
     const Itot = I1 + I2 + I3 + I4;
     const M_eff = Itot / (params.L1 ** 2);
-    const F = 1000 / (2 * Math.PI * Math.sqrt(Math.max(1, M_eff * params.compliance)));
+    if (params.compliance <= 0 || M_eff <= 0) return { L4_adj_cw, M_eff, F: NaN, isUnbalanced: false };
+    const F = 1000 / (2 * Math.PI * Math.sqrt(M_eff * params.compliance));
     
     return { L4_adj_cw, M_eff, F, isUnbalanced: false };
   });
   
   const diagnosis = computed(() => {
-    if (calculatedResults.value.isUnbalanced) return { status: 'danger', title: 'Unbalanced System', recommendations: ['The tonearm cannot be balanced with the current parameters. Increase counterweight mass or reduce front mass.'] };
+    if (!calculatedResults.value || isNaN(calculatedResults.value.F)) return { status: 'none', title: '', recommendations: [] };
+    if (calculatedResults.value.isUnbalanced) return { status: 'danger', title: 'Unbalanced System', recommendations: ['The tonearm cannot be balanced. Increase counterweight mass or reduce front mass.'] };
     const f = calculatedResults.value.F;
     if (f >= 8 && f <= 11) return { status: 'ideal', title: 'Ideal Match', recommendations: ['The tonearm and cartridge are an excellent match. The resonance is in the ideal range.'] };
     if (f > 11 && f <= 12) return { status: 'warning', title: 'Acceptable, but Not Ideal', recommendations: ['This combination is usable, but could be improved. Consider minor adjustments to headshell or counterweight mass.'] };
     if (f < 8 && f >= 7) return { status: 'warning', title: 'Acceptable, but risk of rumble', recommendations: ['The resonance is on the low side. This may cause issues with warped records. A lighter headshell or heavier cartridge could help.'] };
-    return { status: 'danger', title: 'Poor Match', recommendations: ['This combination is not recommended. The resonance frequency is outside the acceptable range, which will likely lead to audible problems.'] };
+    return { status: 'danger', title: 'Poor Match', recommendations: ['This combination is not recommended. The resonance frequency is outside the acceptable range.'] };
   });
 
   // === ACTIONS ===
@@ -93,7 +97,8 @@ export const useTonearmStore = defineStore('tonearm', () => {
       params.m_tube_percentage = calc.m_tube_percentage || 20;
       params.L2 = calc.L2 || 30;
       params.L3_fixed_cw = calc.L3_fixed_cw || 20;
-      params.m_headshell = arm.has_integrated_headshell ? 0 : (calc.m_headshell || 6.5);
+      // KORRIGERING: Använd 'headshell_connector' för att avgöra.
+      params.m_headshell = arm.headshell_connector === 'integrated' ? 0 : (calc.m_headshell || 6.5);
     }
   }
 
@@ -117,7 +122,6 @@ export const useTonearmStore = defineStore('tonearm', () => {
       params: { ...params },
       results: { ...calculatedResults.value },
       diagnosis: { ...diagnosis.value },
-      // Skicka med nödvändiga beräknade värden för visualisering
       m1: m1.value,
       m2_tube: m2_tube.value,
       m3_fixed_cw: m3_fixed_cw.value,
