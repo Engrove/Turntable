@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { useTonearmStore } from '@/store/tonearmStore.js';
-import { useEstimatorStore } from '@/store/estimatorStore.js'; // KORRIGERING: Importera från rätt källa.
+import { useEstimatorStore } from '@/store/estimatorStore.js';
 
 export const useExplorerStore = defineStore('explorer', {
   state: () => ({
@@ -128,16 +128,18 @@ export const useExplorerStore = defineStore('explorer', {
       this.error = null;
       try {
         const tonearmStore = useTonearmStore();
-        const estimatorStore = useEstimatorStore(); // KORRIGERING: Använder estimatorStore som datakälla.
+        const estimatorStore = useEstimatorStore();
         
+        // Parallell-laddning av alla nödvändiga stores
         await Promise.all([
           tonearmStore.initialize(),
           estimatorStore.initialize(),
         ]);
         
+        // Hämta data från de korrekt initierade storesen
         this.allTonearms = tonearmStore.availableTonearms;
-        this.allPickups = estimatorStore.allPickups; // KORRIGERING
-        this.pickupClassifications = estimatorStore.classifications; // KORRIGERING
+        this.allPickups = estimatorStore.allPickups;
+        this.pickupClassifications = estimatorStore.classifications;
         
         const classificationsResponse = await fetch('/data/tonearm_classifications.json');
         if (!classificationsResponse.ok) throw new Error('Failed to fetch tonearm classifications');
