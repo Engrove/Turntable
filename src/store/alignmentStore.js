@@ -24,7 +24,7 @@ export const useAlignmentStore = defineStore('alignment', {
       nulls: { inner: 0, outer: 0 },
       geometryName: '',
       geometryDescription: '',
-      trackingMethod: 'pivoting', // NYTT: För att hålla koll på vald armtyp
+      trackingMethod: 'pivoting',
       error: null,
     },
 
@@ -52,12 +52,16 @@ export const useAlignmentStore = defineStore('alignment', {
 
     loadTonearmPreset(id) {
       this.selectedTonearmId = id;
-      const tonearm = this.availableTonearms.find(t => t.id == id);
-      if (tonearm) {
-        this.userInput.pivotToSpindle = tonearm.pivot_to_spindle_mm || 222.0;
-        this.calculatedValues.trackingMethod = tonearm.tracking_method || 'pivoting';
+      if (id === null) {
+        // Återställ till manuellt läge
+        this.calculatedValues.trackingMethod = 'pivoting';
       } else {
-        this.calculatedValues.trackingMethod = 'pivoting'; // Återställ till standard om ingen arm är vald
+        const tonearm = this.availableTonearms.find(t => t.id == id);
+        if (tonearm) {
+          this.userInput.pivotToSpindle = tonearm.pivot_to_spindle_mm || 222.0;
+          // KORRIGERING: Uppdatera alltid trackingMethod när en preset laddas.
+          this.calculatedValues.trackingMethod = tonearm.tracking_method || 'pivoting';
+        }
       }
       this.calculateAlignment();
     },
@@ -75,7 +79,6 @@ export const useAlignmentStore = defineStore('alignment', {
         return;
       }
       
-      // Kärnlogik: Hantera olika armtyper
       if (this.calculatedValues.trackingMethod !== 'pivoting') {
         this.calculateForTangentialArm(D);
       } else {
@@ -130,7 +133,7 @@ export const useAlignmentStore = defineStore('alignment', {
         ...this.calculatedValues,
         overhang: 0,
         offsetAngle: 0,
-        effectiveLength: D, // För en tangential arm är P2S och EL samma
+        effectiveLength: D,
         nulls: { inner: null, outer: null },
         geometryName: 'Tangential',
         geometryDescription: 'This arm maintains tangency across the entire record, resulting in zero tracking error.'
@@ -138,6 +141,7 @@ export const useAlignmentStore = defineStore('alignment', {
     },
 
     calculateNulls(D, L, beta) {
+        if (!D || !L || isNaN(beta)) return { inner: 0, outer: 0 };
         const termForNulls = Math.sqrt(L**2 - D**2);
         return {
           inner: (D**2 - termForNulls**2) / (2 * (D - termForNulls * Math.cos(beta))),
@@ -221,3 +225,4 @@ export const useAlignmentStore = defineStore('alignment', {
     },
   },
 });
+// src/store/alignmentStore.js
