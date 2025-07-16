@@ -1,13 +1,17 @@
 <!-- src/views/DataExplorerView.vue -->
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue'; // Importera onMounted
 import { useHead } from '@unhead/vue';
 import { useExplorerStore } from '@/store/explorerStore.js';
+import { useTonearmStore } from '@/store/tonearmStore.js';   // Importera
+import { useEstimatorStore } from '@/store/estimatorStore.js'; // Importera
 import ResultsTable from '@/components/ResultsTable.vue';
 import RangeFilter from '@/components/RangeFilter.vue';
 import ItemDetailModal from '@/components/ItemDetailModal.vue';
 
 const store = useExplorerStore();
+const tonearmStore = useTonearmStore();     // Skapa instans
+const estimatorStore = useEstimatorStore(); // Skapa instans
 
 useHead({
   title: 'Component Database Explorer | Engrove Audio Toolkit',
@@ -23,6 +27,25 @@ useHead({
 
 const isModalOpen = ref(false);
 const selectedItem = ref(null);
+
+// KORRIGERING: Använd onMounted för att hantera initieringen.
+onMounted(async () => {
+  store.isLoading = true; // Sätt laddningsstatus i explorerStore
+  try {
+    // Vänta på att båda datakällorna är klara
+    await Promise.all([
+      tonearmStore.initialize(),
+      estimatorStore.initialize()
+    ]);
+    // Initiera sedan explorerStore, som nu vet att datan finns
+    await store.initialize();
+  } catch (error) {
+    store.error = error.message;
+    console.error("Failed to initialize Data Explorer:", error);
+  } finally {
+    store.isLoading = false;
+  }
+});
 
 function showItemDetails(item) {
   selectedItem.value = item;
