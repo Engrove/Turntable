@@ -4,25 +4,24 @@ import { computed } from 'vue';
 import { useReportStore } from '@/store/reportStore';
 import { useRouter } from 'vue-router';
 
-// Använd store direkt. computed() säkerställer reaktivitet.
 const reportStore = useReportStore();
 const router = useRouter();
 
-// --- Computed Properties som direkt läser från store ---
+// === Kärndata direkt från store ===
 const reportData = computed(() => reportStore.reportData);
-
-const reportTitle = computed(() => {
-  if (reportData.value) {
-    return reportData.value.type === 'tonearm'
-      ? 'Tonearm Resonance Report'
-      : 'Compliance Estimation Report';
-  }
-  return "Error: No Report Data";
-});
-
 const generationDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-const tonearmParamsDetailed = computed(() => [
+// === Computed properties för logik och visning ===
+
+const reportTitle = computed(() => {
+  if (!reportData.value) return "Error: No Report Data";
+  return reportData.value.type === 'tonearm'
+    ? 'Tonearm Resonance Report'
+    : 'Compliance Estimation Report';
+});
+
+// Definitioner för vilka fält som ska visas
+const tonearmParamsDetailedDef = [
   { key: 'm_headshell', label: 'Headshell Mass', unit: 'g' },
   { key: 'm_pickup', label: 'Cartridge Mass', unit: 'g' },
   { key: 'm_screws', label: 'Screws Mass', unit: 'g' },
@@ -31,24 +30,42 @@ const tonearmParamsDetailed = computed(() => [
   { key: 'L1', label: 'Effective Length', unit: 'mm' },
   { key: 'm_rear_assembly', label: 'Rear Assembly Mass', unit: 'g'},
   { key: 'm4_adj_cw', label: 'Adjustable CW Mass', unit: 'g' },
-]);
+];
 
-const tonearmParamsDirect = computed(() => [
+const tonearmParamsDirectDef = [
   { key: 'm_pickup', label: 'Cartridge Mass', unit: 'g' },
   { key: 'compliance', label: 'Compliance @ 10Hz', unit: 'cu' },
   { key: 'directEffectiveMass', label: 'Tonearm Effective Mass', unit: 'g' }
-]);
+];
 
-const estimatorParams = computed(() => [
+const estimatorParamsDef = [
     { key: 'cu_dynamic_100hz', label: 'Compliance @ 100Hz' },
     { key: 'cu_static', label: 'Static Compliance' },
     { key: 'type', label: 'Pickup Type' },
     { key: 'cantilever_class', label: 'Cantilever Class' },
     { key: 'stylus_family', label: 'Stylus Family' },
-]);
+];
 
+// ROBUST filtrering av parametrar
+const filteredTonearmParamsDetailed = computed(() => {
+    if (!reportData.value?.params) return [];
+    return tonearmParamsDetailedDef.filter(p => reportData.value.params[p.key] !== null && reportData.value.params[p.key] !== undefined);
+});
+
+const filteredTonearmParamsDirect = computed(() => {
+    if (!reportData.value?.params) return [];
+    return tonearmParamsDirectDef.filter(p => reportData.value.params[p.key] !== null && reportData.value.params[p.key] !== undefined);
+});
+
+const filteredEstimatorParams = computed(() => {
+    if (!reportData.value?.userInput) return [];
+    return estimatorParamsDef.filter(p => reportData.value.userInput[p.key] !== null && reportData.value.userInput[p.key] !== undefined && reportData.value.userInput[p.key] !== '');
+});
+
+
+// Computed för estimator-resultat
 const resultRange = computed(() => {
-    if (!reportData.value || reportData.value.type !== 'estimator' || !reportData.value.result.compliance_median) return '--';
+    if (!reportData.value?.result?.compliance_median) return '--';
     const { compliance_min, compliance_median, compliance_max } = reportData.value.result;
     if (compliance_min && compliance_max && compliance_min.toFixed(1) !== compliance_max.toFixed(1)) {
         return `${compliance_min.toFixed(1)} – ${compliance_max.toFixed(1)}`;
@@ -57,13 +74,13 @@ const resultRange = computed(() => {
 });
 
 const showMedianNote = computed(() => {
-    if (!reportData.value || reportData.value.type !== 'estimator' || !reportData.value.result.compliance_median) return false;
+    if (!reportData.value?.result?.compliance_median) return false;
     const { compliance_min, compliance_max } = reportData.value.result;
     return compliance_min && compliance_max && compliance_min.toFixed(1) !== compliance_max.toFixed(1);
 });
 
 const confidenceLevel = computed(() => {
-    if (!reportData.value || reportData.value.type !== 'estimator') return 'N/A';
+    if (!reportData.value?.result) return 'N/A';
     const conf = reportData.value.result.confidence;
     if (conf >= 80) return 'High';
     if (conf >= 60) return 'Medium';
@@ -71,12 +88,13 @@ const confidenceLevel = computed(() => {
 });
 
 const confidenceClass = computed(() => {
-    if (!reportData.value || reportData.value.type !== 'estimator') return '';
+    if (!reportData.value?.result) return '';
     const conf = reportData.value.result.confidence;
     if (conf >= 80) return 'ideal';
     if (conf >= 60) return 'warning';
     return 'danger';
 });
+
 
 // --- Metoder ---
 const printReport = () => window.print();
@@ -94,7 +112,6 @@ function goHome() {
       <button v-if="reportData" @click="printReport" class="print-button">Print or Save as PDF</button>
     </header>
 
-    <!-- Huvudvillkoret v-if="reportData" skyddar allt innehåll från att rendera om data saknas -->
     <main class="report-content" v-if="reportData">
       
       <!-- Sektion för Tonarmskalkylatorn -->
@@ -104,19 +121,18 @@ function goHome() {
           <div class="data-group">
             <h3>Input Parameters</h3>
             <ul>
-              <!-- Separata listor för de två lägena -->
-              <template v-if="reportData.params.calculationMode === 'detailed'">
-                <li v-for="param in tonearmParamsDetailed.filter(p => reportData.params[p.key] !== null && reportData.params[p.key] !== undefined)" :key="param.key">
-                  <strong>{{ param.label }}:</strong>
-                  <span>{{ reportData.params[param.key] }} {{ param.unit }}</span>
-                </li>
-              </template>
-              <template v-if="reportData.params.calculationMode === 'direct'">
-                <li v-for="param in tonearmParamsDirect.filter(p => reportData.params[p.key] !== null && reportData.params[p.key] !== undefined)" :key="param.key">
-                  <strong>{{ param.label }}:</strong>
-                  <span>{{ reportData.params[p.key] }} {{ param.unit }}</span>
-                </li>
-              </template>
+                <template v-if="reportData.params.calculationMode === 'detailed'">
+                    <li v-for="param in filteredTonearmParamsDetailed" :key="param.key">
+                        <strong>{{ param.label }}:</strong>
+                        <span>{{ reportData.params[param.key] }} {{ param.unit }}</span>
+                    </li>
+                </template>
+                <template v-if="reportData.params.calculationMode === 'direct'">
+                    <li v-for="param in filteredTonearmParamsDirect" :key="param.key">
+                        <strong>{{ param.label }}:</strong>
+                        <span>{{ reportData.params[param.key] }} {{ param.unit }}</span>
+                    </li>
+                </template>
             </ul>
           </div>
           <div class="data-group">
@@ -141,9 +157,9 @@ function goHome() {
           <div class="data-group">
             <h3>Input Specifications</h3>
             <ul>
-               <li v-for="param in estimatorParams.filter(p => reportData.userInput[p.key] !== null && reportData.userInput[p.key] !== '')" :key="param.key">
+               <li v-for="param in filteredEstimatorParams" :key="param.key">
                 <strong>{{ param.label }}:</strong>
-                <span>{{ reportData.userInput[p.key] }}</span>
+                <span>{{ reportData.userInput[param.key] }}</span>
               </li>
             </ul>
           </div>
@@ -165,7 +181,6 @@ function goHome() {
       </section>
     </main>
 
-    <!-- Felmeddelande visas om ingen rapportdata finns -->
     <main v-else class="report-content">
         <div class="error-box">
             <h2>Error: No Report Data Found</h2>
@@ -184,7 +199,6 @@ function goHome() {
 </template>
 
 <style scoped>
-/* Befintlig CSS förblir oförändrad */
 .report-wrapper { max-width: 800px; margin: 2rem auto; padding: 2rem; background-color: #fff; border: 1px solid #ccc; box-shadow: 0 0 10px rgba(0,0,0,0.1); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
 .report-header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 1rem; margin-bottom: 2rem; }
 .report-header h1 { margin: 0; font-size: 2rem; }
@@ -219,4 +233,4 @@ function goHome() {
 .home-link { display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.5rem; background-color: #3498db; color: white; text-decoration: none; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; }
 @media print { body, .report-wrapper { margin: 0; padding: 0; box-shadow: none; border: none; } .print-button, .home-link { display: none; } }
 @media (max-width: 600px) { .data-grid { grid-template-columns: 1fr; } }
-</style>
+</style>```
