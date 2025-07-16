@@ -35,7 +35,7 @@ watch(() => store.availableNumericFilters, (newFilters) => {
       store.numericFilters[filter.key] = { min: null, max: null };
     }
   });
-}, { immediate: true });
+}, { immediate: true, deep: true });
 
 const cartridgeHeaders = [
   { key: 'manufacturer', label: 'Manufacturer', sortable: true }, { key: 'model', label: 'Model', sortable: true }, { key: 'type', label: 'Type', sortable: true },
@@ -43,7 +43,7 @@ const cartridgeHeaders = [
 ];
 const tonearmHeaders = [
   { key: 'manufacturer', label: 'Manufacturer', sortable: true }, { key: 'model', label: 'Model', sortable: true }, { key: 'effective_mass_g', label: 'Effective Mass (g)', sortable: true },
-  { key: 'effective_length_mm', label: 'Length (mm)', sortable: true }, { key: 'bearing_type', label: 'Bearing', sortable: true }, { key: 'headshell_connector', label: 'Headshell', sortable: true }
+  { key: 'effective_length_mm', label: 'Length (mm)', sortable: true }, { key: 'bearing_type', label: 'Bearing', sortable: true }, { key: 'arm_shape', label: 'Shape', sortable: true }
 ];
 const currentHeaders = computed(() => store.dataType === 'cartridges' ? cartridgeHeaders : tonearmHeaders);
 </script>
@@ -100,7 +100,7 @@ const currentHeaders = computed(() => store.dataType === 'cartridges' ? cartridg
       </aside>
 
       <main class="results-area">
-        <div v-if="store.totalResultsCount === 0 && store.searchTerm === '' && Object.keys(store.filters).length === 0 && Object.keys(store.numericFilters).every(k => !store.numericFilters[k] || (store.numericFilters[k].min === null && store.numericFilters[k].max === null))" class="results-placeholder">
+        <div v-if="store.totalResultsCount === 0 && store.searchTerm === '' && Object.values(store.filters).every(v => !v) && Object.values(store.numericFilters).every(v => v.min === null && v.max === null)" class="results-placeholder">
           <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 17.58A5 5 0 0 0 15 8l-6.4 6.4a5 5 0 1 0 7.8 7.8L20 17.58z"></path></svg>
           <p>Use the filters to begin your search.</p>
         </div>
@@ -116,6 +116,7 @@ const currentHeaders = computed(() => store.dataType === 'cartridges' ? cartridg
           
           <div v-if="store.totalResultsCount > store.itemsPerPage" class="pagination-controls pagination-top">
             <button @click="store.prevPage()" :disabled="!store.canGoPrev">‹ Previous</button>
+            <span>Page {{ store.currentPage }} of {{ Math.ceil(store.totalResultsCount / store.itemsPerPage) }}</span>
             <button @click="store.nextPage()" :disabled="!store.canGoNext">Next ›</button>
           </div>
           
@@ -130,6 +131,7 @@ const currentHeaders = computed(() => store.dataType === 'cartridges' ? cartridg
 
           <div v-if="store.totalResultsCount > store.itemsPerPage" class="pagination-controls pagination-bottom">
             <button @click="store.prevPage()" :disabled="!store.canGoPrev">‹ Previous</button>
+            <span>Page {{ store.currentPage }} of {{ Math.ceil(store.totalResultsCount / store.itemsPerPage) }}</span>
             <button @click="store.nextPage()" :disabled="!store.canGoNext">Next ›</button>
           </div>
         </div>
@@ -166,8 +168,8 @@ const currentHeaders = computed(() => store.dataType === 'cartridges' ? cartridg
 .results-area { min-height: 500px; }
 .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 .results-header h3 { margin: 0; color: var(--header-color); }
-.pagination-info { font-size: 0.9rem; color: var(--label-color); font-style: italic; }
-.pagination-controls { display: flex; justify-content: center; gap: 0.5rem; }
+.pagination-controls { display: flex; justify-content: center; align-items: center; gap: 1rem; }
+.pagination-controls span { font-size: 0.9rem; color: var(--label-color); font-weight: 500;}
 .pagination-top { margin-bottom: 1rem; }
 .pagination-bottom { margin-top: 1.5rem; }
 .pagination-controls button { padding: 0.5rem 1rem; font-weight: 600; background-color: #fff; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; transition: all 0.2s ease; }
@@ -178,29 +180,8 @@ const currentHeaders = computed(() => store.dataType === 'cartridges' ? cartridg
 .results-placeholder p { font-size: 1.25rem; font-weight: 500; }
 .status-container { padding: 2rem; text-align: center; background-color: var(--panel-bg); border-radius: 6px; }
 .status-container.error { background-color: var(--danger-color); color: var(--danger-text); }
-.download-csv-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #fff;
-  background-color: #28a745;
-  border: 1px solid #28a745;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.download-csv-btn:hover:not(:disabled) {
-  background-color: #218838;
-  border-color: #1e7e34;
-}
-.download-csv-btn:disabled {
-  background-color: #6c757d;
-  border-color: #6c757d;
-  opacity: 0.65;
-  cursor: not-allowed;
-}
+.download-csv-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 600; color: #fff; background-color: #28a745; border: 1px solid #28a745; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; }
+.download-csv-btn:hover:not(:disabled) { background-color: #218838; border-color: #1e7e34; }
+.download-csv-btn:disabled { background-color: #6c757d; border-color: #6c757d; opacity: 0.65; cursor: not-allowed; }
 @media (max-width: 900px) { .explorer-layout { grid-template-columns: 1fr; } .filter-panel { position: static; } }
 </style>
