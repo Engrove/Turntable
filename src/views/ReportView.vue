@@ -3,15 +3,14 @@
 import { computed } from 'vue';
 import { useReportStore } from '@/store/reportStore';
 import { useRouter } from 'vue-router';
+import EstimatorChart from '@/components/EstimatorChart.vue';
 
 const reportStore = useReportStore();
 const router = useRouter();
 
-// === Kärndata direkt från store ===
+// --- Computed Properties för logik och visning ---
 const reportData = computed(() => reportStore.reportData);
 const generationDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-
-// === Computed properties för logik och visning ===
 
 const reportTitle = computed(() => {
   if (!reportData.value) return "Error: No Report Data";
@@ -20,50 +19,47 @@ const reportTitle = computed(() => {
     : 'Compliance Estimation Report';
 });
 
-// Definitioner för vilka fält som ska visas
-const tonearmParamsDetailedDef = [
-  { key: 'm_headshell', label: 'Headshell Mass', unit: 'g' },
-  { key: 'm_pickup', label: 'Cartridge Mass', unit: 'g' },
-  { key: 'm_screws', label: 'Screws Mass', unit: 'g' },
-  { key: 'compliance', label: 'Compliance @ 10Hz', unit: 'cu' },
-  { key: 'vtf', label: 'Tracking Force', unit: 'g' },
-  { key: 'L1', label: 'Effective Length', unit: 'mm' },
-  { key: 'm_rear_assembly', label: 'Rear Assembly Mass', unit: 'g'},
-  { key: 'm4_adj_cw', label: 'Adjustable CW Mass', unit: 'g' },
-];
+// --- Hjälpfunktioner ---
+const printReport = () => window.print();
+function goHome() {
+    router.push({ name: 'home' });
+}
+const formatNumber = (num) => {
+  if (num === null || num === undefined || isNaN(num)) return 'N/A';
+  return num.toLocaleString('en-US', { maximumFractionDigits: 0 });
+};
 
-const tonearmParamsDirectDef = [
-  { key: 'm_pickup', label: 'Cartridge Mass', unit: 'g' },
-  { key: 'compliance', label: 'Compliance @ 10Hz', unit: 'cu' },
-  { key: 'directEffectiveMass', label: 'Tonearm Effective Mass', unit: 'g' }
-];
-
-const estimatorParamsDef = [
-    { key: 'cu_dynamic_100hz', label: 'Compliance @ 100Hz' },
-    { key: 'cu_static', label: 'Static Compliance' },
-    { key: 'type', label: 'Pickup Type' },
-    { key: 'cantilever_class', label: 'Cantilever Class' },
-    { key: 'stylus_family', label: 'Stylus Family' },
-];
-
-// ROBUST filtrering av parametrar
-const filteredTonearmParamsDetailed = computed(() => {
-    if (!reportData.value?.params) return [];
-    return tonearmParamsDetailedDef.filter(p => reportData.value.params[p.key] !== null && reportData.value.params[p.key] !== undefined);
-});
-
-const filteredTonearmParamsDirect = computed(() => {
-    if (!reportData.value?.params) return [];
-    return tonearmParamsDirectDef.filter(p => reportData.value.params[p.key] !== null && reportData.value.params[p.key] !== undefined);
-});
-
+// --- Computed: Allmänna ---
 const filteredEstimatorParams = computed(() => {
+    const def = [{ key: 'cu_dynamic_100hz', label: 'Compliance @ 100Hz' }, { key: 'cu_static', label: 'Static Compliance' }, { key: 'type', label: 'Pickup Type' }, { key: 'cantilever_class', label: 'Cantilever Class' }, { key: 'stylus_family', label: 'Stylus Family' }];
     if (!reportData.value?.userInput) return [];
-    return estimatorParamsDef.filter(p => reportData.value.userInput[p.key] !== null && reportData.value.userInput[p.key] !== undefined && reportData.value.userInput[p.key] !== '');
+    return def.filter(p => reportData.value.userInput[p.key] !== null && reportData.value.userInput[p.key] !== undefined && reportData.value.userInput[p.key] !== '');
 });
 
+// --- Computed: Tonearm-specifika ---
+const tonearmParamsDetailed = computed(() => {
+    if (!reportData.value?.params) return [];
+    const def = [{ key: 'm_headshell', label: 'Headshell Mass', unit: 'g' }, { key: 'm_pickup', label: 'Cartridge Mass', unit: 'g' }, { key: 'm_screws', label: 'Screws Mass', unit: 'g' }, { key: 'compliance', label: 'Compliance @ 10Hz', unit: 'cu' }, { key: 'vtf', label: 'Tracking Force', unit: 'g' }, { key: 'L1', label: 'Effective Length', unit: 'mm' }, { key: 'm_rear_assembly', label: 'Rear Assembly Mass', unit: 'g'}, { key: 'm4_adj_cw', label: 'Adjustable CW Mass', unit: 'g' }];
+    return def.filter(p => reportData.value.params[p.key] !== null && reportData.value.params[p.key] !== undefined);
+});
+const tonearmParamsDirect = computed(() => {
+    if (!reportData.value?.params) return [];
+    const def = [{ key: 'm_pickup', label: 'Cartridge Mass', unit: 'g' }, { key: 'compliance', label: 'Compliance @ 10Hz', unit: 'cu' }, { key: 'directEffectiveMass', label: 'Tonearm Effective Mass', unit: 'g' }];
+    return def.filter(p => reportData.value.params[p.key] !== null && reportData.value.params[p.key] !== undefined);
+});
+const frontMassMoment = computed(() => reportData.value ? reportData.value.m1 * reportData.value.params.L1 : 0);
+const vtfMoment = computed(() => reportData.value ? reportData.value.params.vtf * reportData.value.params.L1 : 0);
+const totalFrontMoment = computed(() => frontMassMoment.value + vtfMoment.value);
+const m3Moment = computed(() => reportData.value ? reportData.value.m3_fixed_cw * reportData.value.params.L3_fixed_cw : 0);
+const m4Moment = computed(() => reportData.value ? reportData.value.params.m4_adj_cw * reportData.value.results.L4_adj_cw : 0);
+const totalRearMoment = computed(() => m3Moment.value + m4Moment.value);
+const i1 = computed(() => reportData.value ? reportData.value.m1 * (reportData.value.params.L1 ** 2) : 0);
+const i2 = computed(() => reportData.value ? reportData.value.m2_tube * (reportData.value.params.L2 ** 2) : 0);
+const i3 = computed(() => reportData.value ? reportData.value.m3_fixed_cw * (reportData.value.params.L3_fixed_cw ** 2) : 0);
+const i4 = computed(() => reportData.value ? reportData.value.params.m4_adj_cw * (reportData.value.results.L4_adj_cw ** 2) : 0);
+const totalInertia = computed(() => i1.value + i2.value + i3.value + i4.value);
 
-// Computed för estimator-resultat
+// --- Computed: Estimator-specifika ---
 const resultRange = computed(() => {
     if (!reportData.value?.result?.compliance_median) return '--';
     const { compliance_min, compliance_median, compliance_max } = reportData.value.result;
@@ -72,13 +68,11 @@ const resultRange = computed(() => {
     }
     return compliance_median.toFixed(1);
 });
-
 const showMedianNote = computed(() => {
     if (!reportData.value?.result?.compliance_median) return false;
     const { compliance_min, compliance_max } = reportData.value.result;
     return compliance_min && compliance_max && compliance_min.toFixed(1) !== compliance_max.toFixed(1);
 });
-
 const confidenceLevel = computed(() => {
     if (!reportData.value?.result) return 'N/A';
     const conf = reportData.value.result.confidence;
@@ -86,7 +80,6 @@ const confidenceLevel = computed(() => {
     if (conf >= 60) return 'Medium';
     return 'Low';
 });
-
 const confidenceClass = computed(() => {
     if (!reportData.value?.result) return '';
     const conf = reportData.value.result.confidence;
@@ -94,14 +87,6 @@ const confidenceClass = computed(() => {
     if (conf >= 60) return 'warning';
     return 'danger';
 });
-
-
-// --- Metoder ---
-const printReport = () => window.print();
-
-function goHome() {
-    router.push({ name: 'home' });
-}
 </script>
 
 <template>
@@ -114,25 +99,27 @@ function goHome() {
 
     <main class="report-content" v-if="reportData">
       
-      <!-- Sektion för Tonarmskalkylatorn -->
+      <!-- ================================= -->
+      <!-- === TONEARM CALCULATOR REPORT === -->
+      <!-- ================================= -->
       <section v-if="reportData.type === 'tonearm'" class="report-section">
         <h2>Tonearm Resonance Calculation</h2>
         <div class="data-grid">
           <div class="data-group">
             <h3>Input Parameters</h3>
             <ul>
-                <template v-if="reportData.params.calculationMode === 'detailed'">
-                    <li v-for="param in filteredTonearmParamsDetailed" :key="param.key">
-                        <strong>{{ param.label }}:</strong>
-                        <span>{{ reportData.params[param.key] }} {{ param.unit }}</span>
-                    </li>
-                </template>
-                <template v-if="reportData.params.calculationMode === 'direct'">
-                    <li v-for="param in filteredTonearmParamsDirect" :key="param.key">
-                        <strong>{{ param.label }}:</strong>
-                        <span>{{ reportData.params[param.key] }} {{ param.unit }}</span>
-                    </li>
-                </template>
+              <template v-if="reportData.params.calculationMode === 'detailed'">
+                <li v-for="param in tonearmParamsDetailed" :key="param.key">
+                    <strong>{{ param.label }}:</strong>
+                    <span>{{ reportData.params[param.key] }} {{ param.unit }}</span>
+                </li>
+              </template>
+              <template v-else>
+                <li v-for="param in tonearmParamsDirect" :key="param.key">
+                    <strong>{{ param.label }}:</strong>
+                    <span>{{ reportData.params[param.key] }} {{ param.unit }}</span>
+                </li>
+              </template>
             </ul>
           </div>
           <div class="data-group">
@@ -148,9 +135,36 @@ function goHome() {
             </div>
           </div>
         </div>
+        
+        <!-- Tonearm Visualizations (only in detailed mode and if balanced) -->
+        <div class="visualizations-container" v-if="reportData.params.calculationMode === 'detailed' && !reportData.results.isUnbalanced">
+            <div class="viz-panel report-section">
+                <h3>Static Balance (Moment Equilibrium)</h3>
+                <div class="balance-diagram">
+                    <div class="balance-side"><div class="moment-box front"><div class="moment-item">m₁ × L₁ = {{ formatNumber(frontMassMoment) }} g·mm</div><div class="moment-item vtf">+ VTF × L₁ = {{ formatNumber(vtfMoment) }} g·mm</div><div class="moment-total">Total Front: <span>{{ formatNumber(totalFrontMoment) }} g·mm</span></div></div></div>
+                    <div class="pivot-point">▲</div>
+                    <div class="balance-side"><div class="moment-box rear"><div class="moment-item">m₃ × L₃ = {{ formatNumber(m3Moment) }} g·mm</div><div class="moment-item">m₄ × D = {{ formatNumber(m4Moment) }} g·mm</div><div class="moment-total">Total Rear: <span>{{ formatNumber(totalRearMoment) }} g·mm</span></div></div></div>
+                </div>
+            </div>
+            <div class="viz-panel report-section">
+                <h3>Rotational Inertia (Effective Mass Contribution)</h3>
+                <div class="inertia-diagram">
+                    <div class="inertia-bar"><div class="segment i1" :style="{ flexGrow: i1 }"></div><div class="segment i2" :style="{ flexGrow: i2 }"></div><div class="segment i3" :style="{ flexGrow: i3 }"></div><div class="segment i4" :style="{ flexGrow: i4 }"></div></div>
+                    <div class="inertia-legend">
+                        <div><span class="dot i1"></span>I₁: {{ formatNumber(i1) }}</div>
+                        <div><span class="dot i2"></span>I₂: {{ formatNumber(i2) }}</div>
+                        <div><span class="dot i3"></span>I₃: {{ formatNumber(i3) }}</div>
+                        <div><span class="dot i4"></span>I₄: {{ formatNumber(i4) }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
       </section>
 
-      <!-- Sektion för Compliance Estimator -->
+      <!-- =================================== -->
+      <!-- === COMPLIANCE ESTIMATOR REPORT === -->
+      <!-- =================================== -->
       <section v-if="reportData.type === 'estimator'" class="report-section">
         <h2>Compliance Estimation</h2>
          <div class="data-grid">
@@ -178,9 +192,16 @@ function goHome() {
             </div>
           </div>
         </div>
+        
+        <div class="chart-wrapper" v-if="reportData.result.chartConfig">
+            <h3>Reference Data & Trend Line</h3>
+            <EstimatorChart :chart-config="reportData.result.chartConfig" />
+        </div>
       </section>
+
     </main>
 
+    <!-- Fallback if no report data -->
     <main v-else class="report-content">
         <div class="error-box">
             <h2>Error: No Report Data Found</h2>
@@ -199,16 +220,17 @@ function goHome() {
 </template>
 
 <style scoped>
+:root { --accent-color: #3498db; --header-color: #2c3e50; --label-color: #495057; --text-color: #212529; --panel-bg: #f8f9fa; --border-color: #dee2e6; --ideal-color: #d4edda; --warning-color: #fff3cd; --danger-color: #f8d7da; --ideal-text: #155724; --warning-text: #856404; --danger-text: #721c24; }
 .report-wrapper { max-width: 800px; margin: 2rem auto; padding: 2rem; background-color: #fff; border: 1px solid #ccc; box-shadow: 0 0 10px rgba(0,0,0,0.1); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
 .report-header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 1rem; margin-bottom: 2rem; }
 .report-header h1 { margin: 0; font-size: 2rem; }
 .report-header p { margin: 0.5rem 0 1.5rem 0; color: #555; font-style: italic; }
-.print-button { padding: 0.75rem 1.5rem; background-color: #3498db; color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
+.print-button { padding: 0.75rem 1.5rem; background-color: var(--accent-color); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
 .print-button:hover { background-color: #2980b9; }
 .report-section { margin-bottom: 2.5rem; }
 .report-section h2 { font-size: 1.5rem; border-bottom: 1px solid #eee; padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
 .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
-.data-group h3 { font-size: 1.2rem; margin-top: 0; margin-bottom: 1rem; color: #3498db; }
+.data-group h3 { font-size: 1.2rem; margin-top: 0; margin-bottom: 1rem; color: var(--accent-color); }
 .data-group ul { list-style: none; padding: 0; margin: 0; }
 .data-group li { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0; }
 .data-group li strong { color: #333; }
@@ -218,19 +240,52 @@ function goHome() {
 .diagnosis-box { margin-top: 1.5rem; padding: 1rem; border-radius: 6px; }
 .diagnosis-box h4 { margin: 0 0 0.5rem 0; }
 .diagnosis-box p { margin: 0; }
-.diagnosis-box.ideal { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-.diagnosis-box.warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
-.diagnosis-box.danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-.danger-text { color: #721c24; font-weight: bold; }
-.main-result { text-align: center; padding: 1rem; background-color: #f8f9fa; border-radius: 6px; margin-bottom: 1.5rem; }
+.diagnosis-box.ideal { background-color: var(--ideal-color); color: var(--ideal-text); border: 1px solid #c3e6cb; }
+.diagnosis-box.warning { background-color: var(--warning-color); color: var(--warning-text); border: 1px solid #ffeeba; }
+.diagnosis-box.danger { background-color: var(--danger-color); color: var(--danger-text); border: 1px solid #f5c6cb; }
+.danger-text { color: var(--danger-text); font-weight: bold; }
+.main-result { text-align: center; padding: 1rem; background-color: var(--panel-bg); border-radius: 6px; margin-bottom: 1.5rem; }
 .result-value { font-size: 2.5rem; font-weight: bold; line-height: 1; }
-.result-value span { display: block; font-size: 1rem; font-weight: normal; color: #6c757d; }
-.median-note { font-size: 0.9rem; font-style: italic; color: #6c757d; margin-top: 0.5rem; }
+.result-value span { display: block; font-size: 1rem; font-weight: normal; color: var(--label-color); }
+.median-note { font-size: 0.9rem; font-style: italic; color: var(--label-color); margin-top: 0.5rem; }
 .report-footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 2px solid #333; font-size: 0.8rem; color: #777; }
 .report-footer h3 { font-size: 1rem; margin-top: 0; }
-.error-box { padding: 2rem; text-align: center; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 6px;}
+.error-box { padding: 2rem; text-align: center; background-color: var(--danger-color); color: var(--danger-text); border: 1px solid #f5c6cb; border-radius: 6px;}
 .error-box h2 { margin-top: 0; }
-.home-link { display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.5rem; background-color: #3498db; color: white; text-decoration: none; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; }
-@media print { body, .report-wrapper { margin: 0; padding: 0; box-shadow: none; border: none; } .print-button, .home-link { display: none; } }
-@media (max-width: 600px) { .data-grid { grid-template-columns: 1fr; } }
-</style>```
+.home-link { display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.5rem; background-color: var(--accent-color); color: white; text-decoration: none; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; }
+
+/* Styles for Tonearm Visualizations in Report */
+.visualizations-container { margin-top: 2rem; display: flex; flex-direction: column; gap: 1.5rem; page-break-inside: avoid; }
+.viz-panel { background-color: #f8f9fa; border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem 1.5rem; }
+.viz-panel h3 { font-size: 1.2rem; margin-top: 0; margin-bottom: 1rem; color: var(--header-color); }
+.balance-diagram { display: flex; align-items: center; justify-content: center; padding: 1rem 0; }
+.pivot-point { font-size: 2rem; color: #2c3e50; margin: 0 1rem; }
+.balance-side { flex: 1; }
+.moment-box { border: 1px solid #ccc; background-color: #fff; padding: 0.75rem; border-radius: 4px; font-family: monospace; font-size: 0.9rem; }
+.moment-box.rear { text-align: left; }
+.moment-box.front { text-align: right; }
+.moment-item.vtf { color: #c0392b; }
+.moment-total { border-top: 1px solid #ccc; margin-top: 0.5rem; padding-top: 0.5rem; font-weight: bold; }
+.moment-total span { color: var(--accent-color); }
+.inertia-bar { display: flex; width: 100%; height: 25px; border-radius: 4px; overflow: hidden; }
+.segment { height: 100%; }
+.inertia-legend { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 1rem; margin-top: 0.75rem; font-size: 0.8rem; font-family: monospace; }
+.dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle; }
+.i1 { background-color: #3498db; }
+.i2 { background-color: #2ecc71; }
+.i3 { background-color: #e67e22; }
+.i4 { background-color: #9b59b6; }
+/* Chart Wrapper */
+.chart-wrapper { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid #eee; }
+.chart-wrapper h3 { text-align: center; font-size: 1.2rem; color: var(--header-color); margin-bottom: 1rem; }
+
+@media print {
+    body, .report-wrapper { margin: 0; padding: 0; box-shadow: none; border: none; }
+    .print-button, .home-link { display: none; }
+    .visualizations-container, .chart-wrapper { page-break-inside: avoid; }
+    .chart-wrapper :deep(.chart-panel) { height: 350px !important; padding: 0 !important; border: 1px solid #ccc !important; }
+}
+@media (max-width: 600px) {
+    .data-grid { grid-template-columns: 1fr; }
+}
+</style>
