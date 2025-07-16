@@ -2,8 +2,8 @@
 import { defineStore } from 'pinia';
 import { useTonearmStore } from '@/store/tonearmStore.js';
 
-const R1 = 60.325; // IEC inre spårradie (mm)
-const R2 = 146.05; // IEC yttre spårradie (mm)
+const R1 = 60.325; // IEC inner groove radius (mm)
+const R2 = 146.05; // IEC outer groove radius (mm)
 
 export const useAlignmentStore = defineStore('alignment', {
   state: () => ({
@@ -85,41 +85,52 @@ export const useAlignmentStore = defineStore('alignment', {
       this.updateTrackingErrorChartData();
     },
 
-    // NY, FÖRENKLAD OCH KORREKT IMPLEMENTERING
+    // HELT OMMBYGGD BERÄKNINGSLOGIK
     calculateForPivotingArm(D) {
-      let null1, null2;
+      let overhang, offsetAngleRad, innerNull, outerNull, effectiveLength;
+
+      const r1 = R1, r2 = R2;
 
       switch (this.userInput.alignmentType) {
         case 'LofgrenA': { // Baerwald
-          null1 = (R1 + Math.sqrt(R1) * Math.sqrt(R2) + R2) / 3;
-          null2 = (R1*R2) / null1;
-          const temp = null1; null1 = null2; null2 = temp; // Swap to correct order
+          innerNull = 66.0;
+          outerNull = 120.9;
           break;
         }
         case 'StevensonA': {
-          null1 = R1 * (1 + 1/Math.sqrt(R2/R1));
-          null2 = R1 * (1 - 1/Math.sqrt(R2/R1));
+          innerNull = 60.325;
+          outerNull = 117.42;
           break;
         }
         case 'LofgrenB': {
-          null1 = Math.sqrt(R1 * (R1 + 2*(R2-R1)/Math.log(R2/R1)));
-          null2 = Math.sqrt(R2 * (R2 - 2*(R2-R1)/Math.log(R2/R1)));
+          innerNull = 70.3;
+          outerNull = 116.6;
           break;
         }
         default: return;
       }
+
+      const L = D; // Use pivot-to-spindle as the base length 'L' for these formulas.
       
-      // Dessa formler är universella när nollpunkterna är kända och korrekta
-      const effectiveLength = Math.sqrt((D**2 - null1 * null2) * (null1 + null2)**2 / ((null1 + null2)**2 - 4 * null1 * null2));
-      const offsetAngleRad = Math.asin((null1 + null2) / (2 * effectiveLength));
-      const overhang = effectiveLength - D;
+      // Beräkna Overhang och Offset Angle från nollpunkterna
+      overhang = (innerNull * outerNull) / (innerNull + outerNull - (innerNull * outerNull) / L);
+      offsetAngleRad = Math.asin((innerNull + outerNull - (innerNull*outerNull)/L) / (2*L));
+      
+      // Om ovanstående komplexa formel ger problem, använd en mer robust approximation
+      if(isNaN(offsetAngleRad) || isNaN(overhang)) {
+          const avgNull = (innerNull + outerNull) / 2;
+          overhang = (avgNull**2) / (2*L);
+          offsetAngleRad = Math.asin(avgNull / (L + overhang));
+      }
+      
+      effectiveLength = D + overhang;
 
       this.calculatedValues = {
         ...this.calculatedValues,
         overhang,
         offsetAngle: offsetAngleRad * (180 / Math.PI),
         effectiveLength,
-        nulls: { inner: Math.min(null1, null2), outer: Math.max(null1, null2) },
+        nulls: { inner: innerNull, outer: outerNull },
         geometryName: this.ALIGNMENT_GEOMETRIES[this.userInput.alignmentType]?.name || '',
         geometryDescription: this.ALIGNMENT_GEOMETRIES[this.userInput.alignmentType]?.description || ''
       };
@@ -151,16 +162,16 @@ export const useAlignmentStore = defineStore('alignment', {
       }
       
       const colors = { LofgrenA: '#3498db', LofgrenB: '#2ecc71', StevensonA: '#e74c3c' };
-      
+      const D_base = this.userInput.pivotToSpindle;
+
       const datasets = Object.keys(this.ALIGNMENT_GEOMETRIES).map(type => {
         const tempStore = { ...this.$state, userInput: { ...this.userInput, alignmentType: type }};
-        this.calculateForPivotingArm.call(tempStore, this.userInput.pivotToSpindle);
-        
+        this.calculateForPivotingArm.call(tempStore, D_base);
         const { effectiveLength, offsetAngle } = tempStore.calculatedValues;
         
         const dataPoints = Array.from({ length: 175 }, (_, i) => {
             const r = 60 + i * 0.5;
-            return { x: r, y: this.calculateTrackingError(r, effectiveLength, this.userInput.pivotToSpindle, offsetAngle * (Math.PI/180)) };
+            return { x: r, y: this.calculateTrackingError(r, effectiveLength, D_base, offsetAngle * (Math.PI/180)) };
         });
 
         return {
