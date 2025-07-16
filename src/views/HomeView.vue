@@ -3,7 +3,7 @@
 import { RouterLink } from 'vue-router';
 import { useHead } from '@unhead/vue';
 
-const githubUrl = 'https://github.com/Engrove/Turntable';
+const githubUrl = 'https://github.com/Engrove/engrove';
 
 useHead({
   title: 'Engrove Audio Toolkit | Home',
@@ -26,15 +26,24 @@ useHead({
     </header>
 
     <section class="intro-section">
-      <p class="intro-hook">
-        Want to easily see how your cartridge and tonearm match, or optimize your turntable without complex math? You've come to the right place!
-      </p>
-      <p>
-        Hi! I'm a hifi enthusiast with a passion for vinyl and technology. This toolkit is my attempt to transform complex audio theory into a dynamic, visual, and intuitive environment. The goal is to create tools that allow fellow enthusiasts to explore the trade-offs in audio design in real-time.
-      </p>
-      <p class="note">
-        This is a live project. Features are added and updated sporadically. If something isn't working, it might be under construction! Check out the <a :href="githubUrl" target="_blank" rel="noopener noreferrer">GitHub repository</a> for the latest updates.
-      </p>
+      <!-- NY STRUKTUR FÖR INTRO-SEKTIONEN -->
+      <div class="intro-container">
+        <div class="avatar-wrapper">
+          <img src="/images/engrove.webp" alt="Avatar of the site author" class="avatar-image" loading="lazy" width="200" height="200"/>
+        </div>
+        <div class="intro-text">
+          <p class="intro-hook">
+            Want to easily see how your cartridge and tonearm match, or optimize your turntable without complex math? You've come to the right place!
+          </p>
+          <p>
+            Hi! I'm a hifi enthusiast with a passion for vinyl and technology. This toolkit is my attempt to transform complex audio theory into a dynamic, visual, and intuitive environment. The goal is to create tools that allow fellow enthusiasts to explore the trade-offs in audio design in real-time.
+          </p>
+          <p class="note">
+            This is a live project. Features are added and updated sporadically. If something isn't working, it might be under construction! Check out the <a :href="githubUrl" target="_blank" rel="noopener noreferrer">GitHub repository</a> for the latest updates.
+          </p>
+        </div>
+      </div>
+      <!-- SLUT PÅ NY STRUKTUR -->
     </section>
 
     <section class="tools-section">
@@ -88,7 +97,6 @@ useHead({
       </p>
       <br>
       <center>
-        <!-- UPPDATERAD BADGE-KOD HÄR -->
         <a href="https://dashboard.simpleanalytics.com/engrove.pages.dev?utm_source=engrove.pages.dev&utm_content=badge&affiliate=kurof" referrerpolicy="origin" target="_blank"><picture><source srcset="https://simpleanalyticsbadges.com/engrove.pages.dev?mode=dark" media="(prefers-color-scheme: dark)" /><img src="https://simpleanalyticsbadges.com/engrove.pages.dev?mode=light" loading="lazy" referrerpolicy="no-referrer" crossorigin="anonymous" /></picture></a>
       </center>
     </footer>
@@ -96,12 +104,12 @@ useHead({
 </template>
 
 <style scoped>
+/* Befintliga stilar */
 .home-view { max-width: 1200px; margin: 0 auto; padding: 1rem 2rem 2rem; text-align: center; }
 .home-header { margin-bottom: 3rem; }
 .main-title { font-size: 2.5rem; font-weight: 700; color: var(--header-color); margin-bottom: 0.5rem; }
 .subtitle { font-size: 1.25rem; color: var(--label-color); font-style: italic; }
-.intro-section { font-size: 1.1rem; line-height: 1.7; color: var(--text-color); margin-bottom: 3rem; text-align: left; background-color: var(--panel-bg); padding: 1.5rem 2rem; border-radius: 8px; border: 1px solid var(--border-color); }
-.intro-hook { font-size: 1.2rem; font-weight: 600; color: var(--header-color); margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); }
+.intro-section { padding: 2rem; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--panel-bg); margin-bottom: 3rem; }
 .intro-section a { color: var(--accent-color); font-weight: 600; text-decoration: none; }
 .intro-section a:hover { text-decoration: underline; }
 p.note { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--border-color); font-size: 0.95rem; font-style: italic; color: var(--label-color); }
@@ -117,4 +125,50 @@ p.note { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--bor
 .tool-card:hover .card-action { color: var(--header-color); }
 .home-footer { margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--border-color); color: var(--label-color); font-size: 0.9rem; text-align: left; }
 .home-footer h3 { text-align: center; color: var(--header-color); }
+
+/* --- NY CSS FÖR AVATAR OCH INTRO-LAYOUT --- */
+.intro-container {
+  display: flex;
+  align-items: center;
+  gap: 2.5rem; /* Lite mer avstånd */
+}
+.avatar-wrapper {
+  flex-shrink: 0; /* Förhindrar att bilden krymper */
+}
+.avatar-image {
+  max-width: 200px;
+  border-radius: 50%;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+.intro-text {
+  text-align: left;
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: var(--text-color);
+}
+.intro-hook {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--header-color);
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* Responsivitet för mobila enheter */
+@media (max-width: 768px) {
+  .intro-container {
+    flex-direction: column; /* Stapla på höjden */
+    text-align: center;
+    gap: 1.5rem;
+  }
+  .intro-text {
+    text-align: left; /* Behåll texten vänsterjusterad för läsbarhet */
+  }
+  .avatar-image {
+    max-width: 150px; /* Gör bilden mindre på mobil */
+  }
+}
 </style>
