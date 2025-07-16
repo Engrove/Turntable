@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
-import { useTonearmStore } from './tonearmStore.js';
-import { usePickupStore } from './pickupStore.js'; // KORRIGERING: Korrekt filnamn med .js
+// KORRIGERING: Använder nu korrekt sökvägsalias.
+import { useTonearmStore } from '@/store/tonearmStore.js';
+import { usePickupStore } from '@/store/pickupStore.js';
 
 export const useExplorerStore = defineStore('explorer', {
   state: () => ({
