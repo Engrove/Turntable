@@ -148,7 +148,6 @@ export const useExplorerStore = defineStore('explorer', {
         this.allPickups = pickupStore.availablePickups;
         this.pickupClassifications = pickupStore.classifications;
         
-        // NYTT: Ladda tonarmsklassificeringar
         const classificationsResponse = await fetch('/data/tonearm_classifications.json');
         if (!classificationsResponse.ok) throw new Error('Failed to fetch tonearm classifications');
         this.tonearmClassifications = await classificationsResponse.json();
