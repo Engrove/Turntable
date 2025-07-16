@@ -1,20 +1,16 @@
 # netlify.toml
 
-# Redirect-regel för Vue Router
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# Aktivera Netlifys prerendering-tjänst för SEO
 [prerender]
   enable = true
 
-# KORRIGERAD BYGGREGEL:
-# Detta kommando returnerar nu en "sann" (exit code 0) om den enda ändrade filen är
-# buildtrigger.txt, vilket gör att Netlify INTE ignorerar bygget. Om andra filer ändras,
-# eller inga filer ändras, kommer kommandot att misslyckas (non-zero exit code),
-# vilket får Netlify att IGNORERA bygget. Detta är den korrekta logiken.
-# OBS: Netlify bygger när ignore-kommandot misslyckas.
+# RIKTIG KORRIGERING:
+# Detta skript kollar om buildtrigger.txt finns bland de ändrade filerna.
+# Om den INTE finns, returnerar skriptet exit code 0 (-> ignorera bygge).
+# Om den FINNS, returnerar skriptet exit code 1 (-> starta bygge).
 [build]
-  ignore = "git diff --quiet HEAD^ HEAD ':!buildtrigger.txt'"
+  ignore = "bash -c 'git diff --name-only HEAD^ HEAD | grep -q buildtrigger.txt && exit 1 || exit 0'"
