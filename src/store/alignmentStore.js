@@ -1,155 +1,252 @@
 // src/store/alignmentStore.js
-
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { useTonearmStore } from './tonearmStore.js';
 
-// Definierar standardgeometrier med deras fasta nollpunkter (r1, r2) i mm
-const ALIGNMENT_GEOMETRIES = {
-  Baerwald: {
-    name: "Löfgren A / Baerwald",
-    description: "Balances distortion between inner and outer grooves, resulting in the lowest average RMS distortion. A very popular all-round choice.",
-    nulls: { inner: 66.0, outer: 120.9 }
-  },
-  LofgrenB: {
-    name: "Löfgren B",
-    description: "Minimizes distortion across the entire playing surface, but allows higher peak distortion at the beginning and end of the record compared to Baerwald.",
-    nulls: { inner: 70.3, outer: 116.6 }
-  },
-  StevensonA: {
-    name: "Stevenson A",
-    description: "Optimized to minimize distortion at the critical inner grooves, at the expense of higher distortion elsewhere. Excellent for classical music.",
-    nulls: { inner: 60.325, outer: 117.42 }
-  }
-};
+// --- Konstanter för IEC-standard ---
+const R1 = 60.325; // Inre spårradie (mm)
+const R2 = 146.05; // Yttre spårradie (mm)
 
-export const useAlignmentStore = defineStore('alignment', () => {
-  // --- STATE ---
-  const isLoading = ref(true);
-  const error = ref(null);
-  const availableTonearms = ref([]);
-  const selectedTonearmId = ref(null);
-  const userInput = ref({
-    pivotToSpindle: 222.0,
-    alignmentType: 'Baerwald',
-  });
-
-  // --- ACTIONS ---
-  const initialize = async () => {
-    isLoading.value = true;
-    error.value = null;
-    try {
-      const response = await fetch('/data/tonearm_data.json');
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      availableTonearms.value = data;
-    } catch (e) {
-      error.value = "Could not fetch or parse tonearm data. " + e.message;
-      console.error(e);
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
-  const setAlignment = (type) => {
-    userInput.value.alignmentType = type;
-  };
-  
-  const loadTonearmPreset = (id) => {
-    selectedTonearmId.value = id;
-    if (!id) {
-      return;
-    }
-    const tonearm = availableTonearms.value.find(t => t.id == id);
-    if (tonearm && tonearm.pivot_to_spindle_mm) {
-      userInput.value.pivotToSpindle = tonearm.pivot_to_spindle_mm;
-    }
-  };
-
-  // --- GETTERS (COMPUTED) ---
-  const calculatedValues = computed(() => {
-    const D = userInput.value.pivotToSpindle;
-    const geometry = ALIGNMENT_GEOMETRIES[userInput.value.alignmentType];
-    const r1 = geometry.nulls.inner;
-    const r2 = geometry.nulls.outer;
-
-    if (D <= r2) {
-      return {
-        error: "Pivot-to-Spindle distance must be greater than the outer null radius.",
-        overhang: 0, offsetAngle: 0, effectiveLength: 0, nulls: { inner: r1, outer: r2 },
-        geometryName: geometry.name, geometryDescription: geometry.description
-      };
-    }
-
-    // ===================================================================
-    // === KORREKT OCH VERIFIERAT FORMELBLOCK (J.A. SEIB / LÖFGREN) ===
-    // ===================================================================
-    const term = Math.sqrt(Math.pow(r2 - r1, 2) + 4 * D * D);
-    const overhang = (r2 * r2 - r1 * r1) / (2 * (r1 + r2 + term));
-    const effectiveLength = D + overhang;
-    const offsetAngleRad = Math.asin((r1 + r2) / (2 * effectiveLength));
-    const offsetAngleDeg = offsetAngleRad * (180 / Math.PI);
-
-    if (isNaN(effectiveLength) || isNaN(overhang) || isNaN(offsetAngleDeg)) {
-      return {
-        error: "Invalid geometry. Pivot-to-spindle distance is likely incompatible with the chosen alignment null points.",
-        overhang: 0, offsetAngle: 0, effectiveLength: 0, nulls: { inner: r1, outer: r2 },
-        geometryName: geometry.name, geometryDescription: geometry.description
-      };
-    }
+export const useAlignmentStore = defineStore('alignment', {
+  state: () => ({
+    availableTonearms: [],
+    isLoading: true,
+    error: null,
+    selectedTonearmId: null,
     
-    return {
-      overhang: overhang,
-      offsetAngle: offsetAngleDeg,
-      effectiveLength: effectiveLength,
-      nulls: { inner: r1, outer: r2 },
-      geometryName: geometry.name,
-      geometryDescription: geometry.description,
-      error: null
-    };
-  });
-  
-  const trackingErrorData = computed(() => {
-    if (calculatedValues.value.error) {
-      return { datasets: [] };
-    }
+    // Användarinput med standardvärden
+    userInput: {
+      pivotToSpindle: 222.0,
+      alignmentType: 'LofgrenA', // Kan vara 'LofgrenA', 'LofgrenB', 'Stevenson'
+    },
     
-    const Le = calculatedValues.value.effectiveLength;
-    const betaRad = calculatedValues.value.offsetAngle * (Math.PI / 180);
-    const D = userInput.value.pivotToSpindle;
+    // Beräknade värden
+    calculatedValues: {
+      overhang: 0,
+      offsetAngle: 0,
+      effectiveLength: 0,
+      nulls: { inner: 0, outer: 0 },
+      geometryName: '',
+      geometryDescription: '',
+      error: null,
+    },
 
-    const points = [];
-    for (let R = 60; R <= 147; R += 0.5) {
-      // ==========================================================
-      // === KORREKT FORMELBLOCK FÖR SPÅRVINKELFEL ===
-      // ==========================================================
-      const termForAcos = (D * D + R * R - Le * Le) / (2 * D * R);
-      if (termForAcos < -1 || termForAcos > 1) continue; // Undvik ogiltiga värden för acos
+    // NYTT: State för diagramdata
+    trackingErrorChartData: {
+      datasets: []
+    },
 
-      const alphaRad = Math.acos(termForAcos);
-      const trackingErrorRad = betaRad - (Math.PI / 2 - alphaRad);
+    // Geometrispecifika konstanter och beskrivningar
+    ALIGNMENT_GEOMETRIES: {
+      LofgrenA: {
+        name: 'Löfgren A / Baerwald',
+        description: 'Balances distortion between inner and outer grooves, resulting in the lowest average RMS distortion. A very popular all-round choice.'
+      },
+      LofgrenB: {
+        name: 'Löfgren B',
+        description: 'Minimizes distortion across the entire playing surface, but allows higher distortion peaks at the beginning and end compared to Baerwald.'
+      },
+      StevensonA: {
+        name: 'Stevenson A',
+        description: 'Prioritizes the lowest possible distortion at the inner groove, where it is typically most audible, at the expense of higher distortion elsewhere.'
+      },
+    },
+  }),
+
+  actions: {
+    async initialize() {
+      const tonearmStore = useTonearmStore();
+      if (tonearmStore.availableTonearms.length === 0) {
+        await tonearmStore.initialize();
+      }
+      this.availableTonearms = tonearmStore.availableTonearms;
+      this.isLoading = false;
+      this.calculateAlignment();
+    },
+
+    loadTonearmPreset(id) {
+      if (id === null) {
+        this.selectedTonearmId = null;
+        this.userInput.pivotToSpindle = 222.0; // Standardvärde
+      } else {
+        const tonearm = this.availableTonearms.find(t => t.id == id);
+        if (tonearm && tonearm.pivot_to_spindle_mm) {
+          this.selectedTonearmId = id;
+          this.userInput.pivotToSpindle = tonearm.pivot_to_spindle_mm;
+        }
+      }
+      this.calculateAlignment();
+    },
+
+    setAlignment(type) {
+        this.userInput.alignmentType = type;
+        this.calculateAlignment();
+    },
+
+    // ---- Huvudberäkningsfunktion ----
+    calculateAlignment() {
+      const D = this.userInput.pivotToSpindle;
+
+      if (!D || D <= 0) {
+        this.calculatedValues.error = "Pivot to Spindle distance must be a positive number.";
+        this.trackingErrorChartData.datasets = []; // Rensa diagramdata
+        return;
+      }
+      this.calculatedValues.error = null;
+
+      let overhang, offsetAngleRad;
+
+      // Beräkningar enligt vald geometri
+      switch (this.userInput.alignmentType) {
+        case 'LofgrenA': {
+          const term1 = (R1 + R2);
+          const term2 = (R1 * R2);
+          overhang = term2 / term1;
+          const sinOffset = term1 / (2 * (D + overhang));
+          offsetAngleRad = Math.asin(sinOffset);
+          break;
+        }
+        case 'LofgrenB': {
+          const C1 = (R2 - R1) / 2;
+          const C2 = (R2 * R1) * Math.log(R2 / R1) / (R2 - R1);
+          overhang = (C1 * C2) / (C1 + C2);
+          const sinOffset = (C1 + C2) / (D + overhang);
+          offsetAngleRad = Math.asin(sinOffset);
+          break;
+        }
+        case 'StevensonA': {
+           const term1 = (R1 + R2);
+           const term2 = (R1 * R2);
+           overhang = (2 * term2) / term1;
+           const sinOffset = (term1 / 2) / (D + overhang);
+           offsetAngleRad = Math.asin(sinOffset);
+           break;
+        }
+        default:
+          return;
+      }
       
-      points.push({ x: R, y: trackingErrorRad * (180 / Math.PI) });
-    }
-    
-    return {
-      datasets: [
-        {
-          label: `Tracking Error (°), ${userInput.value.alignmentType.replace('A','')}`,
-          data: points,
-          borderColor: '#3498db',
-          backgroundColor: 'rgba(52, 152, 219, 0.2)',
-          borderWidth: 2,
-          pointRadius: 0,
-          tension: 0.1,
-          fill: 'origin'
-        },
-      ],
-    };
-  });
+      const offsetAngleDeg = offsetAngleRad * (180 / Math.PI);
+      const effectiveLength = D + overhang;
+      const termForNulls = Math.sqrt(effectiveLength**2 - D**2);
+      const nulls = {
+        inner: (D**2 - termForNulls**2) / (2 * (D - termForNulls * Math.cos(offsetAngleRad))),
+        outer: (D**2 - termForNulls**2) / (2 * (D + termForNulls * Math.cos(offsetAngleRad)))
+      };
 
-  return {
-    isLoading, error, availableTonearms, selectedTonearmId,
-    userInput, ALIGNMENT_GEOMETRIES, calculatedValues,
-    trackingErrorData, initialize, setAlignment, loadTonearmPreset
-  };
+      this.calculatedValues = {
+        ...this.calculatedValues,
+        overhang,
+        offsetAngle: offsetAngleDeg,
+        effectiveLength,
+        nulls,
+        geometryName: this.ALIGNMENT_GEOMETRIES[this.userInput.alignmentType]?.name || 'Unknown',
+        geometryDescription: this.ALIGNMENT_GEOMETRIES[this.userInput.alignmentType]?.description || ''
+      };
+
+      // NYTT: Anropa funktionen som genererar diagramdata
+      this.updateTrackingErrorChartData();
+    },
+
+    // --- NYA FUNKTIONER FÖR DIAGRAM ---
+
+    calculateTrackingErrorCurve(pivotToSpindle, effectiveLength, overhang, offsetAngle, label, color) {
+        const dataPoints = [];
+        const L = effectiveLength;
+        const D = pivotToSpindle;
+        const offsetRad = offsetAngle * (Math.PI / 180);
+
+        if (!L || L <= 0) return { label, data: [] };
+
+        for (let r = 60; r <= 147; r += 0.5) {
+            // HTE formula δ = arcsin((r² + L² - D²) / (2rL)) - β
+            // This is more direct than using overhang
+            const term = (r**2 + L**2 - D**2) / (2 * r * L);
+            
+            // Säkerställ att termen är inom arcsin's domän [-1, 1]
+            if (term >= -1 && term <= 1) {
+                const trackingErrorRad = Math.asin(term) - offsetRad;
+                const trackingErrorDeg = trackingErrorRad * (180 / Math.PI);
+                dataPoints.push({ x: r, y: trackingErrorDeg });
+            }
+        }
+        return {
+            label,
+            data: dataPoints,
+            borderColor: color,
+            backgroundColor: `${color}33`, // Lätt transparent färg
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.1,
+        };
+    },
+
+    updateTrackingErrorChartData() {
+        if (this.calculatedValues.error) {
+            this.trackingErrorChartData = { datasets: [] };
+            return;
+        }
+
+        const D = this.userInput.pivotToSpindle;
+
+        // Beräkna data för alla tre geometrier
+        const geometries = ['LofgrenA', 'LofgrenB', 'StevensonA'];
+        const datasets = geometries.map(type => {
+            // Beräkna specifika värden för denna geometri
+            let overhang, offsetAngleRad, effectiveLength;
+            switch (type) {
+                case 'LofgrenA': {
+                  const term1 = (R1 + R2);
+                  const term2 = (R1 * R2);
+                  overhang = term2 / term1;
+                  effectiveLength = D + overhang;
+                  const sinOffset = term1 / (2 * effectiveLength);
+                  offsetAngleRad = Math.asin(sinOffset);
+                  break;
+                }
+                case 'LofgrenB': {
+                  const C1 = (R2 - R1) / 2;
+                  const C2 = (R2 * R1) * Math.log(R2 / R1) / (R2 - R1);
+                  overhang = (C1 * C2) / (C1 + C2);
+                  effectiveLength = D + overhang;
+                  const sinOffset = (C1 + C2) / effectiveLength;
+                  offsetAngleRad = Math.asin(sinOffset);
+                  break;
+                }
+                case 'StevensonA': {
+                   const term1 = (R1 + R2);
+                   const term2 = (R1 * R2);
+                   overhang = (2 * term2) / term1;
+                   effectiveLength = D + overhang;
+                   const sinOffset = (term1 / 2) / effectiveLength;
+                   offsetAngleRad = Math.asin(sinOffset);
+                   break;
+                }
+            }
+            const offsetAngleDeg = offsetAngleRad * (180 / Math.PI);
+
+            const colors = { LofgrenA: '#3498db', LofgrenB: '#2ecc71', StevensonA: '#e74c3c' };
+            const dataset = this.calculateTrackingErrorCurve(
+                D,
+                effectiveLength,
+                overhang,
+                offsetAngleDeg,
+                this.ALIGNMENT_GEOMETRIES[type].name.split(' / ')[0], // Använd kort namn
+                colors[type]
+            );
+
+            // Gör den aktiva kurvan tjockare
+            if (type === this.userInput.alignmentType) {
+                dataset.borderWidth = 4;
+                dataset.order = 1; // Ritas ovanpå
+            } else {
+                dataset.borderWidth = 2;
+                dataset.order = 2; // Ritas under
+            }
+
+            return dataset;
+        });
+
+        this.trackingErrorChartData = { datasets };
+    },
+  },
 });
