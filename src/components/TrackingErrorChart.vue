@@ -24,40 +24,55 @@ let chartInstance = null;
 const updateChart = () => {
   if (!chartInstance || !props.chartData || !props.chartData.datasets) return;
 
-  // Uppdatera dataset med den nya datan
   chartInstance.data.datasets = props.chartData.datasets;
   
-  // Uppdatera annotations för nollpunkter
+  // Funktion för att bestämma etikettens position
+  const getLabelPosition = (yValue) => {
+    // Om Y-värdet är i den övre 20% av skalan, flytta ner etiketten. Annars upp.
+    const yMax = chartInstance.scales.y.max;
+    const yMin = chartInstance.scales.y.min;
+    return yValue > (yMax - (yMax - yMin) * 0.2) ? 'start' : 'end';
+  };
+
+  // Funktion för att bestämma Y-justering
+  const getYAdjust = (position) => (position === 'start' ? 15 : -15);
+  
+  const innerNullValue = props.nullPoints.inner;
+  const outerNullValue = props.nullPoints.outer;
+
+  const innerPosition = getLabelPosition(chartInstance.data.datasets[0]?.data.find(p => p.x >= innerNullValue)?.y ?? 0);
+  const outerPosition = getLabelPosition(chartInstance.data.datasets[0]?.data.find(p => p.x >= outerNullValue)?.y ?? 0);
+  
   chartInstance.options.plugins.annotation.annotations.innerNull = {
     type: 'line',
     scaleID: 'x',
-    value: props.nullPoints.inner,
+    value: innerNullValue,
     borderColor: 'rgba(231, 76, 60, 0.7)',
     borderWidth: 1.5,
     borderDash: [6, 6],
     label: {
-      content: `Null ${props.nullPoints.inner.toFixed(1)}mm`,
+      content: `Null ${innerNullValue.toFixed(1)}mm`,
       display: true,
-      position: 'start',
+      position: innerPosition,
       font: { size: 10 },
       backgroundColor: 'rgba(231, 76, 60, 0.7)',
-      yAdjust: -15,
+      yAdjust: getYAdjust(innerPosition),
     }
   };
   chartInstance.options.plugins.annotation.annotations.outerNull = {
     type: 'line',
     scaleID: 'x',
-    value: props.nullPoints.outer,
+    value: outerNullValue,
     borderColor: 'rgba(231, 76, 60, 0.7)',
     borderWidth: 1.5,
     borderDash: [6, 6],
     label: {
-      content: `Null ${props.nullPoints.outer.toFixed(1)}mm`,
+      content: `Null ${outerNullValue.toFixed(1)}mm`,
       display: true,
-      position: 'start',
+      position: outerPosition,
       font: { size: 10 },
       backgroundColor: 'rgba(231, 76, 60, 0.7)',
-      yAdjust: -15,
+      yAdjust: getYAdjust(outerPosition),
     }
   };
 
@@ -127,7 +142,6 @@ onMounted(() => {
           type: 'linear',
           position: 'left',
           title: { display: true, text: 'Tracking Error (°)' },
-          // Låt skalan anpassa sig dynamiskt baserat på datan
         }
       }
     }
