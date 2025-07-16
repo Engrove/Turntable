@@ -117,9 +117,10 @@ export const useEstimatorStore = defineStore('estimator', {
 
     estimateFrom100Hz() {
       const rule = this.findBestRule(this.estimationRules, this.userInput);
-      const medianRatio = rule.median_ratio;
+      // *** KORRIGERING: Använder nu k och m istället för medianRatio ***
+      const { k, m } = rule;
       const confidence = this.calculateConfidence(rule);
-      const estimatedMedian = this.userInput.cu_dynamic_100hz * medianRatio;
+      const estimatedMedian = (this.userInput.cu_dynamic_100hz * k) + m;
       
       const uncertainty = (1 - (rule.r_squared || 0)) * 0.15;
       this.result = {
@@ -128,7 +129,8 @@ export const useEstimatorStore = defineStore('estimator', {
         compliance_max: estimatedMedian * (1 + uncertainty),
         confidence: confidence,
         sampleSize: rule.sample_size,
-        description: `Using a median ratio model for '${rule.conditions.type || 'All'}'. Formula: (100Hz Value) × ${medianRatio.toFixed(2)}`,
+        // *** KORRIGERING: Uppdaterad beskrivning ***
+        description: `Using a regression model for '${rule.conditions.type || 'All'}'. Formula: (100Hz Val × ${k.toFixed(3)}) + ${m.toFixed(3)}`,
         chartConfig: this.generateChartConfig(rule, this.estimationRules, '100Hz')
       };
     },
@@ -146,7 +148,7 @@ export const useEstimatorStore = defineStore('estimator', {
         compliance_max: estimatedMedian * (1 + uncertainty),
         confidence: confidence,
         sampleSize: rule.sample_size,
-        description: `Using a regression model for '${rule.conditions.type || 'All'}'. Formula: (Static Compliance × ${k.toFixed(3)}) + ${m.toFixed(3)}`,
+        description: `Using a regression model for '${rule.conditions.type || 'All'}'. Formula: (Static Comp. × ${k.toFixed(3)}) + ${m.toFixed(3)}`,
         chartConfig: this.generateChartConfig(rule, this.staticEstimationRules, 'static')
       };
     },
@@ -163,25 +165,18 @@ export const useEstimatorStore = defineStore('estimator', {
 
         const chartPoints = dataPoints.map(p => ({ x: p[xVar], y: p[yVar], model: `${p.manufacturer} ${p.model}` }));
         
-        let config = {
+        // *** KORRIGERING: Skickar alltid k och m nu ***
+        return {
             dataPoints: chartPoints,
             labels: {
                 x: type === '100Hz' ? 'Compliance @ 100Hz' : 'Static Compliance',
                 y: 'Compliance @ 10Hz',
                 title: type === '100Hz' ? '10Hz vs. 100Hz Compliance' : '10Hz vs. Static Compliance',
-                lineLabel: ''
-            }
+                lineLabel: `Trend Line (R²=${rule.r_squared.toFixed(2)})`
+            },
+            k: rule.k,
+            m: rule.m
         };
-        
-        if (type === '100Hz') {
-            config.medianRatio = rule.median_ratio;
-            config.labels.lineLabel = `Median Ratio (x${rule.median_ratio.toFixed(2)})`;
-        } else {
-            config.k = rule.k;
-            config.m = rule.m;
-            config.labels.lineLabel = `Trend Line (R²=${rule.r_squared.toFixed(2)})`;
-        }
-        return config;
     },
 
     getReportData() {
@@ -191,5 +186,6 @@ export const useEstimatorStore = defineStore('estimator', {
             result: { ...this.result } 
         };
     },
+
   },
 });
