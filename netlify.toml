@@ -1,24 +1,20 @@
 # netlify.toml
 
-# Detta är en "redirect rule". Den omdirigerar ALLA sökvägar som inte kan hittas
-# till /index.html och returnerar en HTTP 200 (OK) status.
-# Detta låter Vue Router ta över och hantera routingen.
+# Redirect-regel för Vue Router
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# Aktiverar Netlifys prerendering-tjänst.
-# Detta serverar en cachad, fullständigt renderad HTML-version av sidan
-# till specificerade user agents (sökmotor-bots), vilket är kritiskt
-# för SEO i en Single-Page Application.
+# Aktivera Netlifys prerendering-tjänst för SEO
 [prerender]
   enable = true
 
-# NYTT OCH AVGÖRANDE: Konfigurerar Netlify att ignorera builds om endast vissa filer ändras.
-# Byggprocessen triggas ENDAST om det finns ändringar i:
-# - FILEN 'buildtrigger.txt'
-# Alla andra ändringar i REPOSITORYT (oavsett mapp eller fil) kommer att ignoreras.
-# För att deploya, måste du manuellt ändra 'buildtrigger.txt' och pusha den.
+# KORRIGERAD BYGGREGEL:
+# Detta kommando returnerar nu en "sann" (exit code 0) om den enda ändrade filen är
+# buildtrigger.txt, vilket gör att Netlify INTE ignorerar bygget. Om andra filer ändras,
+# eller inga filer ändras, kommer kommandot att misslyckas (non-zero exit code),
+# vilket får Netlify att IGNORERA bygget. Detta är den korrekta logiken.
+# OBS: Netlify bygger när ignore-kommandot misslyckas.
 [build]
-  ignore = "git diff --quiet HEAD^ HEAD -- . 'buildtrigger.txt'"
+  ignore = "git diff --quiet HEAD^ HEAD ':!buildtrigger.txt'"
