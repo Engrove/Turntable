@@ -1,16 +1,14 @@
-// src/store/tonearmStore.js
 import { defineStore } from 'pinia';
-// BORTTAGET: Beroendet av pickupStore tas bort. Denna store hanterar bara tonarmar.
+// KORRIGERING: Byt ut den felaktiga importen mot den korrekta storen.
+import { useEstimatorStore } from '@/store/estimatorStore.js';
 
 export const useTonearmStore = defineStore('tonearm', {
   state: () => ({
-    // befintliga states
     availableTonearms: [],
-    availablePickups: [], // Detta kan tas bort, men vi låter det vara för att undvika fler fel om något refererar till det.
+    availablePickups: [],
     isLoading: true,
     error: null,
     
-    // Användarparametrar
     params: {
         calculationMode: 'detailed',
         m_headshell: 6.5, m_pickup: 6.5, m_screws: 0.5,
@@ -74,17 +72,26 @@ export const useTonearmStore = defineStore('tonearm', {
 
   actions: {
     async initialize() {
-        if (this.availableTonearms.length > 0) {
+        if (this.availableTonearms.length > 0 && this.availablePickups.length > 0) {
             this.isLoading = false;
             return;
         }
         this.isLoading = true;
         this.error = null;
         try {
-            // Laddar bara tonarmsdata
+            // KORRIGERING: Använd estimatorStore för att hämta pickup-data.
+            const estimatorStore = useEstimatorStore();
+
+            // Anropa estimatorStore's initiering om den inte redan är laddad.
+            if (estimatorStore.allPickups.length === 0) {
+                await estimatorStore.initialize();
+            }
+            this.availablePickups = estimatorStore.allPickups;
+
             const tonearmResponse = await fetch('/data/tonearm_data.json');
             if (!tonearmResponse.ok) throw new Error('Failed to fetch tonearm data');
             this.availableTonearms = await tonearmResponse.json();
+            
         } catch (e) {
             this.error = `Database initialization failed: ${e.message}`;
             console.error(e);
@@ -107,7 +114,7 @@ export const useTonearmStore = defineStore('tonearm', {
                 this.params.m_tube_percentage = params.m_tube_percentage || this.params.m_tube_percentage;
                 this.params.L2 = params.L2 || this.params.L2;
                 this.params.L3_fixed_cw = params.L3_fixed_cw || this.params.L3_fixed_cw;
-                this.params.m_headshell = params.m_headshell || 0;
+                this.params.m_headshell = params.m_headshell === 0 ? 0 : (params.m_headshell || this.params.m_headshell);
             }
         }
     },
