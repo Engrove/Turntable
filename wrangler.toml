@@ -1,13 +1,12 @@
-# This is the configuration file for Cloudflare Workers and Pages.
+# This is the configuration file for Cloudflare Pages.
 
-# The name of your application.
+# The name of your Pages project.
 name = "engrove"
 
 # The date of the Workers runtime version to use.
-# It's good practice to set this to the current date when you create the project.
 compatibility_date = "2025-07-16"
 
-# This section is crucial for Cloudflare Pages.
-# It tells Wrangler that this is a Pages project and where the static assets are.
-[pages]
-main.dir = "dist"
+# [pages]-sektionen är nu borttagen. Istället specificerar vi byggkonfigurationen direkt.
+# Detta är den föredragna metoden som Cloudflare Pages nu letar efter.
+[pages_build_output_dir]
+main = "dist"
