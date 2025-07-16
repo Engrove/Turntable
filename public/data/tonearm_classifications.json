@@ -22,16 +22,6 @@
         "id": "magnetic",
         "name": "Magnetic",
         "description": "Uses magnetic levitation or stabilization for a non-contact pivot. Can be part of a gimbal or unipivot design."
-      },
-      {
-        "id": "tangential_air_bearing",
-        "name": "Tangential (Air Bearing)",
-        "description": "A linear tracking arm that moves on a cushion of air, theoretically eliminating tracking error. Complex and expensive."
-      },
-      {
-        "id": "tangential_mechanical",
-        "name": "Tangential (Mechanical)",
-        "description": "A linear tracking arm that moves along a physical rail or mechanism. Aims to eliminate tracking error."
       }
     ]
   },
@@ -130,6 +120,32 @@
         "id": "proprietary",
         "name": "Proprietary",
         "description": "A unique connector specific to the manufacturer (e.g., some Dual, Lenco, or B&O models)."
+      }
+    ]
+  },
+  "tracking_method": {
+    "name": "Tracking Method",
+    "description": "The fundamental way the tonearm tracks the record groove, either by pivoting from a fixed point or moving linearly across the record.",
+    "categories": [
+      {
+        "id": "pivoting",
+        "name": "Pivoting",
+        "description": "The most common tonearm design, where the arm pivots from a single fixed point. It tracks the record in an arc."
+      },
+      {
+        "id": "tangential_air_bearing",
+        "name": "Tangential (Air Bearing)",
+        "description": "A linear tracking arm that moves on a cushion of air to maintain tangency to the groove across the entire record."
+      },
+      {
+        "id": "tangential_mechanical",
+        "name": "Tangential (Mechanical)",
+        "description": "A linear tracking arm that moves along a physical rail or mechanism to maintain tangency to the groove."
+      },
+      {
+        "id": "tangential_pivot",
+        "name": "Tangential (Pivoting/Thales)",
+        "description": "A specific type of pivoting arm (e.g., Thales, Schroeder LT) that uses a complex pivot arrangement to mimic linear tracking with very low tracking error."
       }
     ]
   }
