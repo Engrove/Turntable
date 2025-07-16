@@ -40,7 +40,6 @@ useHead({
     <section class="tools-section">
       <h2>Available Tools</h2>
       <div class="tools-grid">
-        <!-- KORRIGERING: Använder .webp och lazy loading -->
         <RouterLink to="/tonearm-calculator" class="tool-card">
           <img src="/images/preview-resonance.webp" alt="Tonearm Resonance Calculator Preview" class="tool-preview-image" loading="lazy" width="320" height="200"/>
           <div class="card-content">
@@ -89,14 +88,14 @@ useHead({
       </p>
       <br>
       <center>
-        <a href="https://dashboard.simpleanalytics.com/engrove.netlify.app?utm_source=engrove.netlify.app&utm_content=badge&affiliate=kurof" referrerpolicy="origin" target="_blank"><picture><source srcset="https://simpleanalyticsbadges.com/engrove.netlify.app?mode=dark" media="(prefers-color-scheme: dark)" /><img src="https://simpleanalyticsbadges.com/engrove.netlify.app?mode=light" loading="lazy" referrerpolicy="no-referrer" crossorigin="anonymous" /></picture></a>
+        <!-- UPPDATERAD BADGE-KOD HÄR -->
+        <a href="https://dashboard.simpleanalytics.com/engrove.pages.dev?utm_source=engrove.pages.dev&utm_content=badge&affiliate=kurof" referrerpolicy="origin" target="_blank"><picture><source srcset="https://simpleanalyticsbadges.com/engrove.pages.dev?mode=dark" media="(prefers-color-scheme: dark)" /><img src="https://simpleanalyticsbadges.com/engrove.pages.dev?mode=light" loading="lazy" referrerpolicy="no-referrer" crossorigin="anonymous" /></picture></a>
       </center>
     </footer>
   </div>
 </template>
 
 <style scoped>
-/* Befintlig CSS förblir oförändrad */
 .home-view { max-width: 1200px; margin: 0 auto; padding: 1rem 2rem 2rem; text-align: center; }
 .home-header { margin-bottom: 3rem; }
 .main-title { font-size: 2.5rem; font-weight: 700; color: var(--header-color); margin-bottom: 0.5rem; }
