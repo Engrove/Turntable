@@ -18,5 +18,5 @@ Disallow: /
 User-agent: *
 Disallow:
 
-# Point to the sitemap file for good bots
-Sitemap: https://engrove.netlify.app/sitemap.xml
+# Point to the sitemap file - UPPDATERAD URL
+Sitemap: https://engrove.pages.dev/sitemap.xml
