@@ -1,6 +1,22 @@
-# Allow all user agents to crawl the entire site
+# Block common marketing and SEO crawlers that are not useful for this site.
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: PetalBot
+Disallow: /
+
+# Allow all other user agents to crawl the entire site
 User-agent: *
 Disallow:
 
-# Point to the sitemap file
+# Point to the sitemap file for good bots
 Sitemap: https://engrove.netlify.app/sitemap.xml
