@@ -1,12 +1,13 @@
 {
-  "timestamp": "2025-07-14T18:30:00.000Z",
-  "source_data_count": 442,
+  "timestamp": "2025-07-16T08:30:00.000Z",
+  "source_data_count": 550,
   "analysis_data_count": 52,
   "global_fallback": {
     "priority": 99,
     "conditions": {},
-    "median_ratio": 1.71,
-    "r_squared": 0.235,
+    "k": 1.4873,
+    "m": 1.5492,
+    "r_squared": 0.7381,
     "sample_size": 52
   },
   "segmented_rules": [
@@ -17,8 +18,9 @@
         "cantilever_class": "Exotic/High-Performance",
         "stylus_family": "Advanced Line-Contact"
       },
-      "median_ratio": 1.685,
-      "r_squared": 0.989,
+      "k": 1.6363,
+      "m": 0.1772,
+      "r_squared": 0.9899,
       "sample_size": 5
     },
     {
@@ -28,8 +30,9 @@
         "cantilever_class": "Aluminum",
         "stylus_family": "Elliptical"
       },
-      "median_ratio": 1.7,
-      "r_squared": 0.001,
+      "k": 1.0883,
+      "m": 4.1483,
+      "r_squared": 0.0884,
       "sample_size": 18
     },
     {
@@ -38,8 +41,9 @@
         "type": "MM",
         "cantilever_class": "Aluminum"
       },
-      "median_ratio": 1.84,
-      "r_squared": 0.017,
+      "k": 1.1578,
+      "m": 4.2183,
+      "r_squared": 0.1345,
       "sample_size": 28
     },
     {
@@ -48,8 +52,9 @@
         "type": "MC",
         "cantilever_class": "Aluminum"
       },
-      "median_ratio": 2.23,
-      "r_squared": 0.811,
+      "k": 2.0545,
+      "m": 1.0909,
+      "r_squared": 0.8118,
       "sample_size": 11
     },
     {
@@ -58,8 +63,9 @@
         "type": "MC",
         "cantilever_class": "Exotic/High-Performance"
       },
-      "median_ratio": 1.69,
-      "r_squared": 0.976,
+      "k": 1.6888,
+      "m": -0.0111,
+      "r_squared": 0.9768,
       "sample_size": 8
     },
     {
@@ -67,8 +73,9 @@
       "conditions": {
         "type": "MM"
       },
-      "median_ratio": 1.78,
-      "r_squared": 0.015,
+      "k": 1.1543,
+      "m": 4.2285,
+      "r_squared": 0.1317,
       "sample_size": 30
     },
     {
@@ -76,8 +83,9 @@
       "conditions": {
         "type": "MC"
       },
-      "median_ratio": 2.15,
-      "r_squared": 0.738,
+      "k": 1.8488,
+      "m": 0.8359,
+      "r_squared": 0.8392,
       "sample_size": 20
     },
     {
@@ -85,7 +93,8 @@
       "conditions": {
         "type": "MI"
       },
-      "median_ratio": 1.71,
+      "k": 1.7142,
+      "m": 0.0,
       "r_squared": 0.0,
       "sample_size": 5
     }
