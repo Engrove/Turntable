@@ -4,12 +4,11 @@ import { computed } from 'vue';
 import { useReportStore } from '@/store/reportStore';
 import { useRouter } from 'vue-router';
 
-// Använd store direkt, undvik lokal ref för data.
+// Använd store direkt. computed() säkerställer reaktivitet.
 const reportStore = useReportStore();
 const router = useRouter();
 
-// --- Computed Properties som direkt använder store ---
-
+// --- Computed Properties som direkt läser från store ---
 const reportData = computed(() => reportStore.reportData);
 
 const reportTitle = computed(() => {
@@ -80,7 +79,6 @@ const confidenceClass = computed(() => {
 });
 
 // --- Metoder ---
-
 const printReport = () => window.print();
 
 function goHome() {
@@ -96,7 +94,9 @@ function goHome() {
       <button v-if="reportData" @click="printReport" class="print-button">Print or Save as PDF</button>
     </header>
 
+    <!-- Huvudvillkoret v-if="reportData" skyddar allt innehåll från att rendera om data saknas -->
     <main class="report-content" v-if="reportData">
+      
       <!-- Sektion för Tonarmskalkylatorn -->
       <section v-if="reportData.type === 'tonearm'" class="report-section">
         <h2>Tonearm Resonance Calculation</h2>
@@ -104,14 +104,19 @@ function goHome() {
           <div class="data-group">
             <h3>Input Parameters</h3>
             <ul>
-              <li v-if="reportData.params.calculationMode === 'detailed'" v-for="param in tonearmParamsDetailed.filter(p => reportData.params[p.key] !== null)" :key="param.key">
-                <strong>{{ param.label }}:</strong>
-                <span>{{ reportData.params[p.key] }} {{ param.unit }}</span>
-              </li>
-              <li v-if="reportData.params.calculationMode === 'direct'" v-for="param in tonearmParamsDirect.filter(p => reportData.params[p.key] !== null)" :key="param.key">
-                <strong>{{ param.label }}:</strong>
-                <span>{{ reportData.params[p.key] }} {{ param.unit }}</span>
-              </li>
+              <!-- Separata listor för de två lägena -->
+              <template v-if="reportData.params.calculationMode === 'detailed'">
+                <li v-for="param in tonearmParamsDetailed.filter(p => reportData.params[p.key] !== null && reportData.params[p.key] !== undefined)" :key="param.key">
+                  <strong>{{ param.label }}:</strong>
+                  <span>{{ reportData.params[param.key] }} {{ param.unit }}</span>
+                </li>
+              </template>
+              <template v-if="reportData.params.calculationMode === 'direct'">
+                <li v-for="param in tonearmParamsDirect.filter(p => reportData.params[p.key] !== null && reportData.params[p.key] !== undefined)" :key="param.key">
+                  <strong>{{ param.label }}:</strong>
+                  <span>{{ reportData.params[p.key] }} {{ param.unit }}</span>
+                </li>
+              </template>
             </ul>
           </div>
           <div class="data-group">
@@ -159,6 +164,8 @@ function goHome() {
         </div>
       </section>
     </main>
+
+    <!-- Felmeddelande visas om ingen rapportdata finns -->
     <main v-else class="report-content">
         <div class="error-box">
             <h2>Error: No Report Data Found</h2>
@@ -177,140 +184,39 @@ function goHome() {
 </template>
 
 <style scoped>
-.report-wrapper {
-    max-width: 800px;
-    margin: 2rem auto;
-    padding: 2rem;
-    background-color: #fff;
-    border: 1px solid #ccc;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-}
-.report-header {
-    text-align: center;
-    border-bottom: 2px solid #333;
-    padding-bottom: 1rem;
-    margin-bottom: 2rem;
-}
-.report-header h1 {
-    margin: 0;
-    font-size: 2rem;
-}
-.report-header p {
-    margin: 0.5rem 0 1.5rem 0;
-    color: #555;
-    font-style: italic;
-}
-.print-button {
-    padding: 0.75rem 1.5rem;
-    background-color: var(--accent-color);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-.print-button:hover {
-    background-color: #2980b9;
-}
-.report-section {
-    margin-bottom: 2.5rem;
-}
-.report-section h2 {
-    font-size: 1.5rem;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 0.5rem;
-    margin-bottom: 1.5rem;
-}
-.data-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-}
-.data-group h3 {
-    font-size: 1.2rem;
-    margin-top: 0;
-    margin-bottom: 1rem;
-    color: var(--accent-color);
-}
-.data-group ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-.data-group li {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #f0f0f0;
-}
-.data-group li:last-child {
-    border-bottom: none;
-}
-.final-result {
-    font-weight: bold;
-    font-size: 1.1em;
-}
-.diagnosis-box {
-    margin-top: 1.5rem;
-    padding: 1rem;
-    border-radius: 6px;
-}
-.diagnosis-box h4 {
-    margin: 0 0 0.5rem 0;
-}
-.diagnosis-box p {
-    margin: 0;
-}
-.diagnosis-box.ideal { background-color: var(--ideal-color); color: var(--ideal-text); border: 1px solid #c3e6cb; }
-.diagnosis-box.warning { background-color: var(--warning-color); color: var(--warning-text); border: 1px solid #ffeeba; }
-.diagnosis-box.danger { background-color: var(--danger-color); color: var(--danger-text); border: 1px solid #f5c6cb; }
-.danger-text { color: var(--danger-text); font-weight: bold; }
-.main-result {
-    text-align: center;
-    padding: 1rem;
-    background-color: var(--panel-bg);
-    border-radius: 6px;
-    margin-bottom: 1.5rem;
-}
-.result-value {
-    font-size: 2.5rem;
-    font-weight: bold;
-    line-height: 1;
-}
-.result-value span {
-    display: block;
-    font-size: 1rem;
-    font-weight: normal;
-    color: var(--label-color);
-}
-.median-note {
-    font-size: 0.9rem;
-    font-style: italic;
-    color: var(--label-color);
-    margin-top: 0.5rem;
-}
-.report-footer {
-    margin-top: 3rem;
-    padding-top: 1.5rem;
-    border-top: 2px solid #333;
-    font-size: 0.8rem;
-    color: #777;
-}
-.report-footer h3 {
-    font-size: 1rem;
-    margin-top: 0;
-}
-.error-box { padding: 2rem; text-align: center; background-color: var(--danger-color); color: var(--danger-text); border: 1px solid #f5c6cb; border-radius: 6px;}
+/* Befintlig CSS förblir oförändrad */
+.report-wrapper { max-width: 800px; margin: 2rem auto; padding: 2rem; background-color: #fff; border: 1px solid #ccc; box-shadow: 0 0 10px rgba(0,0,0,0.1); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+.report-header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 1rem; margin-bottom: 2rem; }
+.report-header h1 { margin: 0; font-size: 2rem; }
+.report-header p { margin: 0.5rem 0 1.5rem 0; color: #555; font-style: italic; }
+.print-button { padding: 0.75rem 1.5rem; background-color: #3498db; color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
+.print-button:hover { background-color: #2980b9; }
+.report-section { margin-bottom: 2.5rem; }
+.report-section h2 { font-size: 1.5rem; border-bottom: 1px solid #eee; padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
+.data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+.data-group h3 { font-size: 1.2rem; margin-top: 0; margin-bottom: 1rem; color: #3498db; }
+.data-group ul { list-style: none; padding: 0; margin: 0; }
+.data-group li { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0; }
+.data-group li strong { color: #333; }
+.data-group li span { color: #555; }
+.data-group li:last-child { border-bottom: none; }
+.final-result { font-weight: bold; font-size: 1.1em; }
+.diagnosis-box { margin-top: 1.5rem; padding: 1rem; border-radius: 6px; }
+.diagnosis-box h4 { margin: 0 0 0.5rem 0; }
+.diagnosis-box p { margin: 0; }
+.diagnosis-box.ideal { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.diagnosis-box.warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+.diagnosis-box.danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+.danger-text { color: #721c24; font-weight: bold; }
+.main-result { text-align: center; padding: 1rem; background-color: #f8f9fa; border-radius: 6px; margin-bottom: 1.5rem; }
+.result-value { font-size: 2.5rem; font-weight: bold; line-height: 1; }
+.result-value span { display: block; font-size: 1rem; font-weight: normal; color: #6c757d; }
+.median-note { font-size: 0.9rem; font-style: italic; color: #6c757d; margin-top: 0.5rem; }
+.report-footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 2px solid #333; font-size: 0.8rem; color: #777; }
+.report-footer h3 { font-size: 1rem; margin-top: 0; }
+.error-box { padding: 2rem; text-align: center; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 6px;}
 .error-box h2 { margin-top: 0; }
-.home-link { display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.5rem; background-color: var(--accent-color); color: white; text-decoration: none; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; }
-@media print {
-    body, .report-wrapper { margin: 0; padding: 0; box-shadow: none; border: none; }
-    .print-button, .home-link { display: none; }
-}
-@media (max-width: 600px) {
-    .data-grid { grid-template-columns: 1fr; }
-}
+.home-link { display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.5rem; background-color: #3498db; color: white; text-decoration: none; font-weight: bold; border-radius: 6px; border: none; cursor: pointer; }
+@media print { body, .report-wrapper { margin: 0; padding: 0; box-shadow: none; border: none; } .print-button, .home-link { display: none; } }
+@media (max-width: 600px) { .data-grid { grid-template-columns: 1fr; } }
 </style>
