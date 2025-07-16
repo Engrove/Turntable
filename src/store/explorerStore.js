@@ -1,19 +1,17 @@
 import { defineStore } from 'pinia';
-// KORRIGERING: Använder nu korrekt sökvägsalias.
 import { useTonearmStore } from '@/store/tonearmStore.js';
-import { usePickupStore } from '@/store/pickupStore.js';
+import { useEstimatorStore } from '@/store/estimatorStore.js'; // KORRIGERING: Importera från rätt källa.
 
 export const useExplorerStore = defineStore('explorer', {
   state: () => ({
     dataType: 'tonearms', // 'tonearms' or 'cartridges'
     searchTerm: '',
     filters: {},
-    numericFilters: {}, // Håller { min: null, max: null } för varje numeriskt filter
+    numericFilters: {},
     sortKey: 'manufacturer',
     sortOrder: 'asc',
     currentPage: 1,
     itemsPerPage: 20,
-    // Datakällor
     allTonearms: [],
     allPickups: [],
     pickupClassifications: {},
@@ -23,11 +21,10 @@ export const useExplorerStore = defineStore('explorer', {
   }),
 
   getters: {
-    // Returnerar tillgängliga filter baserat på vald datatyp
     availableFilters(state) {
       if (state.dataType === 'cartridges' && state.pickupClassifications) {
         return Object.entries(state.pickupClassifications)
-          .filter(([key]) => key !== 'tags') // Filtrera bort 'tags' från dropdowns
+          .filter(([key]) => key !== 'tags')
           .map(([key, value]) => ({
             key: key,
             name: value.name,
@@ -44,7 +41,6 @@ export const useExplorerStore = defineStore('explorer', {
       return [];
     },
 
-    // Returnerar definitioner för numeriska filter
     availableNumericFilters(state) {
         if (state.dataType === 'cartridges') {
             return [
@@ -61,11 +57,9 @@ export const useExplorerStore = defineStore('explorer', {
         return [];
     },
 
-    // Den centrala filtrerings- och sorteringslogiken
     filteredResults(state) {
       let results = state.dataType === 'tonearms' ? state.allTonearms : state.allPickups;
 
-      // 1. Text-sökning
       if (state.searchTerm) {
         const term = state.searchTerm.toLowerCase();
         results = results.filter(item =>
@@ -73,14 +67,12 @@ export const useExplorerStore = defineStore('explorer', {
         );
       }
 
-      // 2. Kategoriska filter (dropdowns)
       for (const key in state.filters) {
         if (state.filters[key]) {
           results = results.filter(item => item[key] === state.filters[key]);
         }
       }
 
-      // 3. Numeriska filter (min/max)
       for (const key in state.numericFilters) {
         const filter = state.numericFilters[key];
         if (filter && (filter.min !== null || filter.max !== null)) {
@@ -94,7 +86,6 @@ export const useExplorerStore = defineStore('explorer', {
         }
       }
 
-      // 4. Sortering
       if (state.sortKey) {
         results.sort((a, b) => {
           let valA = a[state.sortKey];
@@ -137,16 +128,16 @@ export const useExplorerStore = defineStore('explorer', {
       this.error = null;
       try {
         const tonearmStore = useTonearmStore();
-        const pickupStore = usePickupStore();
+        const estimatorStore = useEstimatorStore(); // KORRIGERING: Använder estimatorStore som datakälla.
         
         await Promise.all([
           tonearmStore.initialize(),
-          pickupStore.initialize(),
+          estimatorStore.initialize(),
         ]);
         
         this.allTonearms = tonearmStore.availableTonearms;
-        this.allPickups = pickupStore.availablePickups;
-        this.pickupClassifications = pickupStore.classifications;
+        this.allPickups = estimatorStore.allPickups; // KORRIGERING
+        this.pickupClassifications = estimatorStore.classifications; // KORRIGERING
         
         const classificationsResponse = await fetch('/data/tonearm_classifications.json');
         if (!classificationsResponse.ok) throw new Error('Failed to fetch tonearm classifications');
