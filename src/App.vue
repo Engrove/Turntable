@@ -1,15 +1,21 @@
 <!-- src/App.vue -->
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue';
-// KORRIGERING: Lade till 'useRoute' i importen från 'vue-router'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 
 const router = useRouter();
-const route = useRoute(); // Denna rad fungerar nu korrekt
+const route = useRoute();
 
 const isMenuExpanded = ref(false);
 const isMobile = ref(false);
 const bannerState = ref('none'); 
+
+// --- NY LOGIK FÖR FLYTT-BANNERN ---
+// 1. Kontrollera miljövariabeln som sattes i Netlify. Den kommer vara 'undefined' på Cloudflare.
+const shouldShowMigrationBanner = computed(() => import.meta.env.VITE_HOSTING_PLATFORM === 'netlify');
+// 2. State för att låta användaren stänga bannern.
+const isMigrationBannerClosed = ref(false);
+// --- SLUT PÅ NY LOGIK ---
 
 const isReportPage = computed(() => route.meta.isReportPage);
 
@@ -32,7 +38,6 @@ const bannerClass = computed(() => {
   return bannerState.value === 'none' ? 'banner-hidden' : '';
 });
 
-
 onMounted(() => {
   checkScreenSize();
   window.addEventListener('resize', checkScreenSize);
@@ -47,24 +52,15 @@ onMounted(() => {
 
     if (timeSinceDeploy < thirtyMinutesInMillis) {
       bannerState.value = 'in-progress';
-      
       const timeToGreen = thirtyMinutesInMillis - timeSinceDeploy;
-      setTimeout(() => {
-        bannerState.value = 'updated';
-      }, timeToGreen);
-
+      setTimeout(() => { bannerState.value = 'updated'; }, timeToGreen);
       const timeToHide = sixtyMinutesInMillis - timeSinceDeploy;
-      setTimeout(() => {
-        bannerState.value = 'none';
-      }, timeToHide);
+      setTimeout(() => { bannerState.value = 'none'; }, timeToHide);
 
     } else if (timeSinceDeploy < sixtyMinutesInMillis) {
       bannerState.value = 'updated';
-      
       const timeRemaining = sixtyMinutesInMillis - timeSinceDeploy;
-      setTimeout(() => {
-        bannerState.value = 'none';
-      }, timeRemaining);
+      setTimeout(() => { bannerState.value = 'none'; }, timeRemaining);
     }
   }
 });
@@ -84,15 +80,27 @@ const routeIcons = {
 
 <template>
   <div class="app-layout" :class="{ 'mobile-view': isMobile, [bannerClass]: isMobile }">
+
+    <!-- NY FLYTT-BANNER -->
+    <div v-if="shouldShowMigrationBanner && !isMigrationBannerClosed" class="migration-banner">
+      <div class="banner-content">
+        <p>
+          <strong>Site Has Moved!</strong> This version is now an archive. For the latest updates, please update your bookmarks to our new address:
+          <a href="https://engrove.pages.dev" target="_blank" rel="noopener noreferrer">engrove.pages.dev</a>
+        </p>
+      </div>
+      <button @click="isMigrationBannerClosed = true" class="close-banner-btn" title="Close this message">×</button>
+    </div>
+
     <transition name="banner-fade">
       <div v-if="bannerState !== 'none'" class="update-banner" :class="bannerState">
         <p v-if="bannerState === 'in-progress'">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg>
-          An update is in progress. The site may be refreshed automatically.
+          An update is in progress...
         </p>
         <p v-if="bannerState === 'updated'">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
-          The site has just been updated! Refresh the page to ensure you have the latest version.
+          Site has been updated. Please refresh the page.
         </p>
       </div>
     </transition>
@@ -145,6 +153,46 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .panel { background-color: var(--panel-bg); padding: 1.5rem; border-radius: 6px; border: 1px solid var(--border-color); }
 .panel h2 { margin-top: 0; color: var(--header-color); font-size: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1.5rem; }
 
+/* --- NY STYLING FÖR FLYTT-BANNER --- */
+.migration-banner {
+  position: sticky;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: #34495e; /* Mörkblå färg för att skilja sig från röd/grön */
+  color: white;
+  z-index: 2001; /* Se till att den ligger överst */
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+.migration-banner .banner-content p {
+  margin: 0;
+  font-weight: 500;
+}
+.migration-banner .banner-content a {
+  color: #a9cce3; /* Ljusare blå för länken */
+  font-weight: 700;
+  text-decoration: underline;
+}
+.close-banner-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 0.5rem;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+.close-banner-btn:hover {
+  opacity: 1;
+}
+
 /* Sidebar */
 .sidebar { background-color: var(--header-color); color: var(--text-light); height: 100dvh; position: fixed; top: 0; left: 0; z-index: 1000; display: flex; flex-direction: column; width: var(--sidebar-width-collapsed); overflow: hidden; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .sidebar.is-expanded { width: var(--sidebar-width-expanded); }
@@ -169,7 +217,7 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
 .sidebar.is-expanded .menu-toggle { transform: rotate(180deg); }
 
 /* Banner för uppdatering */
-.update-banner { position: fixed; top: 0; left: 0; width: 100%; color: white; text-align: center; padding: 0.75rem; z-index: 2000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); transition: background-color 0.5s ease; }
+.update-banner { position: sticky; top: 0; left: 0; width: 100%; color: white; text-align: center; padding: 0.75rem; z-index: 2000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); transition: background-color 0.5s ease; }
 .update-banner.updated { background-color: #27ae60; }
 .update-banner.in-progress { background-color: #e74c3c; }
 .update-banner.in-progress svg { animation: spin 2s linear infinite; }
@@ -188,13 +236,13 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Ro
   .mobile-menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); z-index: 999; }
   .app-layout.mobile-view:not(.banner-hidden) .mobile-menu-trigger { top: calc(1rem + 48px); }
   .update-banner p { font-size: 0.9rem; }
+  .migration-banner { flex-direction: column; text-align: center; gap: 0.5rem; }
 }
 
 /* Utskriftsregler */
 @media print {
   body { background-color: #fff !important; }
-  .sidebar, .mobile-menu-trigger, .update-banner { display: none !important; }
+  .sidebar, .mobile-menu-trigger, .update-banner, .migration-banner { display: none !important; }
   .content-area { margin-left: 0 !important; padding: 0 !important; }
-  /* Specifik styling för rapportutskrift hanteras nu i ReportView.vue */
 }
 </style>
