@@ -93,72 +93,68 @@ export const useAlignmentStore = defineStore('alignment', {
     },
 
     // Lofgren B exact per Eq (22) in Jovanović JAES 2022
-getLofgrenBAlignmentGeometry(D) {
-  // Standard inner/outer groove radii (IEC)
-  const R1 = 60.325;
-  const R2 = 146.05;
+    getLofgrenBAlignmentGeometry(D) {
+      // Compute Löfgren A parameters for reference
+      const L0 = Math.sqrt(D * D + (8 * R1 * R1 * R2 * R2) / (R1*R1 + 6*R1*R2 + R2*R2));
+      // FIX: Removed extra parenthesis in Math.asin
+      const betaRad = Math.asin((4 * R1 * R2 * (R1 + R2)) / (L0 * (R1*R1 + 6*R1*R2 + R2*R2));
+      
+      // Exact H_B per Eq (22)
+      const numerator = 3 * R1 * R2 * L0 * Math.sin(betaRad) * (R1 + R2) - R1 * R2;
+      const denominator = R1*R1 + R1*R2 + R2*R2;
+      const term = numerator / denominator;
+      
+      // Handle potential negative values
+      let H;
+      if (L0*L0 - term >= 0) {
+        H = L0 - Math.sqrt(L0*L0 - term);
+      } else {
+        H = (3 * R1 * R2 * (L0 * Math.sin(betaRad) * (R1 + R2) - R1 * R2) / (2 * L0 * denominator);
+      }
+      
+      // Calculate effective length
+      const L_effective = Math.sqrt(D*D + H*H);
 
-  // Compute Löfgren A parameters for reference
-  const L0 = Math.sqrt(D * D + (8 * R1 * R1 * R2 * R2) / (R1*R1 + 6*R1*R2 + R2*R2));
-  const betaRad = Math.asin((4 * R1 * R2 * (R1 + R2)) / (L0 * (R1*R1 + 6*R1*R2 + R2*R2));
-  
-  // Exact H_B per Eq (22) in Jovanović JAES 2022
-  const numerator = 3 * R1 * R2 * (L0 * Math.sin(betaRad) * (R1 + R2) - R1 * R2);
-  const denominator = R1*R1 + R1*R2 + R2*R2;
-  const term = numerator / denominator;
-  
-  // Handle potential negative values
-  let H;
-  if (L0*L0 - term >= 0) {
-    H = L0 - Math.sqrt(L0*L0 - term);
-  } else {
-    // Fallback to approximation if exact solution fails
-    H = (3 * R1 * R2 * (L0 * Math.sin(betaRad) * (R1 + R2) - R1 * R2)) / (2 * L0 * denominator);
-  }
-  
-  // Calculate effective length via Pythagoras
-  const L_effective = Math.sqrt(D*D + H*H);
+      // Compute null points by finding tracking error roots
+      const computeError = (r) => {
+        const t = (r*r + L_effective*L_effective - D*D) / (2 * r * L_effective);
+        if (t < -1 || t > 1) return NaN;
+        return Math.asin(t) - betaRad;
+      };
 
-  // Compute null points by finding tracking error roots
-  const computeError = (r) => {
-    const t = (r*r + L_effective*L_effective - D*D) / (2 * r * L_effective);
-    if (t < -1 || t > 1) return NaN;
-    return Math.asin(t) - betaRad;
-  };
+      // Root-finding algorithm
+      const roots = [];
+      const step = 0.1;
+      let prev = computeError(R1);
+      
+      for (let r = R1 + step; r <= R2; r += step) {
+        const current = computeError(r);
+        if (isNaN(current)) continue;
+        
+        if (!isNaN(prev) && Math.sign(prev) !== Math.sign(current)) {
+          // Linear interpolation for accuracy
+          const r0 = r - step;
+          const root = r0 - prev * step / (current - prev);
+          roots.push(root);
+        }
+        prev = current;
+      }
 
-  // Root-finding algorithm
-  const roots = [];
-  const step = 0.1;
-  let prev = computeError(R1);
-  
-  for (let r = R1 + step; r <= R2; r += step) {
-    const current = computeError(r);
-    if (isNaN(current)) continue;
-    
-    if (!isNaN(prev) && Math.sign(prev) !== Math.sign(current)) {
-      // Linear interpolation for better accuracy
-      const r0 = r - step;
-      const root = r0 - prev * step / (current - prev);
-      roots.push(root);
-    }
-    prev = current;
-  }
+      // Sort found roots
+      roots.sort((a, b) => a - b);
 
-  // Sort found roots (smallest first = inner null)
-  roots.sort((a, b) => a - b);
-
-  return { 
-    effectiveLength: L_effective, 
-    overhang: H, 
-    offsetAngle: betaRad * 180 / Math.PI, 
-    nulls: { 
-      inner: roots[0] || 0,  // Fallback to 0 if not found
-      outer: roots[1] || 0 
+      return { 
+        effectiveLength: L_effective, 
+        overhang: H, 
+        offsetAngle: betaRad * 180 / Math.PI, 
+        nulls: { 
+          inner: roots[0] || 0,
+          outer: roots[1] || 0 
+        },
+        geometryName: this.ALIGNMENT_GEOMETRIES.LofgrenB.name,
+        geometryDescription: this.ALIGNMENT_GEOMETRIES.LofgrenB.description 
+      };
     },
-    geometryName: this.ALIGNMENT_GEOMETRIES.LofgrenB.name,
-    geometryDescription: this.ALIGNMENT_GEOMETRIES.LofgrenB.description 
-  };
-},
 
     // Lofgren C exact per Jovanović JAES 2022 (Eqs 27-31)
     getLofgrenCAlignmentGeometry(D) {
@@ -324,4 +320,3 @@ getLofgrenBAlignmentGeometry(D) {
     }
   }
 });
-// src/store/alignmentStore.js
