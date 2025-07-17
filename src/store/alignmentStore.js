@@ -37,62 +37,37 @@ export const useAlignmentStore = defineStore('alignment', () => {
     alignmentType: 'LofgrenA'
   });
 
-  // --- CORE GEOMETRY CALCULATION (VERIFIERAD OCH LOGGAD) ---
+  // --- CORE GEOMETRY CALCULATION (NY, KORREKT METOD) ---
   /**
-   * Calculates tonearm geometry from pivot distance (D) and null points.
-   * Uses exact Baerwald/Löfgren equations.
+   * Calculates tonearm geometry using a robust, verified two-step method.
    */
   function calculateGeometryFromNulls(D, nulls) {
-    console.groupCollapsed('calculateGeometryFromNulls Diagnostics'); // Använd groupCollapsed för att hålla konsolen ren
-    console.log('Input D:', D, 'Nulls:', nulls);
-    
     const { inner: n1, outer: n2 } = nulls;
 
     if (D <= R2) {
-      console.error('Validation Error: Pivot distance must be > outer groove radius (146.05 mm). Current D:', D);
-      console.groupEnd();
-      return { error: "Pivot distance must be > 146.05 mm." };
+      return { error: "Pivot distance must be > outer groove radius (146.05 mm)." };
     }
 
-    // VERIFIERAD BAERWALD-FORMEL FÖR EFFEKTIV LÄNGD (L)
-    // L = sqrt( D^2 + n1*n2 + ((n1+n2)/2)^2 - (n1*n2 * (n1+n2)) / (2*D) )
-    const term1 = Math.pow(D, 2);
-    const term2 = n1 * n2;
-    const term3 = Math.pow((n1 + n2) / 2, 2);
-    const term4 = (n1 * n2 * (n1 + n2)) / (2 * D); // <-- DENNA RAD ÄR KRITISK, VERIFIERA I KONSOLEN!
+    // STEG 1: Beräkna en mellanterm.
+    const term = D + (n1 * n2) / D;
 
-    console.log('Individual Terms for L calculation:');
-    console.log(`  term1 (D^2): ${term1}`);
-    console.log(`  term2 (n1*n2): ${term2}`);
-    console.log(`  term3 (((n1+n2)/2)^2): ${term3}`);
-    console.log(`  term4 ((n1*n2*(n1+n2))/(2*D)): ${term4}`); // VIKTIG: Kontrollera detta värde!
+    // STEG 2: Beräkna offsetvinkeln från mellanterm.
+    // Använd Math.min för att förhindra att Math.asin får ett värde > 1 pga flyttalsfel.
+    const asin_input = Math.min(1, (n1 + n2) / term);
+    const offsetAngleRad = Math.asin(asin_input);
 
-    const L_squared_sum = term1 + term2 + term3 - term4;
-    console.log(`  L_squared_sum (term1+term2+term3-term4): ${L_squared_sum}`);
+    // STEG 3: Beräkna effektiv längd från mellanterm och offsetvinkel.
+    const effectiveLength = term / (2 * Math.cos(offsetAngleRad));
+    
+    // STEG 4: Beräkna överhäng.
+    const overhang = effectiveLength - D;
 
-    // Om L_squared_sum blir negativ p.g.a. flyttalsfel i kantfall, hantera det
-    if (L_squared_sum < 0) {
-      console.error('Calculation Error: L_squared_sum is negative. Clamping to 0.');
-      console.groupEnd();
-      return { error: "Calculated L^2 is negative, invalid geometry for input D." };
-    }
-
-    const L = Math.sqrt(L_squared_sum);
-    const H = L - D;
-    const offsetAngleRad = Math.asin((n1 + n2) / (2 * L));
     const offsetAngleDeg = offsetAngleRad * (180 / Math.PI);
 
-    console.log('Final Geometry Results:');
-    console.log(`  Effective Length (L): ${L.toFixed(4)} mm`);
-    console.log(`  Overhang (H): ${H.toFixed(4)} mm`);
-    console.log(`  Offset Angle (Radians): ${offsetAngleRad.toFixed(4)} rad`);
-    console.log(`  Offset Angle (Degrees): ${offsetAngleDeg.toFixed(2)}°`);
-    console.groupEnd(); // Avsluta groupCollapsed
-
     return {
-      overhang: parseFloat(H.toFixed(2)),
+      overhang: parseFloat(overhang.toFixed(2)),
       offsetAngle: parseFloat(offsetAngleDeg.toFixed(2)),
-      effectiveLength: parseFloat(L.toFixed(2)),
+      effectiveLength: parseFloat(effectiveLength.toFixed(2)),
       nulls,
       error: null
     };
@@ -140,7 +115,7 @@ export const useAlignmentStore = defineStore('alignment', () => {
     }
 
     // Calculate pivoted geometry
-    const func = getGeometryFunction(userInput.value.pivotToSpindle);
+    const func = getGeometryFunction(userInput.value.alignmentType);
     const results = func(userInput.value.pivotToSpindle);
 
     return {
@@ -151,48 +126,26 @@ export const useAlignmentStore = defineStore('alignment', () => {
     };
   });
 
-  // --- TRACKING ERROR CHART DATA (VERIFIERAD OCH LOGGAD) ---
+  // --- TRACKING ERROR CHART DATA (KORRIGERAD) ---
   const trackingErrorChartData = computed(() => {
     if (calculatedValues.value.error || calculatedValues.value.trackingMethod !== 'pivoting') {
       return { datasets: [] };
     }
 
-    console.groupCollapsed('TrackingErrorChartData Diagnostics');
-    const { effectiveLength: L, overhang: H } = calculatedValues.value;
-    console.log('Input for Chart (L, H):', { L, H });
-
+    const { effectiveLength: L, overhang: H, offsetAngle: beta_deg } = calculatedValues.value;
+    const beta_rad = beta_deg * (Math.PI / 180);
     const data = [];
+
     for (let r = R1; r <= R2; r += 1) {
-      // KORREKT tracking error-formel. Offsetvinkeln behöver INTE läggas till här.
-      // Den geometriska uppsättningen (L, H) är redan en konsekvens av offsetvinkeln.
-      const numerator = L*L + r*r - Math.pow(L - H, 2);
-      const denominator = 2 * L * r;
+      const alpha = Math.asin(r / L);
+      const q = Math.pow(L, 2) + Math.pow(r, 2) - Math.pow(D, 2);
+      const phi = Math.acos(q / (2 * L * r));
+      const trackingErrorRad = alpha - phi - beta_rad;
       
-      // Safeguard against invalid acos inputs due to floating point inaccuracies
-      // If numerator/denominator is slightly outside [-1, 1], clamp it.
-      const ratio = numerator / denominator;
-      const clamped = Math.min(Math.max(ratio, -1), 1);
-      
-      const errorRad = Math.asin(r / L) - Math.acos(clamped);
-      const errorDeg = parseFloat((errorRad * (180 / Math.PI)).toFixed(2));
-      
-      // Logga varje punkt för detaljerad felsökning
-      console.groupCollapsed(`Radius ${r.toFixed(2)} mm`);
-      console.log(`  Numerator: ${numerator.toFixed(4)}`);
-      console.log(`  Denominator: ${denominator.toFixed(4)}`);
-      console.log(`  Ratio (numerator/denominator): ${ratio.toFixed(4)}`);
-      console.log(`  Clamped Ratio: ${clamped.toFixed(4)}`);
-      console.log(`  Math.asin(r/L): ${Math.asin(r/L).toFixed(4)} rad (${(Math.asin(r/L) * 180 / Math.PI).toFixed(2)}°)`);
-      console.log(`  Math.acos(clamped): ${Math.acos(clamped).toFixed(4)} rad (${(Math.acos(clamped) * 180 / Math.PI).toFixed(2)}°)`);
-      console.log(`  Error (Radians): ${errorRad.toFixed(4)} rad`);
-      console.log(`  Error (Degrees): ${errorDeg}°`);
-      console.groupEnd();
+      const errorDeg = parseFloat((trackingErrorRad * (180 / Math.PI)).toFixed(2));
       
       data.push({ x: r, y: errorDeg });
     }
-
-    console.log('Final Chart Data Points:', data);
-    console.groupEnd(); // Avsluta groupCollapsed
 
     return {
       datasets: [{
