@@ -117,7 +117,7 @@ export const useAlignmentStore = defineStore('alignment', () => {
     async initialize() {
       try {
         state.isLoading.value = true;
-        const response = await fetch('/data/tonearms.json');
+        const response = await fetch('/data/tonearm_data.json');
         state.availableTonearms.value = await response.json();
       } catch (err) {
         state.error.value = err.message;
