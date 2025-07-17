@@ -108,19 +108,21 @@ export const useAlignmentStore = defineStore('alignment', () => {
     };
   });
 
-  // --- TRACKING ERROR CHART DATA ---
+  // --- TRACKING ERROR CHART DATA (KORRIGERAD) ---
   const trackingErrorChartData = computed(() => {
     if (calculatedValues.value.error || calculatedValues.value.trackingMethod !== 'pivoting') {
       return { datasets: [] };
     }
 
-    const { effectiveLength: L, overhang: H, offsetAngle: β } = calculatedValues.value;
+    const { effectiveLength: L, overhang: H } = calculatedValues.value;
     const data = [];
 
     // Calculate error for each groove radius (R1 to R2)
     for (let r = R1; r <= R2; r += 1) {
-      const errorRad = Math.asin(r / L) - Math.acos((L*L + r*r - (L-H)*(L-H)) / (2 * L * r)) + (β * Math.PI / 180);
-      data.push({ x: r, y: errorRad * (180 / Math.PI) });
+      // Korrekt formel utan dubbelkonvertering av offsetvinkeln
+      const errorRad = Math.asin(r / L) - Math.acos((L*L + r*r - (L-H)*(L-H)) / (2 * L * r));
+      const errorDeg = errorRad * (180 / Math.PI);  // Konvertera till grader
+      data.push({ x: r, y: errorDeg });
     }
 
     return {
