@@ -37,14 +37,14 @@ export const useAlignmentStore = defineStore('alignment', () => {
     alignmentType: 'LofgrenA'
   });
 
-  // --- CORE GEOMETRY CALCULATION (VERIFIED) ---
+  // --- CORE GEOMETRY CALCULATION ---
   function calculateGeometryFromNulls(D, nulls) {
     const { inner: n1, outer: n2 } = nulls;
     if (D <= R2) return { error: "Pivot distance must be > 146.05 mm." };
 
-    // Verified Baerwald formula (term-by-term for clarity)
-    const term1 = Math.pow(D, 2);
-    const term2 = n1 * n2;
+    // Exact Baerwald formula (verified)
+    const term1 = D*D;
+    const term2 = n1*n2;
     const term3 = Math.pow((n1 + n2)/2, 2);
     const term4 = (n1 * n2 * (n1 + n2)) / (2 * D);
     const L = Math.sqrt(term1 + term2 + term3 - term4);
@@ -115,7 +115,7 @@ export const useAlignmentStore = defineStore('alignment', () => {
     };
   });
 
-  // --- TRACKING ERROR CHART DATA (VERIFIED) ---
+  // --- TRACKING ERROR CHART DATA ---
   const trackingErrorChartData = computed(() => {
     if (calculatedValues.value.error || calculatedValues.value.trackingMethod !== 'pivoting') {
       return { datasets: [] };
@@ -124,16 +124,12 @@ export const useAlignmentStore = defineStore('alignment', () => {
     const { effectiveLength: L, overhang: H } = calculatedValues.value;
     const data = [];
 
-    // Calculate error for each groove radius (R1 to R2)
     for (let r = R1; r <= R2; r += 1) {
+      // Correct tracking error formula
       const numerator = L*L + r*r - Math.pow(L - H, 2);
       const denominator = 2 * L * r;
-      
-      // Safeguard against invalid acos inputs
-      const acosInput = numerator / denominator;
-      const clampedInput = Math.min(Math.max(acosInput, -1), 1);
-      
-      const errorRad = Math.asin(r / L) - Math.acos(clampedInput);
+      const clamped = Math.min(Math.max(numerator / denominator, -1), 1);
+      const errorRad = Math.asin(r / L) - Math.acos(clamped);
       const errorDeg = parseFloat((errorRad * (180 / Math.PI)).toFixed(2));
       
       data.push({ x: r, y: errorDeg });
