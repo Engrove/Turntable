@@ -1,7 +1,5 @@
 // src/store/alignmentStore.js
 import { defineStore } from 'pinia';
-// Antagande: en separat store för tonarmsdata finns, men är inte nödvändig för kärnberäkningarna.
-// import { useTonearmStore } from '@/store/tonearmStore.js';
 
 // --- Auktoritativ Data ---
 
@@ -43,7 +41,7 @@ export const useAlignmentStore = defineStore('alignment', {
       error: null
     },
     trackingErrorChartData: {
-      datasets:
+      datasets: [] // Korrigerat: Initieras som tom array
     },
     constants: {
       STANDARDS,
@@ -53,14 +51,10 @@ export const useAlignmentStore = defineStore('alignment', {
 
   getters: {
     currentStandard: (state) => {
-      return STANDARDS[state.userInput.standard] |
-
-| STANDARDS.IEC;
+      return STANDARDS[state.userInput.standard] || STANDARDS.IEC; // Korrigerat: Använder korrekt fallback
     },
     currentGeometryInfo: (state) => {
-      return ALIGNMENT_GEOMETRIES |
-
-| {};
+      return ALIGNMENT_GEOMETRIES[state.userInput.alignmentType] || {}; // Korrigerat: Använder korrekt fallback
     }
   },
 
@@ -85,13 +79,11 @@ export const useAlignmentStore = defineStore('alignment', {
 
     calculateAlignment() {
       this.calculatedValues.error = null;
+      this.trackingErrorChartData = { datasets: [] }; // Korrigerat: Initierar tom dataset vid beräkning
 
       const D = this.userInput.pivotToSpindle;
-      if (!D |
-
-| D <= 0) {
+      if (!D || D <= 0) {
         this.calculatedValues.error = 'Monteringsavstånd (D) måste vara ett positivt tal.';
-        this.trackingErrorChartData = { datasets: };
         return;
       }
 
@@ -103,28 +95,26 @@ export const useAlignmentStore = defineStore('alignment', {
       if (alignmentType === 'StevensonA') {
         res = this.calculateStevensonA(D, R1);
       } else {
-        const nulls = NULL_POINTS?.[standardKey];
+        // Korrigerat: Använder optional chaining för säkrare null-check
+        const nulls = NULL_POINTS[alignmentType]?.[standardKey];
         if (!nulls) {
           this.calculatedValues.error = `Nollpunkter för ${alignmentType}/${standardKey} ej definierade.`;
-          this.trackingErrorChartData = { datasets: };
           return;
         }
         res = this.calculateFromNulls(D, nulls);
       }
 
-      if (isNaN(res.effectiveLength) |
-
-| isNaN(res.offsetAngle) |
-| res.effectiveLength < D) {
+      if (isNaN(res.effectiveLength) || 
+          isNaN(res.offsetAngle) || 
+          res.effectiveLength < D) {
         this.calculatedValues.error = 'Ogiltig geometri. Kontrollera att monteringsavståndet är tillräckligt långt.';
-        this.calculatedValues = {...this.calculatedValues,...res, effectiveLength: 0, overhang: 0, offsetAngle: 0 };
-        this.trackingErrorChartData = { datasets: };
+        this.calculatedValues = {...this.calculatedValues, ...res, effectiveLength: 0, overhang: 0, offsetAngle: 0 };
         return;
       }
       
       this.calculatedValues = {
-      ...this.calculatedValues,
-      ...res,
+        ...this.calculatedValues,
+        ...res,
         geometryName: this.currentGeometryInfo.name,
         geometryDescription: this.currentGeometryInfo.description,
       };
@@ -165,7 +155,7 @@ export const useAlignmentStore = defineStore('alignment', {
 
     updateTrackingErrorChartData() {
       if (this.calculatedValues.error) {
-        this.trackingErrorChartData = { datasets: };
+        this.trackingErrorChartData = { datasets: [] }; // Korrigerat: Initierar tom dataset vid fel
         return;
       }
 
@@ -173,7 +163,7 @@ export const useAlignmentStore = defineStore('alignment', {
       const L = this.calculatedValues.effectiveLength;
       const offsetRad = this.calculatedValues.offsetAngle * (Math.PI / 180);
       
-      const data =;
+      const data = []; // Korrigerat: Initierar data-array
       const { inner: minR, outer: maxR } = this.currentStandard;
       
       const start = Math.floor(minR - 5);
@@ -192,7 +182,17 @@ export const useAlignmentStore = defineStore('alignment', {
       }
 
       this.trackingErrorChartData = {
-        datasets:
+        datasets: [ // Korrigerat: Rätt struktur för dataset
+          {
+            label: 'Spårfel (grader)',
+            data: data,
+            borderColor: '#4f46e5',
+            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+            tension: 0.4,
+            pointRadius: 0,
+            fill: true
+          }
+        ]
       };
     }
   }
