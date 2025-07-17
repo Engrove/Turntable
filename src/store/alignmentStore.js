@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia';
 
 // --- Authoritative Data (Frozen for Performance) ---
-// By freezing these objects, we tell Vue it doesn't need to make them reactive,
-// saving memory and CPU cycles.[11]
 const STANDARDS = Object.freeze({
   IEC: { name: 'IEC 60098 / RIAA', inner: 60.325, outer: 146.05 },
   DIN: { name: 'DIN 45547', inner: 57.50, outer: 146.30 },
@@ -144,7 +142,7 @@ export const useAlignmentStore = defineStore('alignment', {
 
     calculateStevensonA(D, R1) {
       const N1 = R1;
-      const N2 = 117.42;
+      const N2 = 117.42; // Stevenson A's second null point is a constant
       return this.calculateFromNulls(D, [N1, N2]);
     },
 
@@ -168,7 +166,7 @@ export const useAlignmentStore = defineStore('alignment', {
         data.push({ x: r, y: trackingError });
       }
 
-      // Mutate the existing array for a more direct update
+      // Mutate the existing array for a more direct and performant update
       this.trackingErrorChartData.datasets =;
     }
   }
