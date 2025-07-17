@@ -36,6 +36,7 @@ export const useAlignmentStore = defineStore('alignment', {
     ALIGNMENT_GEOMETRIES: {
       LofgrenA: { name: 'Löfgren A / Baerwald', description: 'Balances distortion between inner and outer grooves, resulting in the lowest average RMS distortion.' },
       LofgrenB: { name: 'Löfgren B', description: 'Minimizes overall RMS distortion across the record with fixed offset angle.' },
+      LofgrenC: { name: 'Löfgren C', description: 'Least Mean Squares (LMS) optimization for minimal average distortion.' },
       StevensonA: { name: 'Stevenson A', description: 'Prioritizes lowest distortion at inner groove with two null points.' },
     },
   }),
@@ -78,25 +79,132 @@ export const useAlignmentStore = defineStore('alignment', {
       const offsetAngle = betaRad * 180 / Math.PI;
 
       const invSqrt2 = 1/Math.sqrt(2);
-      const inner = (2 * R1 * R2 * (1 - invSqrt2)) / (R2 + (1 + invSqrt2) * R1);
-      const outer = (2 * R1 * R2 * (1 + invSqrt2)) / (R2 + (1 - invSqrt2) * R1);
+      const innerNull = (2 * R1 * R2 * (1 - invSqrt2)) / (R2 + (1 + invSqrt2) * R1);
+      const outerNull = (2 * R1 * R2 * (1 + invSqrt2)) / (R2 + (1 - invSqrt2) * R1);
 
-      return { effectiveLength: L, overhang, offsetAngle, nulls: { inner, outer }, geometryName: this.ALIGNMENT_GEOMETRIES.LofgrenA.name, geometryDescription: this.ALIGNMENT_GEOMETRIES.LofgrenA.description };
+      return { 
+        effectiveLength: L, 
+        overhang, 
+        offsetAngle, 
+        nulls: { inner: innerNull, outer: outerNull }, 
+        geometryName: this.ALIGNMENT_GEOMETRIES.LofgrenA.name, 
+        geometryDescription: this.ALIGNMENT_GEOMETRIES.LofgrenA.description 
+      };
     },
 
-    // Lofgren B approximate per Jovanović (fixed offset = βA)
+    // Lofgren B exact per Eq (22) in Jovanović JAES 2022
     getLofgrenBAlignmentGeometry(D) {
-      // compute βA
-      const L0 = Math.sqrt(D * D + (8 * R1*R1 * R2*R2) / (R1*R1 + 6*R1*R2 + R2*R2));
+      // Compute Löfgren A parameters for reference
+      const L0 = Math.sqrt(D * D + (8 * R1 * R1 * R2 * R2) / (R1*R1 + 6*R1*R2 + R2*R2));
       const betaRad = Math.asin((4 * R1 * R2 * (R1 + R2)) / (L0 * (R1*R1 + 6*R1*R2 + R2*R2)));
-      const beta = betaRad;
-      // approximate H_B per eq (23)
-      const a2 = 2 * L0 * (L0 - D) - (L0 - D)**2; // unused here
-      const num = 3 * R1 * R2 * (L0 * Math.sin(beta) * (R1 + R2) - R1 * R2);
-      const den = 2 * L0 * (R1*R1 + R1*R2 + R2*R2);
-      const H = num / den;
-      const L = D + H;
-      return { effectiveLength: L, overhang: H, offsetAngle: beta * 180 / Math.PI, nulls: { inner: null, outer: null }, geometryName: this.ALIGNMENT_GEOMETRIES.LofgrenB.name, geometryDescription: this.ALIGNMENT_GEOMETRIES.LofgrenB.description };
+      
+      // Exact H_B per Eq (22)
+      const numerator = 3 * R1 * R2 * (L0 * Math.sin(betaRad) * (R1 + R2) - R1 * R2;
+      const denominator = R1*R1 + R1*R2 + R2*R2;
+      const term = numerator / denominator;
+      
+      // Handle potential negative values
+      let H;
+      if (L0*L0 - term >= 0) {
+        H = L0 - Math.sqrt(L0*L0 - term);
+      } else {
+        // Fallback to approximation if exact fails
+        H = (3 * R1 * R2 * (L0 * Math.sin(betaRad) * (R1 + R2) - R1 * R2)) / (2 * L0 * denominator);
+      }
+      
+      // Calculate effective length via Pythagoras
+      const L_effective = Math.sqrt(D*D + H*H);
+      
+      return { 
+        effectiveLength: L_effective, 
+        overhang: H, 
+        offsetAngle: betaRad * 180 / Math.PI, 
+        nulls: { inner: null, outer: null }, 
+        geometryName: this.ALIGNMENT_GEOMETRIES.LofgrenB.name, 
+        geometryDescription: this.ALIGNMENT_GEOMETRIES.LofgrenB.description 
+      };
+    },
+
+    // Lofgren C exact per Jovanović JAES 2022 (Eqs 27-31)
+    getLofgrenCAlignmentGeometry(D) {
+      // Solve for effective length (L) using numerical iteration
+      let L = Math.sqrt(D*D + 100); // Initial guess
+      const tolerance = 0.0001;
+      let diff = 10;
+      let iterations = 0;
+      
+      while (Math.abs(diff) > tolerance && iterations < 100) {
+        // Eq (27): Compute linear offset (p)
+        const R_diff = R2 - R1;
+        const R_diff6 = Math.pow(R_diff, 6);
+        const L2 = L*L;
+        const L2_R1R2 = L2 + R1*R2;
+        const logR = Math.log(R2/R1);
+        
+        const numeratorPart = 2*(R1*R1 + R1*R2 + R2*R2)*logR - 3*(R2*R2 - R1*R1);
+        const innerRoot = R_diff6 * L2_R1R2*L2_R1R2 - 4*L2*R1*R1*R2*R2*numeratorPart*numeratorPart;
+        
+        let p;
+        if (innerRoot >= 0) {
+          p = ((L2_R1R2 * Math.pow(R_diff,3)) - Math.sqrt(innerRoot)) /
+              (4*R1*R2*(R1*R1 + R1*R2 + R2*R2)*logR - 6*R1*R2*(R2*R2 - R1*R1));
+        } else {
+          p = (4 * R1 * R2 * (R1 + R2)) / (R1*R1 + 6*R1*R2 + R2*R2);
+        }
+        
+        // Eq (28): Compute a²
+        const a2 = (3 * R1 * R2 * (p * (R1 + R2) - R1*R2)) / (R1*R1 + R1*R2 + R2*R2);
+        
+        // Eq (30): Compute overhang (H)
+        const H = L - Math.sqrt(L*L - a2);
+        
+        // Update L using Pythagoras: D^2 = L^2 - H^2
+        const newL = Math.sqrt(D*D + H*H);
+        diff = newL - L;
+        L = newL;
+        iterations++;
+      }
+      
+      // Recompute parameters with final L
+      const R_diff = R2 - R1;
+      const R_diff6 = Math.pow(R_diff, 6);
+      const L2 = L*L;
+      const L2_R1R2 = L2 + R1*R2;
+      const logR = Math.log(R2/R1);
+      
+      const numeratorPart = 2*(R1*R1 + R1*R2 + R2*R2)*logR - 3*(R2*R2 - R1*R1);
+      const innerRoot = R_diff6 * L2_R1R2*L2_R1R2 - 4*L2*R1*R1*R2*R2*numeratorPart*numeratorPart;
+      
+      let p;
+      if (innerRoot >= 0) {
+        p = ((L2_R1R2 * Math.pow(R_diff,3)) - Math.sqrt(innerRoot)) /
+            (4*R1*R2*(R1*R1 + R1*R2 + R2*R2)*logR - 6*R1*R2*(R2*R2 - R1*R1));
+      } else {
+        p = (4 * R1 * R2 * (R1 + R2)) / (R1*R1 + 6*R1*R2 + R2*R2);
+      }
+      
+      // Eq (28): a²
+      const a2 = (3 * R1 * R2 * (p * (R1 + R2) - R1*R2)) / (R1*R1 + R1*R2 + R2*R2);
+      
+      // Eq (29): Offset angle (β)
+      const betaRad = Math.asin(p / L);
+      const offsetAngle = betaRad * 180 / Math.PI;
+      
+      // Eq (30): Overhang (H)
+      const H = L - Math.sqrt(L*L - a2);
+      
+      // Eq (31): Null points
+      const innerNull = p - Math.sqrt(p*p - a2);
+      const outerNull = p + Math.sqrt(p*p - a2);
+      
+      return { 
+        effectiveLength: L, 
+        overhang: H, 
+        offsetAngle, 
+        nulls: { inner: innerNull, outer: outerNull }, 
+        geometryName: this.ALIGNMENT_GEOMETRIES.LofgrenC.name, 
+        geometryDescription: this.ALIGNMENT_GEOMETRIES.LofgrenC.description 
+      };
     },
 
     // Stevenson A with inner/outer null at 129.5/136.9 mm
@@ -108,7 +216,14 @@ export const useAlignmentStore = defineStore('alignment', {
       const L = Math.sqrt(D * D + avgNull * avgNull);
       const overhang = L - D;
       const beta = Math.asin((outer - inner) / (2 * L));
-      return { effectiveLength: L, overhang, offsetAngle: beta * 180 / Math.PI, nulls: { inner, outer }, geometryName: this.ALIGNMENT_GEOMETRIES.StevensonA.name, geometryDescription: this.ALIGNMENT_GEOMETRIES.StevensonA.description };
+      return { 
+        effectiveLength: L, 
+        overhang, 
+        offsetAngle: beta * 180 / Math.PI, 
+        nulls: { inner, outer }, 
+        geometryName: this.ALIGNMENT_GEOMETRIES.StevensonA.name, 
+        geometryDescription: this.ALIGNMENT_GEOMETRIES.StevensonA.description 
+      };
     },
 
     calculateAlignment() {
@@ -123,11 +238,20 @@ export const useAlignmentStore = defineStore('alignment', {
       let res;
       const type = this.userInput.alignmentType;
       if (this.calculatedValues.trackingMethod !== 'pivoting') {
-        res = { effectiveLength: D, overhang: 0, offsetAngle: 0, nulls: { inner: null, outer: null }, geometryName: 'Tangential', geometryDescription: 'Zero error.' };
+        res = { 
+          effectiveLength: D, 
+          overhang: 0, 
+          offsetAngle: 0, 
+          nulls: { inner: null, outer: null }, 
+          geometryName: 'Tangential', 
+          geometryDescription: 'Zero error.' 
+        };
       } else if (type === 'LofgrenA') {
         res = this.getLofgrenAAlignmentGeometry(D);
       } else if (type === 'LofgrenB') {
         res = this.getLofgrenBAlignmentGeometry(D);
+      } else if (type === 'LofgrenC') {
+        res = this.getLofgrenCAlignmentGeometry(D);
       } else if (type === 'StevensonA') {
         res = this.getStevensonAAlignmentGeometry(D);
       } else {
@@ -154,7 +278,14 @@ export const useAlignmentStore = defineStore('alignment', {
         const y = (t >= -1 && t <= 1) ? (Math.asin(t) - offsetRad)*180/Math.PI : NaN;
         data.push({ x: r, y });
       }
-      this.trackingErrorChartData = { datasets: [{ label: this.calculatedValues.geometryName, data, borderColor: '#3498db', borderWidth: 4, pointRadius: 0, tension: 0.1 }] };
+      this.trackingErrorChartData = { datasets: [{ 
+        label: this.calculatedValues.geometryName, 
+        data, 
+        borderColor: '#3498db', 
+        borderWidth: 4, 
+        pointRadius: 0, 
+        tension: 0.1 
+      }] };
     }
   }
 });
