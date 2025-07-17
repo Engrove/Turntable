@@ -1,3 +1,4 @@
+// src/store/alignmentStore.js
 import { defineStore } from 'pinia';
 import { useTonearmStore } from '@/store/tonearmStore.js';
 
@@ -206,3 +207,4 @@ export const useAlignmentStore = defineStore('alignment', {
     }
   }
 });
+// src/store/alignmentStore.js
