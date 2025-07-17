@@ -123,7 +123,7 @@ trackingMethod: arm.tracking_method,
 const func = getGeometryFunction(userInput.value.alignmentType);
 const results = func(userInput.value.pivotToSpindle);
 
-Generated code
+
 return {
   ...results,
   geometryName: ALIGNMENT_GEOMETRIES[userInput.value.alignmentType].name,
