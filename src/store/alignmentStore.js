@@ -1,5 +1,4 @@
 // src/store/alignmentStore.js
-// DeepSeek
 import { defineStore } from 'pinia';
 import { useTonearmStore } from '@/store/tonearmStore.js';
 
@@ -124,147 +123,49 @@ export const useAlignmentStore = defineStore('alignment', {
       };
     },
     
-    // Lofgren B implementation (using Jovanovic method)
+    // Simplified Lofgren B implementation
     getLofgrenBAlignmentGeometry(D) {
-      // Compute Löfgren A parameters for reference
-      const L0 = Math.sqrt(D * D + (8 * R1 * R1 * R2 * R2) / (R1*R1 + 6*R1*R2 + R2*R2));
-      const betaRad = Math.asin((4 * R1 * R2 * (R1 + R2)) / (L0 * (R1*R1 + 6*R1*R2 + R2*R2)));
+      // Fixed null points for Lofgren B (IEC standard)
+      const innerNull = 70.29;
+      const outerNull = 116.60;
       
-      // Exact H_B calculation
-      const numerator = 3 * R1 * R2 * (L0 * Math.sin(betaRad) * (R1 + R2) - R1 * R2);
-      const denominator = R1*R1 + R1*R2 + R2*R2;
-      const term = numerator / denominator;
-      
-      // Handle potential negative values
-      let H;
-      if (L0*L0 - term >= 0) {
-        H = L0 - Math.sqrt(L0*L0 - term);
-      } else {
-        H = (3 * R1 * R2 * (L0 * Math.sin(betaRad) * (R1 + R2) - R1 * R2)) / 
-            (2 * L0 * denominator);
-      }
-      
-      // Calculate effective length
-      const L_effective = Math.sqrt(D*D + H*H);
-      
-      // Compute null points by finding tracking error roots
-      const computeError = (r) => {
-        const t = (r*r + L_effective*L_effective - D*D) / (2 * r * L_effective);
-        if (t < -1 || t > 1) return NaN;
-        return Math.asin(t) - betaRad;
-      };
-      
-      // Root-finding algorithm
-      const roots = [];
-      const step = 0.1;
-      let prev = computeError(R1);
-      
-      for (let r = R1 + step; r <= R2; r += step) {
-        const current = computeError(r);
-        if (isNaN(current)) continue;
-        
-        if (!isNaN(prev) && Math.sign(prev) !== Math.sign(current)) {
-          // Linear interpolation for accuracy
-          const r0 = r - step;
-          const root = r0 - prev * step / (current - prev);
-          roots.push(root);
-        }
-        prev = current;
-      }
-      
-      // Sort found roots
-      roots.sort((a, b) => a - b);
+      // Calculate parameters based on fixed null points
+      const effectiveLength = Math.sqrt(D * D + innerNull * outerNull);
+      const overhang = effectiveLength - D;
+      const offsetAngleRad = Math.asin(
+        (innerNull * innerNull + effectiveLength * effectiveLength - D * D) / 
+        (2 * innerNull * effectiveLength)
+      );
+      const offsetAngle = offsetAngleRad * 180 / Math.PI;
       
       return {
-        effectiveLength: L_effective,
-        overhang: H,
-        offsetAngle: betaRad * 180 / Math.PI,
-        nulls: {
-          inner: roots[0] || 70.29,
-          outer: roots[1] || 116.60
-        },
+        effectiveLength,
+        overhang,
+        offsetAngle,
+        nulls: { inner: innerNull, outer: outerNull },
         geometryName: this.ALIGNMENT_GEOMETRIES.LofgrenB.name,
         geometryDescription: this.ALIGNMENT_GEOMETRIES.LofgrenB.description
       };
     },
     
-    // Lofgren C implementation (using Jovanovic method)
+    // Simplified Lofgren C implementation
     getLofgrenCAlignmentGeometry(D) {
-      // Solve for effective length (L) using numerical iteration
-      let L = Math.sqrt(D*D + 100); // Initial guess
-      const tolerance = 0.0001;
-      let diff = 10;
-      let iterations = 0;
+      // Fixed null points for Lofgren C (Jovanovic 2022)
+      const innerNull = 70.025;
+      const outerNull = 115.985;
       
-      while (Math.abs(diff) > tolerance && iterations < 100) {
-        // Eq (27): Compute linear offset (p)
-        const R_diff = R2 - R1;
-        const R_diff6 = Math.pow(R_diff, 6);
-        const L2 = L*L;
-        const L2_R1R2 = L2 + R1*R2;
-        const logR = Math.log(R2/R1);
-        
-        const numeratorPart = 2*(R1*R1 + R1*R2 + R2*R2)*logR - 3*(R2*R2 - R1*R1);
-        const innerRoot = R_diff6 * L2_R1R2*L2_R1R2 - 
-                          4*L2*R1*R1*R2*R2*numeratorPart*numeratorPart;
-        
-        let p;
-        if (innerRoot >= 0) {
-          p = ((L2_R1R2 * Math.pow(R_diff,3)) - Math.sqrt(innerRoot)) / 
-              (4*R1*R2*(R1*R1 + R1*R2 + R2*R2)*logR - 6*R1*R2*(R2*R2 - R1*R1));
-        } else {
-          p = (4 * R1 * R2 * (R1 + R2)) / (R1*R1 + 6*R1*R2 + R2*R2);
-        }
-        
-        // Eq (28): Compute a²
-        const a2 = (3 * R1 * R2 * (p * (R1 + R2) - R1*R2)) / (R1*R1 + R1*R2 + R2*R2);
-        
-        // Eq (30): Compute overhang (H)
-        const H = L - Math.sqrt(L*L - a2);
-        
-        // Update L using Pythagoras: D^2 = L^2 - H^2
-        const newL = Math.sqrt(D*D + H*H);
-        diff = newL - L;
-        L = newL;
-        iterations++;
-      }
-      
-      // Recompute parameters with final L
-      const R_diff = R2 - R1;
-      const R_diff6 = Math.pow(R_diff, 6);
-      const L2 = L*L;
-      const L2_R1R2 = L2 + R1*R2;
-      const logR = Math.log(R2/R1);
-      
-      const numeratorPart = 2*(R1*R1 + R1*R2 + R2*R2)*logR - 3*(R2*R2 - R1*R1);
-      const innerRoot = R_diff6 * L2_R1R2*L2_R1R2 - 
-                        4*L2*R1*R1*R2*R2*numeratorPart*numeratorPart;
-      
-      let p;
-      if (innerRoot >= 0) {
-        p = ((L2_R1R2 * Math.pow(R_diff,3)) - Math.sqrt(innerRoot)) / 
-            (4*R1*R2*(R1*R1 + R1*R2 + R2*R2)*logR - 6*R1*R2*(R2*R2 - R1*R1));
-      } else {
-        p = (4 * R1 * R2 * (R1 + R2)) / (R1*R1 + 6*R1*R2 + R2*R2);
-      }
-      
-      // Eq (28): a²
-      const a2 = (3 * R1 * R2 * (p * (R1 + R2) - R1*R2)) / (R1*R1 + R1*R2 + R2*R2);
-      
-      // Eq (29): Offset angle (β)
-      const betaRad = Math.asin(p / L);
-      const offsetAngle = betaRad * 180 / Math.PI;
-      
-      // Eq (30): Overhang (H)
-      const H = L - Math.sqrt(L*L - a2);
-      
-      // Eq (31): Null points
-      const innerNull = p - Math.sqrt(p*p - a2);
-      const outerNull = p + Math.sqrt(p*p - a2);
+      // Calculate parameters based on fixed null points
+      const effectiveLength = Math.sqrt(D * D + innerNull * outerNull);
+      const overhang = effectiveLength - D;
+      const offsetAngleRad = Math.asin(
+        (innerNull * innerNull + effectiveLength * effectiveLength - D * D) / 
+        (2 * innerNull * effectiveLength)
+      );
+      const offsetAngle = offsetAngleRad * 180 / Math.PI;
       
       return {
-        effectiveLength: L,
-        overhang: H,
+        effectiveLength,
+        overhang,
         offsetAngle,
         nulls: { inner: innerNull, outer: outerNull },
         geometryName: this.ALIGNMENT_GEOMETRIES.LofgrenC.name,
