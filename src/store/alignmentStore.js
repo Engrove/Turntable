@@ -1,4 +1,3 @@
-// src/store/alignmentStore.js
 import { defineStore } from 'pinia';
 
 // --- Auktoritativ Data ---
@@ -16,10 +15,10 @@ const NULL_POINTS = {
 };
 
 const ALIGNMENT_GEOMETRIES = {
-  LofgrenA: { name: 'Löfgren A / Baerwald', description: 'Balanserar distorsionen jämnt över skivan för lägst genomsnittlig RMS-distorsion. En utmärkt allround-justering.' },
-  LofgrenB: { name: 'Löfgren B', description: 'Minimerar den totala RMS-distorsionen, vilket ger lägst distorsion i mitten av skivan på bekostnad av något högre i början och slutet.' },
-  LofgrenC: { name: 'Löfgren C (Jovanovic)', description: 'En LMS-optimering (Least Mean Squares) baserad på den senaste forskningen. Ger en alternativ balans av distorsion.' },
-  StevensonA: { name: 'Stevenson A', description: 'Prioriterar lägsta möjliga distorsion vid det kritiska inre spåret, vilket är idealiskt för klassisk musik och långa skivsidor.' }
+  LofgrenA: { name: 'Löfgren A / Baerwald', description: 'Balanserar distorsionen jämnt över skivan för lägst genomsnittlig RMS-distorsion.' },
+  LofgrenB: { name: 'Löfgren B', description: 'Minimerar den totala RMS-distorsionen.' },
+  LofgrenC: { name: 'Löfgren C (Jovanovic)', description: 'En LMS-optimering baserad på den senaste forskningen.' },
+  StevensonA: { name: 'Stevenson A', description: 'Prioriterar lägsta möjliga distorsion vid det kritiska inre spåret.' }
 };
 
 export const useAlignmentStore = defineStore('alignment', {
@@ -40,34 +39,28 @@ export const useAlignmentStore = defineStore('alignment', {
       error: null
     },
     trackingErrorChartData: {
-      datasets:
+      datasets: [] // FIX: Initialize as empty array
     }
   }),
 
   getters: {
     currentStandard: (state) => {
-      return STANDARDS[state.userInput.standard] |
-
-| STANDARDS.IEC;
+      // FIX: Proper value return
+      return STANDARDS[state.userInput.standard] || STANDARDS.IEC;
     },
     currentGeometryInfo: (state) => {
-      return ALIGNMENT_GEOMETRIES |
-
-| {};
+      // FIX: Proper value return
+      return ALIGNMENT_GEOMETRIES[state.userInput.alignmentType] || {};
     },
-    availableStandards: () => {
-      return Object.keys(STANDARDS).map(key => ({
-        value: key,
-        label: STANDARDS[key].name
-      }));
-    },
-    availableGeometries: () => {
-      return Object.keys(ALIGNMENT_GEOMETRIES).map(key => ({
-        value: key,
-        name: ALIGNMENT_GEOMETRIES[key].name,
-        description: ALIGNMENT_GEOMETRIES[key].description
-      }));
-    }
+    availableStandards: () => Object.keys(STANDARDS).map(key => ({
+      value: key,
+      label: STANDARDS[key].name
+    })),
+    availableGeometries: () => Object.keys(ALIGNMENT_GEOMETRIES).map(key => ({
+      value: key,
+      name: ALIGNMENT_GEOMETRIES[key].name,
+      description: ALIGNMENT_GEOMETRIES[key].description
+    }))
   },
 
   actions: {
@@ -76,12 +69,10 @@ export const useAlignmentStore = defineStore('alignment', {
     },
 
     updateUserInput(key, value) {
-      if (this.userInput.hasOwnProperty(key)) {
+      if (key in this.userInput) {
         if (key === 'pivotToSpindle') {
           const numValue = parseFloat(value);
-          if (!isNaN(numValue)) {
-            this.userInput[key] = numValue;
-          }
+          if (!isNaN(numValue)) this.userInput[key] = numValue;
         } else {
           this.userInput[key] = value;
         }
@@ -91,13 +82,12 @@ export const useAlignmentStore = defineStore('alignment', {
 
     calculateAlignment() {
       this.calculatedValues.error = null;
-
       const D = this.userInput.pivotToSpindle;
-      if (!D |
 
-| D <= 0) {
+      // FIX: Added proper error handling
+      if (!D || D <= 0) {
         this.calculatedValues.error = 'Monteringsavstånd (D) måste vara ett positivt tal.';
-        this.trackingErrorChartData = { datasets: };
+        this.trackingErrorChartData = { datasets: [] };
         return;
       }
 
@@ -109,30 +99,29 @@ export const useAlignmentStore = defineStore('alignment', {
       if (alignmentType === 'StevensonA') {
         res = this.calculateStevensonA(D, R1);
       } else {
-        const nulls = NULL_POINTS?.[standardKey];
+        // FIX: Proper null points lookup
+        const nulls = NULL_POINTS[alignmentType]?.[standardKey];
         if (!nulls) {
           this.calculatedValues.error = `Nollpunkter för ${alignmentType}/${standardKey} ej definierade.`;
-          this.trackingErrorChartData = { datasets: };
+          this.trackingErrorChartData = { datasets: [] };
           return;
         }
         res = this.calculateFromNulls(D, nulls);
       }
 
-      if (isNaN(res.effectiveLength) |
-
-| isNaN(res.offsetAngle) |
-| res.effectiveLength < D) {
-        this.calculatedValues.error = 'Ogiltig geometri. Kontrollera att monteringsavståndet är tillräckligt långt.';
-        this.calculatedValues = {...this.calculatedValues,...res, effectiveLength: 0, overhang: 0, offsetAngle: 0 };
-        this.trackingErrorChartData = { datasets: };
+      // FIX: Logical OR (||) instead of bitwise (|)
+      if (isNaN(res.effectiveLength) || isNaN(res.offsetAngle) || res.effectiveLength < D) {
+        this.calculatedValues.error = 'Ogiltig geometri. Kontrollera monteringsavståndet.';
+        this.calculatedValues = {...this.calculatedValues, ...res, effectiveLength: 0, overhang: 0, offsetAngle: 0 };
+        this.trackingErrorChartData = { datasets: [] };
         return;
       }
       
       this.calculatedValues = {
-      ...this.calculatedValues,
-      ...res,
-        geometryName: this.currentGeometryInfo.name,
-        geometryDescription: this.currentGeometryInfo.description,
+        ...this.calculatedValues,
+        ...res,
+        geometryName: this.currentGeometryInfo.name || '',
+        geometryDescription: this.currentGeometryInfo.description || ''
       };
 
       this.updateTrackingErrorChartData();
@@ -171,7 +160,7 @@ export const useAlignmentStore = defineStore('alignment', {
 
     updateTrackingErrorChartData() {
       if (this.calculatedValues.error) {
-        this.trackingErrorChartData = { datasets: };
+        this.trackingErrorChartData = { datasets: [] };
         return;
       }
 
@@ -179,7 +168,8 @@ export const useAlignmentStore = defineStore('alignment', {
       const L = this.calculatedValues.effectiveLength;
       const offsetRad = this.calculatedValues.offsetAngle * (Math.PI / 180);
       
-      const data =;
+      // FIX: Initialize data array
+      const data = [];
       const { inner: minR, outer: maxR } = this.currentStandard;
       
       const start = Math.floor(minR - 5);
@@ -197,8 +187,16 @@ export const useAlignmentStore = defineStore('alignment', {
         data.push({ x: r, y: trackingError });
       }
 
+      // FIX: Proper dataset assignment
       this.trackingErrorChartData = {
-        datasets:
+        datasets: [{
+          label: 'Tracking Error',
+          data: data,
+          borderColor: '#4CAF50',
+          backgroundColor: 'rgba(76, 175, 80, 0.1)',
+          pointRadius: 0,
+          borderWidth: 2
+        }]
       };
     }
   }
