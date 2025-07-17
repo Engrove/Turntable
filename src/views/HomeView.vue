@@ -37,10 +37,9 @@ useHead({
           </p>
           <p>
             Hi! I am a hi fi enthusiast who loves vinyl and technology. This toolkit transforms complex audio theory into a dynamic visual and intuitive environment and also tests how AI and other cutting edge technologies can help develop and verify ideas code and functionality.
-
             I have a personal goal to deepen my knowledge of acoustics and audio theory and to create tools that let fellow enthusiasts explore trade offs in audio design in real time. Along the way I hope to show how modern technology can speed up learning and spark new innovations in audio engineering.          </p>
           <p class="note">
-            This is a live project. Features are added and updated sporadically. If something isn't working, it might be under construction! Check out the <a :href="githubUrl" target="_blank" rel="noopener noreferrer">GitHub repository</a> for the latest updates.
+            This is a live project. Features are added and updated sporadically. If something isn't working, it might be under construction!
           </p>
         </div>
       </div>
