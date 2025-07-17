@@ -1,283 +1,160 @@
 // src/store/alignmentStore.js
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { useTonearmStore } from '@/store/tonearmStore.js';
 
-export const useAlignmentStore = defineStore('alignment', () => {
-  // --- Constants ---
-  const R1 = 60.325; // Inner groove radius (mm) - IEC standard
-  const R2 = 146.05; // Outer groove radius (mm) - IEC standard
+// Standard inner/outer groove radii (IEC)
+const R1 = 60.325;
+const R2 = 146.05;
 
-  // --- State ---
-  const isLoading = ref(true);
-  const error = ref(null);
-  const availableTonearms = ref([]);
-  const selectedTonearmId = ref(null);
-  
-  const userInput = ref({
-    pivotToSpindle: 230, // Default value
-    alignmentType: 'LofgrenA'
-  });
+export const useAlignmentStore = defineStore('alignment', {
+  state: () => ({
+    availableTonearms: [],
+    isLoading: true,
+    error: null,
+    selectedTonearmId: null,
 
-  // --- Geometry Definitions ---
-  const geometries = {
-    LofgrenA: {
-      name: 'Löfgren A / Baerwald',
-      description: 'Minimizes maximum distortion (minimax optimization)',
-      method: 'minimax'
+    userInput: {
+      pivotToSpindle: 222.0,
+      alignmentType: 'LofgrenA',
     },
-    LofgrenB: {
-      name: 'Löfgren B',
-      description: 'Fixed offset angle with optimized overhang',
-      method: 'fixedOffset'
+
+    calculatedValues: {
+      overhang: 0,
+      offsetAngle: 0,
+      effectiveLength: 0,
+      nulls: { inner: 0, outer: 0 },
+      geometryName: '',
+      geometryDescription: '',
+      trackingMethod: 'pivoting',
+      error: null,
     },
-    LofgrenC: {
-      name: 'Löfgren C',
-      description: 'Least Mean Squares (LMS) optimization',
-      method: 'lms'
+
+    trackingErrorChartData: {
+      datasets: []
     },
-    StevensonA: {
-      name: 'Stevenson A',
-      description: 'Prioritizes inner groove distortion',
-      method: 'stevenson'
-    }
-  };
 
-  // --- Core Calculation Functions ---
-  function calculateLofgrenA(D) {
-    console.log('[LofgrenA] Calculating with pivot distance:', D);
-    
-    const term1 = R1*R1 + 6*R1*R2 + R2*R2;
-    const L = Math.sqrt(D*D + (8*R1*R1*R2*R2)/term1);
-    const H = L - D;
-    const betaRad = Math.asin((4*R1*R2*(R1 + R2))/(L*term1));
-    const betaDeg = betaRad * 180/Math.PI;
+    ALIGNMENT_GEOMETRIES: {
+      LofgrenA: { name: 'Löfgren A / Baerwald', description: 'Balances distortion between inner and outer grooves, resulting in the lowest average RMS distortion.' },
+      LofgrenB: { name: 'Löfgren B', description: 'Minimizes overall RMS distortion across the record with fixed offset angle.' },
+      StevensonA: { name: 'Stevenson A', description: 'Prioritizes lowest distortion at inner groove with two null points.' },
+    },
+  }),
 
-    // Null points (Baerwald formula)
-    const innerNull = (2*R1*R2*(1-1/Math.sqrt(2)))/(R2 + (1+1/Math.sqrt(2))*R1);
-    const outerNull = (2*R1*R2*(1+1/Math.sqrt(2)))/(R2 + (1-1/Math.sqrt(2))*R1);
-
-    console.log('[LofgrenA] Results:', { L, H, betaDeg, innerNull, outerNull });
-    
-    return {
-      effectiveLength: parseFloat(L.toFixed(3)),
-      overhang: parseFloat(H.toFixed(3)),
-      offsetAngle: parseFloat(betaDeg.toFixed(3)),
-      nullPoints: { inner: parseFloat(innerNull.toFixed(2)), outer: parseFloat(outerNull.toFixed(2)) }
-    };
-  }
-
-  function calculateLofgrenC(D) {
-    console.log('[LofgrenC] Calculating with pivot distance:', D);
-    
-    // Exact LMS solution per Jovanović 2022
-    const term1 = R2 - R1;
-    const term2 = Math.log(R2/R1);
-    const term3 = R1*R2;
-    const term4 = R1*R1 + R1*R2 + R2*R2;
-    
-    const numerator = (D*D + term3) * Math.pow(term1, 3);
-    const sqrtTerm = Math.pow(term1, 6) * Math.pow(D*D + term3, 2) - 
-                    4*D*D*R1*R1*R2*R2 * Math.pow(2*term4*term2 - 3*(R2*R2 - R1*R1), 2);
-    
-    const p = (numerator - Math.sqrt(sqrtTerm)) / 
-              (4*term3*(2*term4*term2 - 3*(R2*R2 - R1*R1)));
-    
-    const a2 = (3*term3*(p*(R1 + R2) - term3))/term4;
-    const betaRad = Math.asin(p/D);
-    const betaDeg = betaRad * 180/Math.PI;
-    const L = D;
-    const H = L - Math.sqrt(L*L - a2);
-
-    // Null points
-    const null1 = p + Math.sqrt(p*p - a2);
-    const null2 = p - Math.sqrt(p*p - a2);
-
-    console.log('[LofgrenC] Intermediate terms:', { term1, term2, term3, term4 });
-    console.log('[LofgrenC] Results:', { L, H, betaDeg, null1, null2 });
-    
-    return {
-      effectiveLength: parseFloat(L.toFixed(3)),
-      overhang: parseFloat(H.toFixed(3)),
-      offsetAngle: parseFloat(betaDeg.toFixed(3)),
-      nullPoints: { 
-        inner: parseFloat(Math.min(null1, null2).toFixed(2)),
-        outer: parseFloat(Math.max(null1, null2).toFixed(2)) 
+  actions: {
+    async initialize() {
+      const tonearmStore = useTonearmStore();
+      if (!tonearmStore.availableTonearms.length) {
+        await tonearmStore.initialize();
       }
-    };
-  }
+      this.availableTonearms = tonearmStore.availableTonearms;
+      this.isLoading = false;
+      this.calculateAlignment();
+    },
 
-  function calculateTrackingErrors(L, betaDeg, D) {
-    console.log('[TrackingErrors] Calculating for L:', L, 'beta:', betaDeg, 'D:', D);
-    
-    const betaRad = betaDeg * (Math.PI/180);
-    const errors = [];
-
-    for (let r = Math.floor(R1); r <= Math.ceil(R2); r += 1) {
-      const acosInput = (r*r + L*L - D*D)/(2*r*L);
-      
-      // Clamp to valid range for acos
-      const clampedInput = Math.max(-1, Math.min(1, acosInput));
-      const phi = Math.acos(clampedInput);
-      
-      const alpha = Math.asin(r/L);
-      const errorRad = alpha - phi - betaRad;
-      const errorDeg = errorRad * (180/Math.PI);
-
-      errors.push({
-        radius: r,
-        error: parseFloat(errorDeg.toFixed(3))
-      });
-    }
-
-    console.log('[TrackingErrors] Generated', errors.length, 'data points');
-    return errors;
-  }
-
-  // --- Main Computed Property ---
-  const results = computed(() => {
-    const { pivotToSpindle: D, alignmentType } = userInput.value;
-    const geometry = geometries[alignmentType];
-    
-    console.group('Alignment Calculation');
-    console.log('Input:', { D, alignmentType });
-
-    // Validate input
-    if (!D || D <= 0) {
-      console.error('Invalid pivot distance:', D);
-      return {
-        error: 'Pivot-to-spindle distance must be positive',
-        geometry: geometry.name,
-        effectiveLength: 0,
-        overhang: 0,
-        offsetAngle: 0,
-        errors: []
-      };
-    }
-
-    if (D <= R2) {
-      console.error('Pivot distance too small:', D, '<=', R2);
-      return {
-        error: `Pivot distance must exceed outer groove radius (${R2} mm)`,
-        geometry: geometry.name,
-        effectiveLength: 0,
-        overhang: 0,
-        offsetAngle: 0,
-        errors: []
-      };
-    }
-
-    // Handle tangential arms
-    if (selectedTonearmId.value) {
-      const arm = availableTonearms.value.find(t => t.id === selectedTonearmId.value);
-      if (arm?.tracking_method === 'tangential') {
-        console.log('Tangential arm detected, returning zero error');
-        return {
-          geometry: 'Tangential',
-          effectiveLength: arm.effective_length_mm,
-          overhang: 0,
-          offsetAngle: 0,
-          errors: [],
-          error: null
-        };
+    loadTonearmPreset(id) {
+      this.selectedTonearmId = id;
+      if (id == null) {
+        this.calculatedValues.trackingMethod = 'pivoting';
+      } else {
+        const t = this.availableTonearms.find(x => x.id == id);
+        if (t) {
+          this.userInput.pivotToSpindle = t.pivot_to_spindle_mm || this.userInput.pivotToSpindle;
+          this.calculatedValues.trackingMethod = t.tracking_method || 'pivoting';
+        }
       }
-    }
+      this.calculateAlignment();
+    },
 
-    // Calculate based on alignment type
-    let calculation;
-    try {
-      switch(geometry.method) {
-        case 'minimax':
-          calculation = calculateLofgrenA(D);
-          break;
-        case 'lms':
-          calculation = calculateLofgrenC(D);
-          break;
-        default:
-          throw new Error(`Unsupported alignment method: ${geometry.method}`);
+    setAlignment(type) {
+      this.userInput.alignmentType = type;
+      this.calculateAlignment();
+    },
+
+    // Lofgren A / Baerwald exact per Jovanović JAES 2022
+    getLofgrenAAlignmentGeometry(D) {
+      const L = Math.sqrt(D * D + (8 * R1 * R1 * R2 * R2) / (R1*R1 + 6*R1*R2 + R2*R2));
+      const overhang = L - D;
+      const betaRad = Math.asin((4 * R1 * R2 * (R1 + R2)) / (L * (R1*R1 + 6*R1*R2 + R2*R2)));
+      const offsetAngle = betaRad * 180 / Math.PI;
+
+      const invSqrt2 = 1/Math.sqrt(2);
+      const inner = (2 * R1 * R2 * (1 - invSqrt2)) / (R2 + (1 + invSqrt2) * R1);
+      const outer = (2 * R1 * R2 * (1 + invSqrt2)) / (R2 + (1 - invSqrt2) * R1);
+
+      return { effectiveLength: L, overhang, offsetAngle, nulls: { inner, outer }, geometryName: this.ALIGNMENT_GEOMETRIES.LofgrenA.name, geometryDescription: this.ALIGNMENT_GEOMETRIES.LofgrenA.description };
+    },
+
+    // Lofgren B approximate per Jovanović (fixed offset = βA)
+    getLofgrenBAlignmentGeometry(D) {
+      // compute βA
+      const L0 = Math.sqrt(D * D + (8 * R1*R1 * R2*R2) / (R1*R1 + 6*R1*R2 + R2*R2));
+      const betaRad = Math.asin((4 * R1 * R2 * (R1 + R2)) / (L0 * (R1*R1 + 6*R1*R2 + R2*R2)));
+      const beta = betaRad;
+      // approximate H_B per eq (23)
+      const a2 = 2 * L0 * (L0 - D) - (L0 - D)**2; // unused here
+      const num = 3 * R1 * R2 * (L0 * Math.sin(beta) * (R1 + R2) - R1 * R2);
+      const den = 2 * L0 * (R1*R1 + R1*R2 + R2*R2);
+      const H = num / den;
+      const L = D + H;
+      return { effectiveLength: L, overhang: H, offsetAngle: beta * 180 / Math.PI, nulls: { inner: null, outer: null }, geometryName: this.ALIGNMENT_GEOMETRIES.LofgrenB.name, geometryDescription: this.ALIGNMENT_GEOMETRIES.LofgrenB.description };
+    },
+
+    // Stevenson A with inner/outer null at 129.5/136.9 mm
+    getStevensonAAlignmentGeometry(D) {
+      const inner = 129.5;
+      const outer = 136.9;
+      // Stevenson effective length per average null radius
+      const avgNull = 0.5 * (inner + outer);
+      const L = Math.sqrt(D * D + avgNull * avgNull);
+      const overhang = L - D;
+      const beta = Math.asin((outer - inner) / (2 * L));
+      return { effectiveLength: L, overhang, offsetAngle: beta * 180 / Math.PI, nulls: { inner, outer }, geometryName: this.ALIGNMENT_GEOMETRIES.StevensonA.name, geometryDescription: this.ALIGNMENT_GEOMETRIES.StevensonA.description };
+    },
+
+    calculateAlignment() {
+      const D = this.userInput.pivotToSpindle;
+      if (!D || D <= 0) {
+        this.calculatedValues.error = 'Pivot-to-Spindle must be > 0.';
+        this.trackingErrorChartData.datasets = [];
+        return;
+      }
+      this.calculatedValues.error = null;
+
+      let res;
+      const type = this.userInput.alignmentType;
+      if (this.calculatedValues.trackingMethod !== 'pivoting') {
+        res = { effectiveLength: D, overhang: 0, offsetAngle: 0, nulls: { inner: null, outer: null }, geometryName: 'Tangential', geometryDescription: 'Zero error.' };
+      } else if (type === 'LofgrenA') {
+        res = this.getLofgrenAAlignmentGeometry(D);
+      } else if (type === 'LofgrenB') {
+        res = this.getLofgrenBAlignmentGeometry(D);
+      } else if (type === 'StevensonA') {
+        res = this.getStevensonAAlignmentGeometry(D);
+      } else {
+        this.calculatedValues.error = `Unknown alignment type: ${type}`;
+        return;
       }
 
-      const errors = calculateTrackingErrors(
-        calculation.effectiveLength,
-        calculation.offsetAngle,
-        D
-      );
+      this.calculatedValues = { ...this.calculatedValues, ...res };
+      this.updateTrackingErrorChartData();
+    },
 
-      console.log('Calculation successful:', calculation);
-      console.groupEnd();
-      
-      return {
-        geometry: geometry.name,
-        ...calculation,
-        errors,
-        error: null
-      };
-    } catch (err) {
-      console.error('Calculation failed:', err);
-      console.groupEnd();
-      return {
-        error: err.message,
-        geometry: geometry.name,
-        effectiveLength: 0,
-        overhang: 0,
-        offsetAngle: 0,
-        errors: []
-      };
-    }
-  });
-
-  // --- Actions ---
-  async function initialize() {
-    try {
-      isLoading.value = true;
-      error.value = null;
-      
-      // In a real app, you would fetch this from your API
-      const response = await fetch('/data/tonearm_data.json');
-      if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-      
-      availableTonearms.value = await response.json();
-      console.log('Loaded tonearms:', availableTonearms.value.length);
-    } catch (err) {
-      error.value = err.message;
-      console.error('Initialization failed:', err);
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  function loadTonearmPreset(id) {
-    selectedTonearmId.value = id;
-    if (id && availableTonearms.value.length) {
-      const arm = availableTonearms.value.find(x => x.id === id);
-      if (arm) {
-        userInput.value.pivotToSpindle = arm.pivot_to_spindle_mm || userInput.value.pivotToSpindle;
+    updateTrackingErrorChartData() {
+      if (this.calculatedValues.error) {
+        this.trackingErrorChartData = { datasets: [] };
+        return;
       }
+      const D = this.userInput.pivotToSpindle;
+      const L = this.calculatedValues.effectiveLength;
+      const offsetRad = this.calculatedValues.offsetAngle * Math.PI / 180;
+      const data = [];
+      for (let i = 0; i <= 174; i++) {
+        const r = 60 + i * 0.5;
+        const t = (r*r + L*L - D*D) / (2*r*L);
+        const y = (t >= -1 && t <= 1) ? (Math.asin(t) - offsetRad)*180/Math.PI : NaN;
+        data.push({ x: r, y });
+      }
+      this.trackingErrorChartData = { datasets: [{ label: this.calculatedValues.geometryName, data, borderColor: '#3498db', borderWidth: 4, pointRadius: 0, tension: 0.1 }] };
     }
   }
-
-  function setAlignmentType(type) {
-    if (geometries[type]) {
-      userInput.value.alignmentType = type;
-    } else {
-      console.warn('Attempted to set invalid alignment type:', type);
-    }
-  }
-
-  return {
-    // State
-    isLoading,
-    error,
-    availableTonearms,
-    selectedTonearmId,
-    userInput,
-    geometries,
-    
-    // Computed
-    results,
-    
-    // Actions
-    initialize,
-    loadTonearmPreset,
-    setAlignmentType
-  };
 });
