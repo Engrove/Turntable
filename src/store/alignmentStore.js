@@ -15,6 +15,7 @@ const NULL_POINTS = {
   LofgrenA: { IEC: [66.00, 120.90], DIN: [63.24, 122.25], JIS: [63.34, 122.18] },
   LofgrenB: { IEC: [70.29, 116.60], DIN: [67.54, 118.57], JIS: [67.64, 118.51] },
   LofgrenC: { IEC: [70.025, 115.985], DIN: [67.28, 117.96], JIS: [67.38, 117.90] }
+  // StevensonA hanteras separat och använder inte denna struktur.
 };
 
 const ALIGNMENT_GEOMETRIES = {
@@ -38,13 +39,12 @@ export const useAlignmentStore = defineStore('alignment', {
       nulls: { inner: 0, outer: 0 },
       geometryName: '',
       geometryDescription: '',
-      trackingMethod: 'pivoting', // Kan utökas för t.ex. 'tangential'
+      trackingMethod: 'pivoting',
       error: null
     },
     trackingErrorChartData: {
       datasets:
     },
-    // Exponera konstanter till komponenter om det behövs
     constants: {
       STANDARDS,
       ALIGNMENT_GEOMETRIES
@@ -52,17 +52,11 @@ export const useAlignmentStore = defineStore('alignment', {
   }),
 
   getters: {
-    /**
-     * Returnerar det fullständiga objektet för den valda standarden.
-     */
     currentStandard: (state) => {
       return STANDARDS[state.userInput.standard] |
 
 | STANDARDS.IEC;
     },
-    /**
-     * Returnerar det fullständiga objektet för den valda geometrin.
-     */
     currentGeometryInfo: (state) => {
       return ALIGNMENT_GEOMETRIES |
 
@@ -71,21 +65,12 @@ export const useAlignmentStore = defineStore('alignment', {
   },
 
   actions: {
-    /**
-     * Initierar storen och kör den första beräkningen.
-     */
     initialize() {
       this.calculateAlignment();
     },
 
-    /**
-     * Uppdaterar en användarparameter och kör en ny beräkning.
-     * @param {string} key - Nyckeln i userInput som ska uppdateras.
-     * @param {any} value - Det nya värdet.
-     */
     updateUserInput(key, value) {
       if (this.userInput.hasOwnProperty(key)) {
-        // Konvertera numeriska värden från strängar om nödvändigt
         if (key === 'pivotToSpindle') {
           const numValue = parseFloat(value);
           if (!isNaN(numValue)) {
@@ -98,11 +83,8 @@ export const useAlignmentStore = defineStore('alignment', {
       }
     },
 
-    /**
-     * Huvudfunktionen som orkestrerar alla beräkningar.
-     */
     calculateAlignment() {
-      this.calculatedValues.error = null; // Återställ felmeddelande
+      this.calculatedValues.error = null;
 
       const D = this.userInput.pivotToSpindle;
       if (!D |
@@ -130,7 +112,6 @@ export const useAlignmentStore = defineStore('alignment', {
         res = this.calculateFromNulls(D, nulls);
       }
 
-      // Kontrollera för geometriskt omöjliga resultat
       if (isNaN(res.effectiveLength) |
 
 | isNaN(res.offsetAngle) |
@@ -142,8 +123,8 @@ export const useAlignmentStore = defineStore('alignment', {
       }
       
       this.calculatedValues = {
-       ...this.calculatedValues,
-       ...res,
+      ...this.calculatedValues,
+      ...res,
         geometryName: this.currentGeometryInfo.name,
         geometryDescription: this.currentGeometryInfo.description,
       };
@@ -151,12 +132,6 @@ export const useAlignmentStore = defineStore('alignment', {
       this.updateTrackingErrorChartData();
     },
 
-    /**
-     * Beräknar tonarmsparametrar från givna nollpunkter.
-     * Används för Löfgren A, B, och C.
-     * @param {number} D - Monteringsavstånd (pivot-to-spindle).
-     * @param {number} nulls - En array med två nollpunkter [N1, N2].
-     */
     calculateFromNulls(D, [N1, N2]) {
       const L = Math.sqrt(D * D + N1 * N2);
       const overhang = L - D;
@@ -171,20 +146,10 @@ export const useAlignmentStore = defineStore('alignment', {
       };
     },
 
-    /**
-     * Beräknar tonarmsparametrar för Stevenson A.
-     * Denna metod är unik då den härleds från R1 och D, inte från två fasta nollpunkter.
-     * @param {number} D - Monteringsavstånd (pivot-to-spindle).
-     * @param {number} R1 - Inre spårradie från vald standard.
-     */
     calculateStevensonA(D, R1) {
-      // För Stevenson A är den inre nollpunkten per definition R1.
-      // Den yttre nollpunkten är fastställd till 117.42 mm.
       const N1 = R1;
       const N2 = 117.42;
 
-      // Beräkningarna följer samma logik som för de andra metoderna
-      // när nollpunkterna väl är fastställda.
       const L = Math.sqrt(D * D + N1 * N2);
       const overhang = L - D;
       const offsetAngleRad = Math.asin((N1 + N2) / (2 * L));
@@ -198,9 +163,6 @@ export const useAlignmentStore = defineStore('alignment', {
       };
     },
 
-    /**
-     * Uppdaterar datan för spårföljningsfeldiagrammet.
-     */
     updateTrackingErrorChartData() {
       if (this.calculatedValues.error) {
         this.trackingErrorChartData = { datasets: };
@@ -223,7 +185,7 @@ export const useAlignmentStore = defineStore('alignment', {
         
         let trackingError = NaN;
         if (term >= -1 && term <= 1) {
-          const phi = Math.asin(term); // Vinkeln för tonarmen relativt linjen mellan spindel och pivot
+          const phi = Math.asin(term);
           trackingError = (phi - offsetRad) * (180 / Math.PI);
         }
         data.push({ x: r, y: trackingError });
