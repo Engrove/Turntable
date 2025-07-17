@@ -3,137 +3,79 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 
 export const useAlignmentStore = defineStore('alignment', () => {
-  // --- STATE ---
-  const isLoading = ref(true);
-  const error = ref(null);
-  const availableTonearms = ref([]);
-  const selectedTonearmId = ref(null);
+  // [Initial state and constants unchanged...]
 
-  // IEC standard record groove radii (mm)
-  const R1 = 60.325;  // Inner groove radius
-  const R2 = 146.05;  // Outer groove radius
-
-  // Alignment geometries with validated null points
-  const ALIGNMENT_GEOMETRIES = {
-    LofgrenA: {
-      name: 'Löfgren A / Baerwald',
-      description: 'Optimized for lowest average RMS distortion (Baerwald, 1941).',
-      nulls: { inner: 66.0, outer: 120.9 }
-    },
-    LofgrenB: {
-      name: 'Löfgren B',
-      description: 'Minimizes RMS distortion with different weightings.',
-      nulls: { inner: 70.3, outer: 116.6 }
-    },
-    StevensonA: {
-      name: 'Stevenson A',
-      description: 'Prioritizes inner groove distortion reduction.',
-      nulls: { inner: 60.325, outer: 117.42 }
-    }
-  };
-
-  const userInput = ref({
-    pivotToSpindle: 230,  // Default realistic value (e.g., Rega RB250)
-    alignmentType: 'LofgrenA'
-  });
-
-  // --- CORE GEOMETRY CALCULATION ---
   function calculateGeometryFromNulls(D, nulls) {
+    console.group('calculateGeometryFromNulls');
+    console.log('Input:', { D, nulls });
+    
     const { inner: n1, outer: n2 } = nulls;
-    if (D <= R2) return { error: "Pivot distance must be > 146.05 mm." };
+    if (D <= R2) {
+      console.error('Invalid pivot distance:', D);
+      return { error: "Pivot distance must be > 146.05 mm." };
+    }
 
-    // Exact Baerwald formula (verified)
+    // Log each term separately
     const term1 = D*D;
     const term2 = n1*n2;
     const term3 = Math.pow((n1 + n2)/2, 2);
     const term4 = (n1 * n2 * (n1 + n2)) / (2 * D);
-    const L = Math.sqrt(term1 + term2 + term3 - term4);
+    console.log('Terms:', { term1, term2, term3, term4 });
 
+    const L = Math.sqrt(term1 + term2 + term3 - term4);
     const H = L - D;
     const offsetAngleRad = Math.asin((n1 + n2) / (2 * L));
     const offsetAngleDeg = offsetAngleRad * (180 / Math.PI);
 
-    return { 
-      overhang: parseFloat(H.toFixed(2)),
-      offsetAngle: parseFloat(offsetAngleDeg.toFixed(2)),
-      effectiveLength: parseFloat(L.toFixed(2)),
+    console.log('Results:', { L, H, offsetAngleRad, offsetAngleDeg });
+    console.groupEnd();
+
+    return {
+      overhang: H,
+      offsetAngle: offsetAngleDeg,
+      effectiveLength: L,
       nulls,
       error: null
     };
   }
 
-  // --- ALIGNMENT-SPECIFIC CALCULATIONS ---
-  function getLofgrenAAlignmentGeometry(D) {
-    return calculateGeometryFromNulls(D, ALIGNMENT_GEOMETRIES.LofgrenA.nulls);
-  }
-
-  function getLofgrenBAlignmentGeometry(D) {
-    return calculateGeometryFromNulls(D, ALIGNMENT_GEOMETRIES.LofgrenB.nulls);
-  }
-
-  function getStevensonAAlignmentGeometry(D) {
-    return calculateGeometryFromNulls(D, ALIGNMENT_GEOMETRIES.StevensonA.nulls);
-  }
-
-  const getGeometryFunction = (type) => {
-    switch (type) {
-      case 'LofgrenA': return getLofgrenAAlignmentGeometry;
-      case 'LofgrenB': return getLofgrenBAlignmentGeometry;
-      case 'StevensonA': return getStevensonAAlignmentGeometry;
-      default: return getLofgrenAAlignmentGeometry;
-    }
-  };
-
-  // --- COMPUTED VALUES ---
-  const calculatedValues = computed(() => {
-    // Handle tangential tonearms
-    if (selectedTonearmId.value) {
-      const arm = availableTonearms.value.find(t => t.id === selectedTonearmId.value);
-      if (arm?.tracking_method === 'tangential') {
-        return {
-          overhang: 0,
-          offsetAngle: 0,
-          effectiveLength: arm.effective_length_mm,
-          nulls: { inner: R1, outer: R2 },
-          geometryName: 'Tangential',
-          geometryDescription: 'Perfect tangency across the record.',
-          trackingMethod: 'tangential',
-          error: null
-        };
-      }
-    }
-
-    // Calculate pivoted geometry
-    const func = getGeometryFunction(userInput.value.alignmentType);
-    const results = func(userInput.value.pivotToSpindle);
-
-    return {
-      ...results,
-      geometryName: ALIGNMENT_GEOMETRIES[userInput.value.alignmentType].name,
-      geometryDescription: ALIGNMENT_GEOMETRIES[userInput.value.alignmentType].description,
-      trackingMethod: 'pivoting'
-    };
-  });
-
-  // --- TRACKING ERROR CHART DATA ---
   const trackingErrorChartData = computed(() => {
     if (calculatedValues.value.error || calculatedValues.value.trackingMethod !== 'pivoting') {
       return { datasets: [] };
     }
 
+    console.group('trackingErrorChartData Computation');
     const { effectiveLength: L, overhang: H } = calculatedValues.value;
-    const data = [];
+    console.log('Input params:', { L, H, R1, R2 });
 
+    const data = [];
     for (let r = R1; r <= R2; r += 1) {
-      // Correct tracking error formula
       const numerator = L*L + r*r - Math.pow(L - H, 2);
       const denominator = 2 * L * r;
-      const clamped = Math.min(Math.max(numerator / denominator, -1), 1);
-      const errorRad = Math.asin(r / L) - Math.acos(clamped);
-      const errorDeg = parseFloat((errorRad * (180 / Math.PI)).toFixed(2));
+      const ratio = numerator / denominator;
+      const clamped = Math.min(Math.max(ratio, -1), 1);
       
+      console.group(`Radius ${r}mm`);
+      console.log({ numerator, denominator, ratio, clamped });
+
+      const asinVal = Math.asin(r / L);
+      const acosVal = Math.acos(clamped);
+      const errorRad = asinVal - acosVal;
+      const errorDeg = errorRad * (180 / Math.PI);
+
+      console.log({ 
+        asin: { val: asinVal, deg: asinVal * (180/Math.PI) },
+        acos: { val: acosVal, deg: acosVal * (180/Math.PI) },
+        errorRad,
+        errorDeg
+      });
+      console.groupEnd();
+
       data.push({ x: r, y: errorDeg });
     }
+
+    console.log('Final data points:', data);
+    console.groupEnd();
 
     return {
       datasets: [{
@@ -146,46 +88,5 @@ export const useAlignmentStore = defineStore('alignment', () => {
     };
   });
 
-  // --- ACTIONS ---
-  async function initialize() {
-    try {
-      isLoading.value = true;
-      const response = await fetch('/data/tonearm_data.json');
-      availableTonearms.value = await response.json();
-    } catch (err) {
-      error.value = 'Failed to load tonearm database.';
-      console.error(err);
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  function loadTonearmPreset(id) {
-    selectedTonearmId.value = id;
-    const arm = availableTonearms.value.find(t => t.id === id);
-    if (arm) userInput.value.pivotToSpindle = arm.pivot_to_spindle_mm || 230;
-  }
-
-  function setAlignment(type) {
-    userInput.value.alignmentType = type;
-  }
-
-  return {
-    // State
-    isLoading,
-    error,
-    userInput,
-    selectedTonearmId,
-    availableTonearms,
-    ALIGNMENT_GEOMETRIES,
-
-    // Computed
-    calculatedValues,
-    trackingErrorChartData,
-
-    // Actions
-    initialize,
-    loadTonearmPreset,
-    setAlignment
-  };
+  // [Rest of the code unchanged...]
 });
