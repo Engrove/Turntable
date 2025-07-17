@@ -2,8 +2,9 @@
 import { defineStore } from 'pinia';
 import { useTonearmStore } from '@/store/tonearmStore.js';
 
-const R1 = 60.325; // IEC inner groove radius (mm)
-const R2 = 146.05; // IEC outer groove radius (mm)
+// Standard inner/outer groove radii (IEC)
+const R1 = 60.325;
+const R2 = 146.05;
 
 export const useAlignmentStore = defineStore('alignment', {
   state: () => ({
@@ -33,16 +34,16 @@ export const useAlignmentStore = defineStore('alignment', {
     },
 
     ALIGNMENT_GEOMETRIES: {
-      LofgrenA: { name: 'Löfgren A / Baerwald', description: 'Balances distortion between inner and outer grooves, resulting in the lowest average RMS distortion. A very popular all-round choice.' },
-      LofgrenB: { name: 'Löfgren B', description: 'Minimizes distortion across the entire playing surface, but allows higher distortion peaks at the beginning and end compared to Baerwald.' },
-      StevensonA: { name: 'Stevenson A', description: 'Prioritizes the lowest possible distortion at the inner groove, where it is typically most audible, at the expense of higher distortion elsewhere.' },
+      LofgrenA: { name: 'Löfgren A / Baerwald', description: 'Balances distortion between inner and outer grooves, resulting in the lowest average RMS distortion.' },
+      LofgrenB: { name: 'Löfgren B', description: 'Minimizes overall RMS distortion across the record with fixed offset angle.' },
+      StevensonA: { name: 'Stevenson A', description: 'Prioritizes lowest distortion at inner groove with two null points.' },
     },
   }),
 
   actions: {
     async initialize() {
       const tonearmStore = useTonearmStore();
-      if (tonearmStore.availableTonearms.length === 0) {
+      if (!tonearmStore.availableTonearms.length) {
         await tonearmStore.initialize();
       }
       this.availableTonearms = tonearmStore.availableTonearms;
@@ -52,13 +53,13 @@ export const useAlignmentStore = defineStore('alignment', {
 
     loadTonearmPreset(id) {
       this.selectedTonearmId = id;
-      if (id === null) {
+      if (id == null) {
         this.calculatedValues.trackingMethod = 'pivoting';
       } else {
-        const tonearm = this.availableTonearms.find(t => t.id == id);
-        if (tonearm) {
-          this.userInput.pivotToSpindle = tonearm.pivot_to_spindle_mm || 222.0;
-          this.calculatedValues.trackingMethod = tonearm.tracking_method || 'pivoting';
+        const t = this.availableTonearms.find(x => x.id == id);
+        if (t) {
+          this.userInput.pivotToSpindle = t.pivot_to_spindle_mm || this.userInput.pivotToSpindle;
+          this.calculatedValues.trackingMethod = t.tracking_method || 'pivoting';
         }
       }
       this.calculateAlignment();
@@ -69,110 +70,72 @@ export const useAlignmentStore = defineStore('alignment', {
       this.calculateAlignment();
     },
 
+    // Lofgren A / Baerwald exact per Jovanović JAES 2022
     getLofgrenAAlignmentGeometry(D) {
-      const L = D;
-      const r1sq = R1 ** 2;
-      const r2sq = R2 ** 2;
-      const num = 8 * r1sq * r2sq;
-      const den = r1sq + 6 * R1 * R2 + r2sq;
+      const L = Math.sqrt(D * D + (8 * R1 * R1 * R2 * R2) / (R1*R1 + 6*R1*R2 + R2*R2));
+      const overhang = L - D;
+      const betaRad = Math.asin((4 * R1 * R2 * (R1 + R2)) / (L * (R1*R1 + 6*R1*R2 + R2*R2)));
+      const offsetAngle = betaRad * 180 / Math.PI;
 
-      const effectiveLength = Math.sqrt(L ** 2 - num / den);
-      const overhang = effectiveLength - L;
+      const invSqrt2 = 1/Math.sqrt(2);
+      const inner = (2 * R1 * R2 * (1 - invSqrt2)) / (R2 + (1 + invSqrt2) * R1);
+      const outer = (2 * R1 * R2 * (1 + invSqrt2)) / (R2 + (1 - invSqrt2) * R1);
 
-      const betaRad = Math.asin((4 * R1 * R2 * (R1 + R2)) / (effectiveLength * den));
-      const offsetAngle = betaRad * (180 / Math.PI);
-
-      const sqrt2inv = 1 / Math.sqrt(2);
-      const inner = (2 * R1 * R2 * (1 - sqrt2inv)) / (R2 + (1 + sqrt2inv) * R1);
-      const outer = (2 * R1 * R2 * (1 + sqrt2inv)) / (R2 + (1 - sqrt2inv) * R1);
-
-      return {
-        effectiveLength,
-        overhang,
-        offsetAngle,
-        nulls: { inner, outer },
-        geometryName: "Löfgren A / Baerwald",
-        geometryDescription: "Optimized to minimize average tracking distortion across playing surface."
-      };
+      return { effectiveLength: L, overhang, offsetAngle, nulls: { inner, outer }, geometryName: this.ALIGNMENT_GEOMETRIES.LofgrenA.name, geometryDescription: this.ALIGNMENT_GEOMETRIES.LofgrenA.description };
     },
 
+    // Lofgren B approximate per Jovanović (fixed offset = βA)
     getLofgrenBAlignmentGeometry(D) {
-      const r1sq = R1 ** 2;
-      const r2sq = R2 ** 2;
-      const num = 8 * r1sq * r2sq * (r2sq - r1sq);
-      const den = Math.pow(R1 + R2, 2) * (r1sq + r2sq);
-      const effectiveLength = Math.sqrt(D ** 2 + num / den);
-      const overhang = effectiveLength - D;
-      const betaRad = Math.asin((R2 - R1) / effectiveLength);
-      const offsetAngle = betaRad * (180 / Math.PI);
-
-      return {
-        effectiveLength,
-        overhang,
-        offsetAngle,
-        nulls: { inner: 129.1, outer: 225.5 },
-        geometryName: "Löfgren B",
-        geometryDescription: "Minimizes overall RMS distortion across the record."
-      };
+      // compute βA
+      const L0 = Math.sqrt(D * D + (8 * R1*R1 * R2*R2) / (R1*R1 + 6*R1*R2 + R2*R2));
+      const betaRad = Math.asin((4 * R1 * R2 * (R1 + R2)) / (L0 * (R1*R1 + 6*R1*R2 + R2*R2)));
+      const beta = betaRad;
+      // approximate H_B per eq (23)
+      const a2 = 2 * L0 * (L0 - D) - (L0 - D)**2; // unused here
+      const num = 3 * R1 * R2 * (L0 * Math.sin(beta) * (R1 + R2) - R1 * R2);
+      const den = 2 * L0 * (R1*R1 + R1*R2 + R2*R2);
+      const H = num / den;
+      const L = D + H;
+      return { effectiveLength: L, overhang: H, offsetAngle: beta * 180 / Math.PI, nulls: { inner: null, outer: null }, geometryName: this.ALIGNMENT_GEOMETRIES.LofgrenB.name, geometryDescription: this.ALIGNMENT_GEOMETRIES.LofgrenB.description };
     },
 
+    // Stevenson A with inner/outer null at 129.5/136.9 mm
     getStevensonAAlignmentGeometry(D) {
       const inner = 129.5;
       const outer = 136.9;
-      const L = D;
-
-      const effectiveLength = Math.sqrt((outer + inner) * (outer + inner) / 4 + L * L);
-      const overhang = effectiveLength - L;
-
-      const betaRad = Math.asin((outer - inner) / (2 * effectiveLength));
-      const offsetAngle = betaRad * (180 / Math.PI);
-
-      return {
-        effectiveLength,
-        overhang,
-        offsetAngle,
-        nulls: { inner, outer },
-        geometryName: "Stevenson A",
-        geometryDescription: "Minimizes distortion at inner groove by placing null point near the lead-out."
-      };
+      // Stevenson effective length per average null radius
+      const avgNull = 0.5 * (inner + outer);
+      const L = Math.sqrt(D * D + avgNull * avgNull);
+      const overhang = L - D;
+      const beta = Math.asin((outer - inner) / (2 * L));
+      return { effectiveLength: L, overhang, offsetAngle: beta * 180 / Math.PI, nulls: { inner, outer }, geometryName: this.ALIGNMENT_GEOMETRIES.StevensonA.name, geometryDescription: this.ALIGNMENT_GEOMETRIES.StevensonA.description };
     },
 
     calculateAlignment() {
       const D = this.userInput.pivotToSpindle;
-      this.calculatedValues.error = (!D || D <= 0) ? "Pivot-to-Spindle distance must be a positive number." : null;
-      if (this.calculatedValues.error) {
+      if (!D || D <= 0) {
+        this.calculatedValues.error = 'Pivot-to-Spindle must be > 0.';
         this.trackingErrorChartData.datasets = [];
         return;
       }
+      this.calculatedValues.error = null;
 
-      const { alignmentType } = this.userInput;
-
-      let result = null;
+      let res;
+      const type = this.userInput.alignmentType;
       if (this.calculatedValues.trackingMethod !== 'pivoting') {
-        result = {
-          effectiveLength: D,
-          overhang: 0,
-          offsetAngle: 0,
-          nulls: { inner: null, outer: null },
-          geometryName: 'Tangential',
-          geometryDescription: 'Zero tracking error across entire record.'
-        };
-      } else if (alignmentType === 'LofgrenA') {
-        result = this.getLofgrenAAlignmentGeometry(D);
-      } else if (alignmentType === 'LofgrenB') {
-        result = this.getLofgrenBAlignmentGeometry(D);
-      } else if (alignmentType === 'StevensonA') {
-        result = this.getStevensonAAlignmentGeometry(D);
+        res = { effectiveLength: D, overhang: 0, offsetAngle: 0, nulls: { inner: null, outer: null }, geometryName: 'Tangential', geometryDescription: 'Zero error.' };
+      } else if (type === 'LofgrenA') {
+        res = this.getLofgrenAAlignmentGeometry(D);
+      } else if (type === 'LofgrenB') {
+        res = this.getLofgrenBAlignmentGeometry(D);
+      } else if (type === 'StevensonA') {
+        res = this.getStevensonAAlignmentGeometry(D);
       } else {
-        this.calculatedValues.error = `Alignment type "${alignmentType}" not yet implemented.`;
+        this.calculatedValues.error = `Unknown alignment type: ${type}`;
         return;
       }
 
-      this.calculatedValues = {
-        ...this.calculatedValues,
-        ...result
-      };
-
+      this.calculatedValues = { ...this.calculatedValues, ...res };
       this.updateTrackingErrorChartData();
     },
 
@@ -181,30 +144,17 @@ export const useAlignmentStore = defineStore('alignment', {
         this.trackingErrorChartData = { datasets: [] };
         return;
       }
-
       const D = this.userInput.pivotToSpindle;
-      const offsetRad = this.calculatedValues.offsetAngle * (Math.PI / 180);
       const L = this.calculatedValues.effectiveLength;
-
-      const data = Array.from({ length: 175 }, (_, i) => {
+      const offsetRad = this.calculatedValues.offsetAngle * Math.PI / 180;
+      const data = [];
+      for (let i = 0; i <= 174; i++) {
         const r = 60 + i * 0.5;
-        const term = (r ** 2 + L ** 2 - D ** 2) / (2 * r * L);
-        if (term < -1 || term > 1) return { x: r, y: NaN };
-        const angle = Math.asin(term) - offsetRad;
-        return { x: r, y: angle * (180 / Math.PI) };
-      });
-
-      this.trackingErrorChartData = {
-        datasets: [{
-          label: this.calculatedValues.geometryName,
-          data,
-          borderColor: '#3498db',
-          borderWidth: 4,
-          pointRadius: 0,
-          tension: 0.1,
-        }]
-      };
+        const t = (r*r + L*L - D*D) / (2*r*L);
+        const y = (t >= -1 && t <= 1) ? (Math.asin(t) - offsetRad)*180/Math.PI : NaN;
+        data.push({ x: r, y });
+      }
+      this.trackingErrorChartData = { datasets: [{ label: this.calculatedValues.geometryName, data, borderColor: '#3498db', borderWidth: 4, pointRadius: 0, tension: 0.1 }] };
     }
   }
 });
-// src/store/alignmentStore.js
