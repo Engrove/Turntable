@@ -1,4 +1,4 @@
-// src/store/alignmentStore.js
+p// src/store/alignmentStore.js
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 
@@ -42,36 +42,18 @@ export const useAlignmentStore = defineStore('alignment', () => {
    * Calculates tonearm geometry from pivot distance (D) and null points.
    * Uses exact Baerwald/Löfgren equations.
    */
-  function calculateGeometryFromNulls(D, nulls) {
-    const { inner: n1, outer: n2 } = nulls;
+function calculateGeometryFromNulls(D, nulls) {
+  const { inner: n1, outer: n2 } = nulls;
+  if (D <= R2) return { error: "Pivot distance must be > 146.05 mm." };
 
-    // Validate input
-    if (D <= R2) {
-      return { error: "Pivot distance must be > outer groove radius (146.05 mm)." };
-    }
-    if (D < 180 || D > 300) {
-      return { error: "Pivot distance must be 180–300 mm." };
-    }
+  // Exact Baerwald formula
+  const L = Math.sqrt(D*D + n1*n2 + Math.pow((n1+n2)/2, 2) - (n1*n2*(n1+n2))/(2*D));
+  const H = L - D;
+  const offsetAngleRad = Math.asin((n1 + n2) / (2 * L));
+  const offsetAngleDeg = offsetAngleRad * (180 / Math.PI);
 
-    // Exact effective length (L) formula (Baerwald)
-    const term1 = D * D + n1 * n2;
-    const term2 = Math.pow((n1 + n2) / 2, 2);
-    const term3 = (n1 * n2 * (n1 + n2)) / (2 * D);
-    const term4 = Math.pow((n1 * n2) / (2 * D), 2);
-    const L = Math.sqrt(term1 + term2 - term3 + term4);
-
-    // Derived parameters
-    const H = L - D;  // Overhang
-    const offsetAngleRad = Math.asin((n1 + n2) / (2 * L));
-    const offsetAngleDeg = offsetAngleRad * (180 / Math.PI);
-
-    return {
-      overhang: H,
-      offsetAngle: offsetAngleDeg,
-      effectiveLength: L,
-      nulls: { inner: n1, outer: n2 },
-      error: null
-    };
+  return { overhang: H, offsetAngle: offsetAngleDeg, effectiveLength: L, nulls, error: null };
+}
   }
 
   // --- ALIGNMENT-SPECIFIC CALCULATIONS ---
