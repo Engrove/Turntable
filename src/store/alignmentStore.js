@@ -103,7 +103,7 @@ getLofgrenBAlignmentGeometry(D) {
   const betaRad = Math.asin((4 * R1 * R2 * (R1 + R2)) / (L0 * (R1*R1 + 6*R1*R2 + R2*R2));
   
   // Exact H_B per Eq (22) in Jovanović JAES 2022
-  const numerator = 3 * R1 * R2 * (L0 * Math.sin(betaRad) * (R1 + R2) - R1 * R2;
+  const numerator = 3 * R1 * R2 * (L0 * Math.sin(betaRad) * (R1 + R2) - R1 * R2);
   const denominator = R1*R1 + R1*R2 + R2*R2;
   const term = numerator / denominator;
   
