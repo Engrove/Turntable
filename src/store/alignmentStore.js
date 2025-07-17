@@ -56,14 +56,12 @@ export const useAlignmentStore = defineStore('alignment', {
 
 | {};
     },
-    // Getter för UI för att fylla i dropdown för standarder
     availableStandards: () => {
       return Object.keys(STANDARDS).map(key => ({
         value: key,
         label: STANDARDS[key].name
       }));
     },
-    // Getter för UI för att fylla i val av geometrier
     availableGeometries: () => {
       return Object.keys(ALIGNMENT_GEOMETRIES).map(key => ({
         value: key,
@@ -132,8 +130,8 @@ export const useAlignmentStore = defineStore('alignment', {
       }
       
       this.calculatedValues = {
-       ...this.calculatedValues,
-       ...res,
+      ...this.calculatedValues,
+      ...res,
         geometryName: this.currentGeometryInfo.name,
         geometryDescription: this.currentGeometryInfo.description,
       };
