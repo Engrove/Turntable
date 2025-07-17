@@ -97,7 +97,7 @@ export const useAlignmentStore = defineStore('alignment', {
       // Compute Löfgren A parameters for reference
       const L0 = Math.sqrt(D * D + (8 * R1 * R1 * R2 * R2) / (R1*R1 + 6*R1*R2 + R2*R2));
       // FIX: Removed extra parenthesis in Math.asin
-      const betaRad = Math.asin((4 * R1 * R2 * (R1 + R2)) / (L0 * (R1*R1 + 6*R1*R2 + R2*R2));
+      const betaRad = Math.asin((4 * R1 * R2 * (R1 + R2)) / (L0 * (R1*R1 + 6*R1*R2 + R2*R2)));
       
       // Exact H_B per Eq (22)
       const numerator = 3 * R1 * R2 * (L0 * Math.sin(betaRad) * (R1 + R2) - R1 * R2);
