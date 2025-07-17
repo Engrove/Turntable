@@ -36,8 +36,9 @@ useHead({
             Want to easily see how your cartridge and tonearm match, or optimize your turntable without complex math? You've come to the right place!
           </p>
           <p>
-            Hi! I'm a hifi enthusiast with a passion for vinyl and technology. This toolkit is my attempt to transform complex audio theory into a dynamic, visual, and intuitive environment. The goal is to create tools that allow fellow enthusiasts to explore the trade-offs in audio design in real-time.
-          </p>
+            Hi! I am a hi fi enthusiast who loves vinyl and technology. This toolkit transforms complex audio theory into a dynamic visual and intuitive environment and also tests how AI and other cutting edge technologies can help develop and verify ideas code and functionality.
+
+            I have a personal goal to deepen my knowledge of acoustics and audio theory and to create tools that let fellow enthusiasts explore trade offs in audio design in real time. Along the way I hope to show how modern technology can speed up learning and spark new innovations in audio engineering.          </p>
           <p class="note">
             This is a live project. Features are added and updated sporadically. If something isn't working, it might be under construction! Check out the <a :href="githubUrl" target="_blank" rel="noopener noreferrer">GitHub repository</a> for the latest updates.
           </p>
