@@ -49,7 +49,39 @@ export const useAlignmentStore = defineStore('alignment', {
       this.isLoading = false;
       this.calculateAlignment();
     },
+// ChatGTP kod
+getLofgrenAAlignmentGeometry(D) {
+  const R1 = 60.325;  // IEC inner groove radius
+  const R2 = 146.05;  // IEC outer groove radius
 
+  const L = D;  // L = pivot-to-spindle distance
+  const r1sq = R1 ** 2;
+  const r2sq = R2 ** 2;
+  const num = 8 * r1sq * r2sq;
+  const den = r1sq + 6 * R1 * R2 + r2sq;
+
+  const effectiveLength = Math.sqrt(L ** 2 - num / den);
+  const overhang = effectiveLength - L;
+
+  const betaRad = Math.asin((4 * R1 * R2 * (R1 + R2)) / (effectiveLength * (r1sq + 6 * R1 * R2 + r2sq)));
+  const offsetAngle = betaRad * (180 / Math.PI);
+
+  // Null points according to Baerwald's formula (Eq. 15 in paper)
+  const sqrt2inv = 1 / Math.sqrt(2);
+  const inner = (2 * R1 * R2 * (1 - sqrt2inv)) / (R2 + (1 + sqrt2inv) * R1);
+  const outer = (2 * R1 * R2 * (1 + sqrt2inv)) / (R2 + (1 - sqrt2inv) * R1);
+
+  return {
+    effectiveLength,
+    overhang,
+    offsetAngle,
+    nulls: { inner, outer },
+    geometryName: "Löfgren A / Baerwald",
+    geometryDescription: "Optimized to minimize average tracking distortion across playing surface."
+  };
+},
+
+    
     loadTonearmPreset(id) {
       this.selectedTonearmId = id;
       if (id === null) {
@@ -68,21 +100,40 @@ export const useAlignmentStore = defineStore('alignment', {
       this.userInput.alignmentType = type;
       this.calculateAlignment();
     },
-
+// ChatGTP kod
     calculateAlignment() {
-      const D = this.userInput.pivotToSpindle;
-      this.calculatedValues.error = (!D || D <= 0) ? "Pivot-to-Spindle distance must be a positive number." : null;
-      if (this.calculatedValues.error) {
-        this.trackingErrorChartData.datasets = [];
-        return;
-      }
-      
-      if (this.calculatedValues.trackingMethod !== 'pivoting') {
-        this.calculateForTangentialArm(D);
-      } else {
-        this.calculateForPivotingArm(D);
-      }
-      this.updateTrackingErrorChartData();
+  const D = this.userInput.pivotToSpindle;
+  this.calculatedValues.error = (!D || D <= 0) ? "Pivot-to-Spindle distance must be a positive number." : null;
+  if (this.calculatedValues.error) {
+    this.trackingErrorChartData.datasets = [];
+    return;
+  }
+
+  const { alignmentType } = this.userInput;
+
+  let result = null;
+  if (this.calculatedValues.trackingMethod !== 'pivoting') {
+    result = {
+      effectiveLength: D,
+      overhang: 0,
+      offsetAngle: 0,
+      nulls: { inner: null, outer: null },
+      geometryName: 'Tangential',
+      geometryDescription: 'Zero tracking error across entire record.'
+    };
+  } else if (alignmentType === 'LofgrenA') {
+    result = this.getLofgrenAAlignmentGeometry(D);
+  } else {
+    this.calculatedValues.error = `Alignment type "${alignmentType}" not yet implemented.`;
+    return;
+  }
+
+  this.calculatedValues = {
+    ...this.calculatedValues,
+    ...result
+  };
+
+  this.updateTrackingErrorChartData();  // Grafen uppdateras också
     },
     
     // Denna funktion är nu korrekt och stabil.
@@ -151,44 +202,35 @@ export const useAlignmentStore = defineStore('alignment', {
       return (Math.asin(term) - offsetRad) * (180 / Math.PI);
     },
 
-    // HELT OMARBETAD FÖR KORREKTHET
+    // ChatGTP kod
     updateTrackingErrorChartData() {
-      if (this.calculatedValues.error) { this.trackingErrorChartData = { datasets: [] }; return; }
-      if (this.calculatedValues.trackingMethod !== 'pivoting') {
-        const data = Array.from({ length: 175 }, (_, i) => ({ x: 60 + i * 0.5, y: 0 }));
-        this.trackingErrorChartData = { datasets: [{ label: 'Tangential Arm', data, borderColor: '#2ecc71', borderWidth: 4, pointRadius: 0, tension: 0.1 }] };
-        return;
-      }
-      
-      const colors = { LofgrenA: '#3498db', LofgrenB: '#2ecc71', StevensonA: '#e74c3c' };
-      const D = this.userInput.pivotToSpindle;
+  if (this.calculatedValues.error) {
+    this.trackingErrorChartData = { datasets: [] };
+    return;
+  }
 
-      const datasets = Object.keys(this.ALIGNMENT_GEOMETRIES).map(type => {
-        // Skapa en temporär state-kopia för varje beräkning
-        const tempState = { ...this.$state, userInput: { ...this.userInput, alignmentType: type }};
-        // Kör den korrekta beräkningsfunktionen på den temporära state-kopian
-        this.calculateForPivotingArm.call(tempState, D);
-        
-        const { effectiveLength, offsetAngle } = tempState.calculatedValues;
-        const offsetRad = offsetAngle * (Math.PI / 180);
-        
-        const dataPoints = Array.from({ length: 175 }, (_, i) => {
-            const r = 60 + i * 0.5;
-            return { x: r, y: this.calculateTrackingError(r, effectiveLength, D, offsetRad) };
-        });
+  const D = this.userInput.pivotToSpindle;
+  const offsetRad = this.calculatedValues.offsetAngle * (Math.PI / 180);
+  const L = this.calculatedValues.effectiveLength;
 
-        return {
-            label: this.ALIGNMENT_GEOMETRIES[type].name.split(' / ')[0],
-            data: dataPoints,
-            borderColor: colors[type],
-            borderWidth: type === this.userInput.alignmentType ? 4 : 2,
-            order: type === this.userInput.alignmentType ? 1 : 2,
-            pointRadius: 0,
-            tension: 0.1,
-        };
-      });
-      this.trackingErrorChartData = { datasets };
+  const data = Array.from({ length: 175 }, (_, i) => {
+    const r = 60 + i * 0.5;
+    const term = (r ** 2 + L ** 2 - D ** 2) / (2 * r * L);
+    if (term < -1 || term > 1) return { x: r, y: NaN };
+    const angle = Math.asin(term) - offsetRad;
+    return { x: r, y: angle * (180 / Math.PI) };
+  });
+
+  this.trackingErrorChartData = {
+    datasets: [{
+      label: this.calculatedValues.geometryName,
+      data,
+      borderColor: '#3498db',
+      borderWidth: 4,
+      pointRadius: 0,
+      tension: 0.1,
+    }]
+  };
     },
-  },
 });
 // src/store/alignmentStore.js
