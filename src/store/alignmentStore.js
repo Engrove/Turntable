@@ -100,7 +100,7 @@ export const useAlignmentStore = defineStore('alignment', {
       const betaRad = Math.asin((4 * R1 * R2 * (R1 + R2)) / (L0 * (R1*R1 + 6*R1*R2 + R2*R2));
       
       // Exact H_B per Eq (22)
-      const numerator = 3 * R1 * R2 * L0 * Math.sin(betaRad) * (R1 + R2) - R1 * R2;
+      const numerator = 3 * R1 * R2 * (L0 * Math.sin(betaRad) * (R1 + R2) - R1 * R2);
       const denominator = R1*R1 + R1*R2 + R2*R2;
       const term = numerator / denominator;
       
@@ -109,7 +109,7 @@ export const useAlignmentStore = defineStore('alignment', {
       if (L0*L0 - term >= 0) {
         H = L0 - Math.sqrt(L0*L0 - term);
       } else {
-        H = (3 * R1 * R2 * (L0 * Math.sin(betaRad) * (R1 + R2) - R1 * R2) / (2 * L0 * denominator);
+        H = (3 * R1 * R2 * (L0 * Math.sin(betaRad) * (R1 + R2) - R1 * R2)) / (2 * L0 * denominator);
       }
       
       // Calculate effective length
