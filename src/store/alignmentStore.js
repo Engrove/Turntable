@@ -13,7 +13,6 @@ const NULL_POINTS = {
   LofgrenA: { IEC: [66.00, 120.90], DIN: [63.24, 122.25], JIS: [63.34, 122.18] },
   LofgrenB: { IEC: [70.29, 116.60], DIN: [67.54, 118.57], JIS: [67.64, 118.51] },
   LofgrenC: { IEC: [70.025, 115.985], DIN: [67.28, 117.96], JIS: [67.38, 117.90] }
-  // StevensonA hanteras separat och använder inte denna struktur.
 };
 
 const ALIGNMENT_GEOMETRIES = {
