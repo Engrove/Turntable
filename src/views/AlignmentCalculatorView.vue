@@ -51,11 +51,11 @@ const template = `
     </div>
   </div>
 
-  <InfoPanel 
+  <InfoPanel>
     :content-html="alignmentContent"
     @open-technical-help="showHelp = true"
-  />
-
+  </InfoPanel>
+    
   <!-- Visar en laddningsindikator medan databasen hämtas -->
   <div v-if="store.isLoading" class="status-container">
     <h2>Loading Database...</h2>
