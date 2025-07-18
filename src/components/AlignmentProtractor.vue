@@ -1,4 +1,3 @@
-// src/components/AlignmentProtractor.vue
 /**
 * @file src/components/AlignmentProtractor.vue
 * @description Genererar en dynamisk, utskriftsvänlig SVG-baserad protraktor.
