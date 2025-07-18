@@ -1,9 +1,16 @@
 // src/components/AlignmentInputPanel.vue
+/**
+* @file src/components/AlignmentInputPanel.vue
+* @description Komponent för all användarinteraktion i Alignment Calculator.
+* Hanterar val av tonarmspreset, manuell input, val av geometri och pappersformat.
+*/
 import { computed, ref, watch } from 'vue';
 import { useAlignmentStore } from '@/store/alignmentStore.js';
 
+// Skapar en instans av storen för att interagera med applikationens state
 const store = useAlignmentStore();
 
+// --- Lokal state för preset-hantering ---
 const selectedTonearmManufacturer = ref(null);
 const tonearmManufacturers = computed(() => [...new Set(store.availableTonearms.map(t => t.manufacturer))].sort());
 const filteredTonearms = computed(() => {
@@ -11,12 +18,20 @@ const filteredTonearms = computed(() => {
   return store.availableTonearms.filter(t => t.manufacturer === selectedTonearmManufacturer.value);
 });
 
+/**
+* @description Beräknad egenskap för att avgöra om den aktuella tonarmen är pivoterande
+* @returns {boolean}
+*/
 const isPivotingArm = computed(() => store.calculatedValues.trackingMethod === 'pivoting');
 
+// Nollställer modellvalet om tillverkaren ändras
 watch(selectedTonearmManufacturer, () => {
   store.selectedTonearmId = null;
 });
 
+/**
+* @description Återställer valet av tonarmspreset
+*/
 function resetTonearmSelection() {
   selectedTonearmManufacturer.value = null;
   store.loadTonearmPreset(null);
@@ -105,6 +120,30 @@ const template = `
         </button>
       </div>
     </fieldset>
+
+    <!-- NYTT FIELDSET FÖR PAPPER -->
+    <fieldset>
+      <legend>4. Protractor Paper Format</legend>
+      <p class="fieldset-description">
+        Choose the paper size for the printable protractor.
+      </p>
+      <div class="mode-switch paper-format">
+        <button
+          :class="{ active: store.userInput.paperFormat === 'A4' }"
+          @click="store.setPaperFormat('A4')"
+          title="A4 Landscape (297 x 210 mm)"
+        >
+          A4
+        </button>
+        <button
+          :class="{ active: store.userInput.paperFormat === 'Letter' }"
+          @click="store.setPaperFormat('Letter')"
+          title="US Letter Landscape (279.4 x 215.9 mm)"
+        >
+          Letter
+        </button>
+      </div>
+    </fieldset>
   </template>
 
   <div v-else class="loading-placeholder">
@@ -133,6 +172,7 @@ input[type="range"] { flex-grow: 1; cursor: pointer; }
 input[type="number"].value-display { font-weight: 600; width: 80px; text-align: right; background-color: #fff; padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); }
 input:disabled { background-color: #e9ecef; cursor: not-allowed; }
 .mode-switch { display: flex; width: 100%; margin-bottom: 1rem; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+.mode-switch.paper-format { max-width: 200px; }
 .mode-switch button { flex-grow: 1; padding: 0.75rem 0.5rem; font-size: 1rem; font-weight: 600; background-color: #fff; border: none; cursor: pointer; transition: all 0.2s ease; color: var(--accent-color); }
 .mode-switch button:not(:last-child) { border-right: 1px solid var(--border-color); }
 .mode-switch button.active { background-color: var(--accent-color); color: white; z-index: 2; }
