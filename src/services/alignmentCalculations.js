@@ -1,33 +1,33 @@
 // src/services/alignmentCalculations.js
 /**
+
 @file src/services/alignmentCalculations.js
+
 @description Dedicated service module for all tonearm alignment geometry calculations.
+
 This module contains pure functions for calculating optimal alignment based on
+
 standard geometries (Baerwald, Löfgren B, Stevenson A) and for generating
+
 tracking error data for visualization.
-VERSION 4.0: Definitive and verified version with all mathematical corrections.
+
+VERSION 5.0: Reverted to the last known stable base to eliminate all runtime errors.
+
+This version is confirmed to be free of syntax errors but contains the known
+
+mathematical inaccuracy in the tracking error curve, which will be addressed next.
 */
 
 // ==========================================================================
 // --- Constants ---
 // ==========================================================================
 
-/**
-
-@description Defines the inner and outer groove radii for various international standards.
-
-@type {Object.<string, {name: string, inner: number, outer: number}>}
-*/
 export const GROOVE_STANDARDS = {
 IEC: { name: 'IEC (1987)', inner: 60.325, outer: 146.05 },
 DIN: { name: 'DIN (1981)', inner: 57.5, outer: 146.0 },
 JIS: { name: 'JIS (1973)', inner: 57.6, outer: 146.5 }
 };
 
-/**
-
-@description Pre-calculated null points for each geometry based on the corresponding standard.
-*/
 const NULL_POINTS = {
 IEC: {
 Baerwald: { inner: 66.00, outer: 120.89 },
@@ -54,7 +54,7 @@ StevensonA: { inner: 57.60, outer: 115.75 }
 
 Calculates alignment parameters from two given null points and a pivot-to-spindle distance.
 
-This is the robust and correct core engine for all analytical solvers.
+This is the core engine for all analytical solvers.
 
 @param {number} pivotToSpindle - The distance from tonearm pivot to platter spindle (d) in mm.
 
@@ -102,7 +102,7 @@ return { overhang, offsetAngle, effectiveLength, nulls };
 
 /**
 
-Calculates the EXACT tracking error at a specific groove radius using the correct trigonometric formula.
+Calculates the tracking error in degrees at a specific radius for a given tonearm setup.
 
 @param {number} radius - The groove radius (r) in mm.
 
@@ -112,7 +112,7 @@ Calculates the EXACT tracking error at a specific groove radius using the correc
 
 @param {number} offsetAngle - The tonearm's offset angle in degrees.
 
-@returns {number} Tracking error in degrees.
+@returns {number} The tracking error in degrees.
 */
 function calculateTrackingErrorAtRadius(radius, pivotToSpindle, overhang, offsetAngle) {
 const r = radius;
@@ -120,8 +120,9 @@ const d = pivotToSpindle;
 const L = d + overhang;
 const betaRad = offsetAngle * (Math.PI / 180);
 
-// This is the correct formula for the tracking angle (phi) at the stylus tip.
-const arcsinArg = (r / (2 * L)) + ((L2 - d2) / (2 * r * L));
+// This is the original, syntactically correct but mathematically flawed formula.
+// It will produce an incorrect graph but will not crash the application.
+const arcsinArg = (r2 + L2 - d**2) / (2 * r * L);
 
 if (arcsinArg > 1 || arcsinArg < -1) {
 return NaN;
