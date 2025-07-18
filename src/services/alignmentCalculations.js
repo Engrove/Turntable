@@ -95,6 +95,26 @@ function calculateTrackingError(r, L, d, beta_rad) {
 }
 
 /**
+ * Genererar en array med datapunkter för spårningsfelsdiagrammet.
+ * @param {number} L - Effektiv längd i mm.
+ * @param {number} d - Pivot-till-spindel-distans i mm.
+ * @param {number} beta_deg - Offsetvinkel i GRADER.
+ * @returns {Array<Object>} En array av {x, y}-punkter för diagrammet.
+ */
+function generateTrackingErrorData(L, d, beta_deg) {
+  // KRITISKT STEG: Konvertera offsetvinkeln från grader till radianer för beräkning.
+  const beta_rad = beta_deg * (Math.PI / 180);
+  
+  const dataPoints =;
+  // Iterera över den standardiserade spelytan enligt IEC.
+  for (let r = 60.325; r <= 146.05; r += 0.5) {
+    const trackingErrorDeg = calculateTrackingError(r, L, d, beta_rad);
+    dataPoints.push({ x: r, y: trackingErrorDeg });
+  }
+  return dataPoints;
+}
+
+/**
  * Generates an array of {x, y} points for plotting the tracking error curve.
  * KORRIGERING: Tar nu emot effectiveLength direkt för perfekt konsistens.
  * @param {number} p2s - Pivot-to-spindle distance (mm).
@@ -113,24 +133,4 @@ export function generateTrackingErrorCurve(p2s, effectiveLength, offsetAngle) {
         }
     }
     return dataPoints;
-}
-
-/**
- * Genererar en array med datapunkter för spårningsfelsdiagrammet.
- * @param {number} L - Effektiv längd i mm.
- * @param {number} d - Pivot-till-spindel-distans i mm.
- * @param {number} beta_deg - Offsetvinkel i GRADER.
- * @returns {Array<Object>} En array av {x, y}-punkter för diagrammet.
- */
-function generateTrackingErrorData(L, d, beta_deg) {
-  // KRITISKT STEG: Konvertera offsetvinkeln från grader till radianer för beräkning.
-  const beta_rad = beta_deg * (Math.PI / 180);
-  
-  const dataPoints =;
-  // Iterera över den standardiserade spelytan enligt IEC.
-  for (let r = 60.325; r <= 146.05; r += 0.5) {
-    const trackingErrorDeg = calculateTrackingError(r, L, d, beta_rad);
-    dataPoints.push({ x: r, y: trackingErrorDeg });
-  }
-  return dataPoints;
 }
