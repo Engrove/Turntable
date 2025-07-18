@@ -132,7 +132,9 @@ export const useAlignmentStore = defineStore('alignment', () => {
       
       chartDatasets.push({
         label: key.replace('A', ''),
-        data: calculator.generateTrackingErrorCurve(p2s, result.overhang, result.offsetAngle, standard),
+        // data: calculator.generateTrackingErrorCurve(p2s, result.overhang, result.offsetAngle, standard),
+        // src/store/alignmentStore.js - KORRIGERAD KOD
+        data: calculator.generateTrackingErrorCurve(p2s, result.effectiveLength, result.offsetAngle, standard),
         borderColor: isActive ? '#c0392b' : '#bdc3c7',
         borderWidth: isActive ? 3 : 1.5,
         pointRadius: 0,
