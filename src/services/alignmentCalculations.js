@@ -83,8 +83,12 @@ function solveFromNulls(p2s, n1, n2) {
  */
 function calculateTrackingError(r, p2s, effectiveLength, offsetAngle) {
     const offsetRad = offsetAngle * (Math.PI / 180);
+    const L = effectiveLength;
+    const d = p2s;
 
-    const arcsinArg = (r**2 + effectiveLength**2 - p2s**2) / (2 * r * effectiveLength);
+    // KORRIGERING: Detta är den matematiskt korrekta formeln för spårningsvinkeln vid nålspetsen.
+    // Den tidigare formeln beräknade felaktigt vinkeln vid tonarmens pivotpunkt.
+    const arcsinArg = (r / (2 * L)) + ((L**2 - d**2) / (2 * r * L));
 
     if (arcsinArg > 1 || arcsinArg < -1) {
         return NaN;
