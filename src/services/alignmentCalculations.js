@@ -93,17 +93,11 @@ error: null
 }
 
 /**
-
 Beräknar det specifika spårningsfelet (i grader) vid en given radie på skivan.
-
 @param {number} overhang - Tonarmens överhäng i mm.
-
 @param {number} offsetAngle - Tonarmens offsetvinkel i grader.
-
 @param {number} pivotToSpindle - Avståndet från pivot till spindel i mm.
-
 @param {number} radius - Den specifika radien på skivan där felet ska beräknas.
-
 @returns {number} Spårningsfelet i grader.
 */
 function calculateTrackingErrorAtRadius(overhang, offsetAngle, pivotToSpindle, radius) {
@@ -118,19 +112,12 @@ return errorRad * (180 / Math.PI);
 }
 
 /**
-
 Genererar den kompletta datastrukturen för spårningsfelsdiagrammet.
-
 Den itererar igenom alla tillgängliga geometrier, beräknar deras optimala
-
 justering och skapar sedan en dataserie (kurva) för var och en.
-
 @param {number} pivotToSpindle - Avståndet från pivot till spindel i mm.
-
 @param {object} geometries - Ett objekt som innehåller alla justeringsgeometrier.
-
 @param {object} standard - Det valda standardobjektet för spelradier.
-
 @returns {object} Ett objekt redo att användas av Chart.js, innehållande datasets.
 */
 function generateTrackingErrorData(pivotToSpindle, geometries, standard) {
