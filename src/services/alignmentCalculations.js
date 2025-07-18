@@ -1,3 +1,4 @@
+
 // src/services/alignmentCalculations.js
 /**
 
@@ -28,7 +29,7 @@ VERSION 2.4: Final, definitive correction of all syntax and reference errors.
 
 @description Defines the inner and outer groove radii for various international standards.
 
-@type {Object.<string, {name: string, inner: number, outer: number}>}
+@type {Object.&lt;string, {name: string, inner: number, outer: number}&gt;}
 */
 export const GROOVE_STANDARDS = {
 IEC: { name: 'IEC (1987)', inner: 60.325, outer: 146.05 },
@@ -84,7 +85,7 @@ const R_avg = (n1 + n2) / 2;
 const R_prod = n1 * n2;
 const term = d + (R_prod / d);
 // KORRIGERING: Använder korrekt exponentieringsoperator.
-const effectiveLength = Math.sqrt(term2 + R_avg2);
+const effectiveLength = Math.sqrt(term ** 2 + R_avg ** 2);
 const overhang = effectiveLength - d;
 
 const offsetAngleRad = Math.asin(R_avg / term);
@@ -168,10 +169,12 @@ const L = d + overhang; // Effective Length
 const betaRad = offsetAngle * (Math.PI / 180);
 
 // KORRIGERING: Använder korrekt exponentieringsoperator.
-const arcsinArg = (r / (2 * L)) + ((L2 - d2) / (2 * r * L));
+const arcsinArg = (r / (2 * L)) + ((L ** 2 - d ** 2) / (2 * r * L));
 
 // Prevent math domain errors from floating point inaccuracies
-if (arcsinArg > 1 || arcsinArg < -1) {
+if (arcsinArg > 1 |
+
+| arcsinArg < -1) {
 return NaN;
 }
 
@@ -195,10 +198,10 @@ Generates an array of data points for plotting the tracking error curve.
 
 @param {number} [steps=150] - The number of points to generate for the curve.
 
-@returns {Array<{x: number, y: number}>} An array of points formatted for Chart.js.
+@returns {Array&lt;{x: number, y: number}&gt;} An array of points formatted for Chart.js.
 */
 export function generateTrackingErrorCurve(pivotToSpindle, overhang, offsetAngle, standard = 'IEC', steps = 150) {
-const curveData = [];
+const curveData =;
 const { inner: innerGroove, outer: outerGroove } = GROOVE_STANDARDS[standard];
 const stepSize = (outerGroove - innerGroove) / (steps - 1);
 
@@ -217,4 +220,3 @@ curveData.push({
 
 return curveData;
 }
-// src/services/alignmentCalculations.js
