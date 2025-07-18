@@ -1,4 +1,3 @@
-<!-- src/components/AlignmentInputPanel.vue -->
 <script setup>
 /**
 * @file src/components/AlignmentInputPanel.vue
