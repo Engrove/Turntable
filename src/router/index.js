@@ -23,14 +23,12 @@ const router = createRouter({
       component: () => import('../views/ComplianceEstimatorView.vue'),
       meta: { title: 'Compliance Estimator', isReportPage: false }
     },
-    // --- NY ROUTE TILLAGD HÄR ---
     {
       path: '/alignment-calculator',
       name: 'alignment-calculator',
       component: () => import('../views/AlignmentCalculatorView.vue'),
-      meta: { title: 'Alignment Calculator', isReportPage: false }
+      meta: { title: 'Alignment Calculator', isReportPage: false, hidden: true }
     },
-    // --- SLUT PÅ NY ROUTE ---
     {
       path: '/data-explorer',
       name: 'data-explorer',
@@ -44,14 +42,13 @@ const router = createRouter({
       meta: { title: 'Generated Report', isReportPage: true }
     }
   ],
-  // Funktion för att scrolla till toppen vid sidbyte
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
       return savedPosition
     } else {
       return { top: 0 }
     }
-  },
+  }
 })
 
 export default router
