@@ -9,10 +9,8 @@ import { onMounted, ref, watch } from 'vue';
 import { Chart } from 'chart.js/auto';
 import annotationPlugin from 'chartjs-plugin-annotation';
 
-// Registrerar annotation-pluginet för att kunna rita linjer för nollpunkter.
 Chart.register(annotationPlugin);
 
-// Definierar de props som komponenten förväntar sig från sin förälder (AlignmentCalculatorView).
 const props = defineProps({
 chartData: {
 type: Object,
@@ -40,20 +38,16 @@ let chartInstance = null;
 const updateChart = () => {
 if (!chartInstance || !props.chartData || !props.chartData.datasets) return;
 
-// Uppdaterar dataseten med de nya kurvorna från storen.
 chartInstance.data.datasets = props.chartData.datasets;
 
-// Nollställer befintliga annotationer för att undvika gamla linjer.
-chartInstance.options.plugins.annotation.annotations = { 
-zeroLine: chartInstance.options.plugins.annotation.annotations.zeroLine 
+chartInstance.options.plugins.annotation.annotations = {
+zeroLine: chartInstance.options.plugins.annotation.annotations.zeroLine
 };
 
-// Ritar bara nollpunktslinjer om det är en pivoterande arm.
 if (props.trackingMethod === 'pivoting' && props.nullPoints.inner && props.nullPoints.outer) {
 const activeDataset = props.chartData.datasets.find(ds => ds.borderWidth > 2);
 const activeColor = activeDataset ? activeDataset.borderColor : 'rgba(231, 76, 60, 0.9)';
 
-// Funktion för att smart placera etiketten antingen överst eller underst.
 const getLabelPosition = (yValue) => {
 if (!yValue) return 'end';
 const yMax = chartInstance.scales.y.max;
@@ -62,7 +56,6 @@ return yValue > (yMax - (yMax - yMin) * 0.2) ? 'start' : 'end';
 };
 const getYAdjust = (position) => (position === 'start' ? 15 : -15);
 
-// Hitta Y-värdet för nollpunkterna för att bestämma etikettens position.
 let innerYValue = 0;
 let outerYValue = 0;
 if (activeDataset && activeDataset.data) {
@@ -75,14 +68,13 @@ outerYValue = outerPoint ? outerPoint.y : 0;
 const innerPosition = getLabelPosition(innerYValue);
 const outerPosition = getLabelPosition(outerYValue);
 
-// Skapar annotationsobjekten för nollpunkterna.
 chartInstance.options.plugins.annotation.annotations.innerNull = {
 type: 'line',
 scaleID: 'x',
 value: props.nullPoints.inner,
 borderColor: 'rgba(231, 76, 60, 0.7)',
 borderWidth: 1.5,
-borderDash:,
+borderDash: [5, 5],
 label: {
 content: `Null ${props.nullPoints.inner.toFixed(1)}mm`,
 display: true,
@@ -98,7 +90,7 @@ scaleID: 'x',
 value: props.nullPoints.outer,
 borderColor: 'rgba(231, 76, 60, 0.7)',
 borderWidth: 1.5,
-borderDash:,
+borderDash: [5, 5],
 label: {
 content: `Null ${props.nullPoints.outer.toFixed(1)}mm`,
 display: true,
@@ -110,16 +102,13 @@ yAdjust: getYAdjust(outerPosition),
 };
 }
 
-// Ritar om diagrammet med den nya datan.
 chartInstance.update();
 };
 
-// Körs när komponenten har monterats i DOM.
 onMounted(() => {
 if (!chartCanvas.value) return;
 const ctx = chartCanvas.value.getContext('2d');
 
-// Skapar en ny Chart.js-instans med grundläggande konfiguration.
 chartInstance = new Chart(ctx, {
 type: 'line',
 data: {
@@ -158,7 +147,7 @@ yMin: 0,
 yMax: 0,
 borderColor: 'rgba(0, 0, 0, 0.5)',
 borderWidth: 1.5,
-borderDash: // KORRIGERING: Kommatecken borttaget
+borderDash: [5, 5]
 }
 }
 }
@@ -179,10 +168,9 @@ title: { display: true, text: 'Tracking Error (°)' },
 }
 }
 });
-updateChart(); // Fyller diagrammet med initial data.
+updateChart();
 });
 
-// Övervakar props för ändringar och anropar updateChart när något ändras.
 watch(() => [props.chartData, props.nullPoints, props.trackingMethod], updateChart, { deep: true });
 </script>
 
