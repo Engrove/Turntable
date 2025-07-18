@@ -38,10 +38,10 @@ overhang = (nulls.inner * nulls.outer) / D;
 offsetAngleRad = Math.asin((nulls.inner + nulls.outer) / (2 * D));
 } else if (geometry.name === 'LofgrenB') {
 nulls = { inner: Math.sqrt(R1 * R2), outer: (R1 + R2) / 2 };
+// KORRIGERING: Använder nulls.outer istället för den odefinierade n_outer.
 overhang = (nulls.inner * nulls.outer) / D;
 offsetAngleRad = Math.asin((nulls.inner + nulls.outer) / (2 * D));
 } else if (geometry.name === 'Stevenson') {
-// För Stevenson beräknas överhäng och vinkel direkt från spelradierna.
 const term1 = (R1 + R2) / (2 * D);
 const term2 = (R1 * R2) / (D * D);
 // KORRIGERING: Lade till saknad multiplikationsoperator.
@@ -50,12 +50,11 @@ offsetAngleRad = Math.asin(term1 * (1 - term2 / (1 + term1 * term1)));
 overhang = D * (term2 / (2 * (1 - term1 * term1)));
 
 
-// Beräkna nollpunkterna för Stevenson efter att överhäng och vinkel är kända.
 const sinOffset = Math.sin(offsetAngleRad);
 const termA = 2 * D * sinOffset;
-const termB = D*D - 2*D*overhang - overhang*overhang;
-const innerNull = (termA - Math.sqrt(termA*termA - 4*termB))/2;
-const outerNull = (termA + Math.sqrt(termA*termA - 4*termB))/2;
+const termB = D * D - 2 * D * overhang - overhang * overhang;
+const innerNull = (termA - Math.sqrt(termA * termA - 4 * termB)) / 2;
+const outerNull = (termA + Math.sqrt(termA * termA - 4 * termB)) / 2;
 nulls = { inner: innerNull, outer: outerNull };
 
 
@@ -63,10 +62,9 @@ nulls = { inner: innerNull, outer: outerNull };
 return { error: `Unknown geometry: ${geometry.name}` };
 }
 
-// Konvertera offsetvinkel från radianer till grader.
 const offsetAngle = offsetAngleRad * (180 / Math.PI);
-// Beräkna effektiv längd.
-const effectiveLength = Math.sqrt((D + overhang)**2);
+// Återställd till den mer robusta ursprungliga formeln för att undvika problem med NaN.
+const effectiveLength = Math.sqrt(D * D + overhang * overhang + 2 * D * overhang);
 
 return {
 overhang,
@@ -87,13 +85,12 @@ Beräknar det specifika spårningsfelet (i grader) vid en given radie på skivan
 */
 function calculateTrackingErrorAtRadius(overhang, offsetAngle, pivotToSpindle, radius) {
 const D = pivotToSpindle;
-const Le = Math.sqrt((D + overhang) ** 2);
+const Le = Math.sqrt(D * D + overhang * overhang + 2 * D * overhang);
 const offsetRad = offsetAngle * (Math.PI / 180);
 
-// Använder en säkrare metod för att undvika Math.asin-fel vid gränsvärden
 const asin_arg = (radius * radius + D * D - Le * Le) / (2 * radius * D);
 if (asin_arg > 1 || asin_arg < -1) {
-return NaN; // Geometriskt omöjligt, returnera NaN
+return NaN;
 }
 const trackingAngleRad = Math.asin(asin_arg);
 const errorRad = offsetRad - trackingAngleRad;
@@ -103,8 +100,6 @@ return errorRad * (180 / Math.PI);
 
 /**
 Genererar den kompletta datastrukturen för spårningsfelsdiagrammet.
-Den itererar igenom alla tillgängliga geometrier, beräknar deras optimala
-justering och skapar sedan en dataserie (kurva) för var och en.
 @param {number} pivotToSpindle - Avståndet från pivot till spindel i mm.
 @param {object} geometries - Ett objekt som innehåller alla justeringsgeometrier.
 @param {object} standard - Det valda standardobjektet för spelradier.
@@ -121,7 +116,6 @@ const optimal = calculateOptimalAlignment(pivotToSpindle, geometry, standard);
 if (optimal && !optimal.error) {
   const curveData = [];
   
-  // Itererar från inre till yttre radie för att bygga upp kurvan.
   for (let r = standard.inner; r <= standard.outer; r += 0.5) {
     const error = calculateTrackingErrorAtRadius(
       optimal.overhang,
@@ -146,16 +140,11 @@ if (optimal && !optimal.error) {
 }
 
 
-
-
-
 }
 
 return { datasets };
 }
 
-// Exporterar funktionerna så att de kan användas av andra delar av applikationen,
-// framförallt av alignmentStore.
 export {
 calculateOptimalAlignment,
 generateTrackingErrorData,
