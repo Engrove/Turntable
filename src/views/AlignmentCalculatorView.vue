@@ -51,11 +51,7 @@ const template = `
     </div>
   </div>
 
-  <InfoPanel>
-    :content-html="alignmentContent"
-    @open-technical-help="showHelp = true"
-  </InfoPanel>
-    
+  <InfoPanel :content-html="alignmentContent" @open-technical-help="showHelp = true" ></InfoPanel> <!-- KORRIGERING: Ändrad till fullständigt tagg-par -->    
   <!-- Visar en laddningsindikator medan databasen hämtas -->
   <div v-if="store.isLoading" class="status-container">
     <h2>Loading Database...</h2>
