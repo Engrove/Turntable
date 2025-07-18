@@ -25,13 +25,13 @@ const router = createRouter({
       component: () => import('../views/ComplianceEstimatorView.vue'),
       meta: { title: 'Compliance Estimator' }
     },
-    {
-      path: '/alignment-calculator',
-      name: 'alignment-calculator',
-      // Dynamisk import för lazy loading
-      component: () => import('../views/AlignmentCalculatorView.vue'),
-      meta: { title: 'Alignment Calculator' }
-    },
+//    {
+//      path: '/alignment-calculator',
+//      name: 'alignment-calculator',
+//      // Dynamisk import för lazy loading
+//      component: () => import('../views/AlignmentCalculatorView.vue'),
+//      meta: { title: 'Alignment Calculator' }
+//    },
     {
       path: '/data-explorer',
       name: 'data-explorer',
