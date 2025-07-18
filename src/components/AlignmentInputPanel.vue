@@ -1,4 +1,5 @@
-// src/components/AlignmentInputPanel.vue
+<!-- src/components/AlignmentInputPanel.vue -->
+<script setup>
 /**
 * @file src/components/AlignmentInputPanel.vue
 * @description Komponent för all användarinteraktion i Alignment Calculator.
@@ -7,152 +8,151 @@
 import { computed, ref, watch } from 'vue';
 import { useAlignmentStore } from '@/store/alignmentStore.js';
 
-// Skapar en instans av storen för att interagera med applikationens state
 const store = useAlignmentStore();
 
-// --- Lokal state för preset-hantering ---
 const selectedTonearmManufacturer = ref(null);
 const tonearmManufacturers = computed(() => [...new Set(store.availableTonearms.map(t => t.manufacturer))].sort());
 const filteredTonearms = computed(() => {
-  if (!selectedTonearmManufacturer.value) return [];
-  return store.availableTonearms.filter(t => t.manufacturer === selectedTonearmManufacturer.value);
+if (!selectedTonearmManufacturer.value) return [];
+return store.availableTonearms.filter(t => t.manufacturer === selectedTonearmManufacturer.value);
 });
 
 /**
-* @description Beräknad egenskap för att avgöra om den aktuella tonarmen är pivoterande
+* @description Beräknad egenskap för att avgöra om den aktuella tonarmen är pivoterande.
+* Används för att dynamiskt aktivera/inaktivera delar av gränssnittet.
 * @returns {boolean}
 */
 const isPivotingArm = computed(() => store.calculatedValues.trackingMethod === 'pivoting');
 
-// Nollställer modellvalet om tillverkaren ändras
 watch(selectedTonearmManufacturer, () => {
-  store.selectedTonearmId = null;
+store.selectedTonearmId = null;
 });
 
 /**
-* @description Återställer valet av tonarmspreset
+* @description Återställer valet av tonarmspreset.
 */
 function resetTonearmSelection() {
-  selectedTonearmManufacturer.value = null;
-  store.loadTonearmPreset(null);
+selectedTonearmManufacturer.value = null;
+store.loadTonearmPreset(null);
 }
+</script>
 
-const template = `
+<template>
 <div class="input-panel panel">
-  <h2>Setup & Controls</h2>
+<h2>Setup & Controls</h2>
 
-  <template v-if="!store.isLoading">
-    <fieldset>
-      <legend>1. Tonearm Setup</legend>
-      <p class="fieldset-description">
-        Start by loading a preset or manually entering your tonearm's Pivot-to-Spindle distance.
-      </p>
+<template v-if="!store.isLoading">
+  <fieldset>
+    <legend>1. Tonearm Setup</legend>
+    <p class="fieldset-description">
+      Start by loading a preset or manually entering your tonearm's Pivot-to-Spindle distance.
+    </p>
 
-      <div class="preset-group">
-        <label>Load Tonearm Preset (Optional)</label>
-        <div class="preset-selectors">
-          <select v-model="selectedTonearmManufacturer" class="value-select manufacturer">
-            <option :value="null" disabled>Select Manufacturer</option>
-            <option v-for="man in tonearmManufacturers" :key="man" :value="man">{{ man }}</option>
-          </select>
-          <select v-model="store.selectedTonearmId" @change="store.loadTonearmPreset($event.target.value)" :disabled="!selectedTonearmManufacturer" class="value-select model">
-            <option :value="null" disabled>Select Model</option>
-            <option v-for="arm in filteredTonearms" :key="arm.id" :value="arm.id">{{ arm.model }}</option>
-          </select>
-          <button v-if="store.selectedTonearmId" @click="resetTonearmSelection" class="reset-preset-btn" title="Clear tonearm selection">✖</button>
-        </div>
+    <div class="preset-group">
+      <label>Load Tonearm Preset (Optional)</label>
+      <div class="preset-selectors">
+        <select v-model="selectedTonearmManufacturer" class="value-select manufacturer">
+          <option :value="null" disabled>Select Manufacturer</option>
+          <option v-for="man in tonearmManufacturers" :key="man" :value="man">{{ man }}</option>
+        </select>
+        <select v-model="store.selectedTonearmId" @change="store.loadTonearmPreset($event.target.value)" :disabled="!selectedTonearmManufacturer" class="value-select model">
+          <option :value="null" disabled>Select Model</option>
+          <option v-for="arm in filteredTonearms" :key="arm.id" :value="arm.id">{{ arm.model }}</option>
+        </select>
+        <button v-if="store.selectedTonearmId" @click="resetTonearmSelection" class="reset-preset-btn" title="Clear tonearm selection">✖</button>
       </div>
+    </div>
 
-      <div class="input-group">
-        <label for="p2s">Pivot-to-Spindle Distance (mm)</label>
-        <div class="input-control">
-          <input type="range" id="p2s" min="150" max="400" step="0.1" v-model.number="store.userInput.pivotToSpindle" @input="store.calculateAlignment" :disabled="!isPivotingArm">
-          <input type="number" class="value-display" step="0.1" v-model.number="store.userInput.pivotToSpindle" @change="store.calculateAlignment" :disabled="!isPivotingArm">
-        </div>
+    <div class="input-group">
+      <label for="p2s">Pivot-to-Spindle Distance (mm)</label>
+      <div class="input-control">
+        <input type="range" id="p2s" min="150" max="400" step="0.1" v-model.number="store.userInput.pivotToSpindle" @input="store.calculateAlignment" :disabled="!isPivotingArm">
+        <input type="number" class="value-display" step="0.1" v-model.number="store.userInput.pivotToSpindle" @change="store.calculateAlignment" :disabled="!isPivotingArm">
       </div>
-    </fieldset>
+    </div>
+  </fieldset>
 
-    <fieldset>
-      <legend>2. Alignment Geometry</legend>
-      <p v-if="isPivotingArm" class="fieldset-description">
-        Choose the alignment geometry you want to use. Each offers a different trade-off in tracking error across the record.
-      </p>
-      
-      <div class="mode-switch">
-        <button
-          v-for="(geo, key) in store.ALIGNMENT_GEOMETRIES"
-          :key="key"
-          :class="{ active: store.userInput.alignmentType === key }"
-          @click="store.setAlignment(key)"
-          :title="geo.description"
-          :disabled="!isPivotingArm"
-        >
-          {{ key.replace('A', '') }}
-        </button>
-      </div>
-      
-      <div v-if="isPivotingArm" class="geometry-info">
-          <strong>{{ store.calculatedValues.geometryName }}:</strong>
-          <span>{{ store.calculatedValues.geometryDescription }}</span>
-      </div>
+  <fieldset>
+    <legend>2. Alignment Geometry</legend>
+    <p v-if="isPivotingArm" class="fieldset-description">
+      Choose the alignment geometry you want to use. Each offers a different trade-off in tracking error across the record.
+    </p>
+    
+    <div class="mode-switch">
+      <button
+        v-for="(geo, key) in store.ALIGNMENT_GEOMETRIES"
+        :key="key"
+        :class="{ active: store.userInput.alignmentType === key }"
+        @click="store.setAlignment(key)"
+        :title="geo.description"
+        :disabled="!isPivotingArm"
+      >
+        {{ key.replace('A', '') }}
+      </button>
+    </div>
+    
+    <div v-if="isPivotingArm" class="geometry-info">
+        <strong>{{ store.calculatedValues.geometryName }}:</strong>
+        <span>{{ store.calculatedValues.geometryDescription }}</span>
+    </div>
 
-      <div v-else class="non-pivoting-info">
-          <strong>{{ store.calculatedValues.geometryName }} Arm Detected</strong>
-          <span>This is a tangential tracking tonearm. Standard alignment geometries do not apply.</span>
-      </div>
-    </fieldset>
+    <div v-else class="non-pivoting-info">
+        <strong>{{ store.calculatedValues.geometryName }} Arm Detected</strong>
+        <span>This is a tangential tracking tonearm. Standard alignment geometries do not apply.</span>
+    </div>
+  </fieldset>
 
-    <fieldset>
-      <legend>3. Groove Standard</legend>
-      <p v-if="isPivotingArm" class="fieldset-description">
-        Select the recording standard for groove radii. This affects the calculated null points.
-      </p>
-      <div class="mode-switch">
-        <button
-          v-for="(standard, key) in store.GROOVE_STANDARDS"
-          :key="key"
-          :class="{ active: store.userInput.standard === key }"
-          @click="store.setStandard(key)"
-          :title="\`${standard.name} (Inner: ${standard.inner}mm, Outer: ${standard.outer}mm)\`"
-          :disabled="!isPivotingArm"
-        >
-          {{ key }}
-        </button>
-      </div>
-    </fieldset>
+  <fieldset>
+    <legend>3. Groove Standard</legend>
+    <p v-if="isPivotingArm" class="fieldset-description">
+      Select the recording standard for groove radii. This affects the calculated null points.
+    </p>
+    <div class="mode-switch">
+      <button
+        v-for="(standard, key) in store.GROOVE_STANDARDS"
+        :key="key"
+        :class="{ active: store.userInput.standard === key }"
+        @click="store.setStandard(key)"
+        :title="`${standard.name} (Inner: ${standard.inner}mm, Outer: ${standard.outer}mm)`"
+        :disabled="!isPivotingArm"
+      >
+        {{ key }}
+      </button>
+    </div>
+  </fieldset>
 
-    <!-- NYTT FIELDSET FÖR PAPPER -->
-    <fieldset>
-      <legend>4. Protractor Paper Format</legend>
-      <p class="fieldset-description">
-        Choose the paper size for the printable protractor.
-      </p>
-      <div class="mode-switch paper-format">
-        <button
-          :class="{ active: store.userInput.paperFormat === 'A4' }"
-          @click="store.setPaperFormat('A4')"
-          title="A4 Landscape (297 x 210 mm)"
-        >
-          A4
-        </button>
-        <button
-          :class="{ active: store.userInput.paperFormat === 'Letter' }"
-          @click="store.setPaperFormat('Letter')"
-          title="US Letter Landscape (279.4 x 215.9 mm)"
-        >
-          Letter
-        </button>
-      </div>
-    </fieldset>
-  </template>
+  <fieldset>
+    <legend>4. Protractor Paper Format</legend>
+    <p class="fieldset-description">
+      Choose the paper size for the printable protractor.
+    </p>
+    <div class="mode-switch paper-format">
+      <button
+        :class="{ active: store.userInput.paperFormat === 'A4' }"
+        @click="store.setPaperFormat('A4')"
+        title="A4 Landscape (297 x 210 mm)"
+      >
+        A4
+      </button>
+      <button
+        :class="{ active: store.userInput.paperFormat === 'Letter' }"
+        @click="store.setPaperFormat('Letter')"
+        title="US Letter Landscape (279.4 x 215.9 mm)"
+      >
+        Letter
+      </button>
+    </div>
+  </fieldset>
+</template>
 
-  <div v-else class="loading-placeholder">
-    <p>Loading presets...</p>
-  </div>
+<div v-else class="loading-placeholder">
+  <p>Loading presets...</p>
 </div>
-`;
 
-const style = `
+</div>
+</template>
+
+<style scoped>
 .input-panel { display: flex; flex-direction: column; gap: 1rem; }
 fieldset { border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem 1.5rem 0.5rem; margin: 0; }
 legend { font-weight: 600; color: var(--header-color); padding: 0 0.5rem; font-size: 1.1rem; }
@@ -182,19 +182,4 @@ input:disabled { background-color: #e9ecef; cursor: not-allowed; }
 .non-pivoting-info { background-color: var(--ideal-color); border: 1px solid var(--ideal-text); padding: 0.75rem 1rem; border-radius: 4px; font-size: 0.9rem; line-height: 1.5; color: var(--ideal-text); margin-bottom: 1rem; text-align: center; }
 .non-pivoting-info strong { display: block; font-size: 1rem; margin-bottom: 0.25rem; }
 .loading-placeholder { text-align: center; padding: 2rem; color: var(--label-color); font-style: italic; }
-`;
-
-export default {
-  setup() {
-    return {
-      store,
-      selectedTonearmManufacturer,
-      tonearmManufacturers,
-      filteredTonearms,
-      isPivotingArm,
-      resetTonearmSelection
-    };
-  },
-  template,
-  style
-};
+</style>
