@@ -8,7 +8,6 @@ export const useAlignmentStore = defineStore('alignment', () => {
   const isLoading = ref(true);
   const error = ref(null);
 
-  // Importera standarder direkt från källan för att hålla det konsekvent
   const GROOVE_STANDARDS = calculator.GROOVE_STANDARDS;
 
   const ALIGNMENT_GEOMETRIES = {
@@ -27,9 +26,10 @@ export const useAlignmentStore = defineStore('alignment', () => {
   };
 
   const userInput = ref({
-    pivotToSpindle: 222, // Default to a common Rega value
+    pivotToSpindle: 222,
     alignmentType: 'Baerwald',
-    standard: 'IEC', // Nytt state för att hantera vald standard
+    standard: 'IEC',
+    paperFormat: 'A4', // NYTT STATE FÖR PAPPER
   });
 
   const availableTonearms = ref([]);
@@ -62,7 +62,7 @@ export const useAlignmentStore = defineStore('alignment', () => {
       const response = await fetch('/data/tonearm_data.json');
       if (!response.ok) throw new Error('Network response was not ok.');
       availableTonearms.value = await response.json();
-      calculateAlignment(); // Gör en initial beräkning med default-värden
+      calculateAlignment();
     } catch (e) {
       error.value = `Failed to load tonearm database: ${e.message}`;
       console.error(error.value);
@@ -85,6 +85,13 @@ export const useAlignmentStore = defineStore('alignment', () => {
     }
   }
 
+  // NY FUNKTION FÖR ATT SÄTTA PAPPER
+  function setPaperFormat(format) {
+    if (['A4', 'Letter'].includes(format)) {
+      userInput.value.paperFormat = format;
+    }
+  }
+
   function loadTonearmPreset(id) {
     selectedTonearmId.value = id ? parseInt(id, 10) : null;
     if (currentTonearm.value && currentTonearm.value.pivot_to_spindle_mm) {
@@ -97,7 +104,6 @@ export const useAlignmentStore = defineStore('alignment', () => {
     const p2s = userInput.value.pivotToSpindle;
     const standard = userInput.value.standard;
 
-    // Hantera icke-pivoterande armar från presets
     if (currentTonearm.value && currentTonearm.value.tracking_method !== 'pivoting') {
       calculatedValues.value = {
         overhang: 0,
@@ -113,10 +119,8 @@ export const useAlignmentStore = defineStore('alignment', () => {
       return;
     }
 
-    // Återställ till pivoterande om en sådan var vald innan
     calculatedValues.value.trackingMethod = 'pivoting';
 
-    // Validera input
     if (!p2s || p2s < 150 || p2s > 400) {
       calculatedValues.value.error = "Pivot-to-Spindle distance must be between 150 and 400 mm.";
       trackingErrorChartData.value = { datasets: [] };
@@ -165,6 +169,7 @@ export const useAlignmentStore = defineStore('alignment', () => {
     initialize,
     setAlignment,
     setStandard,
+    setPaperFormat, // Exponerar den nya funktionen
     loadTonearmPreset,
     calculateAlignment
   };
