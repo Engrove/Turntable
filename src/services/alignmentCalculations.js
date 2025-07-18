@@ -128,7 +128,7 @@ for (const key in geometries) {
 const geometry = geometries[key];
 const optimal = calculateOptimalAlignment(pivotToSpindle, geometry, standard);
 
-Generated code
+
 if (optimal && !optimal.error) {
   const curveData = [];
   
@@ -154,11 +154,7 @@ if (optimal && !optimal.error) {
     tension: 0.1,
   });
 }
-IGNORE_WHEN_COPYING_START
-content_copy
-download
-Use code with caution.
-IGNORE_WHEN_COPYING_END
+
 
 }
 
