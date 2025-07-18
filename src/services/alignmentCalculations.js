@@ -84,7 +84,9 @@ function solveFromNulls(p2s, n1, n2) {
 function calculateTrackingError(r, p2s, effectiveLength, offsetAngle) {
     const offsetRad = offsetAngle * (Math.PI / 180);
 
-    const arcsinArg = (r**2 + effectiveLength**2 - p2s**2) / (2 * r * effectiveLength);
+    //const arcsinArg = (r**2 + effectiveLength**2 - p2s**2) / (2 * r * effectiveLength);
+    // This CORRECTLY calculates the cosine of the angle at the SPINDLE
+    const arcsinArg = (p2s**2 + r**2 - effectiveLength**2) / (2 * p2s * r);
 
     if (arcsinArg > 1 || arcsinArg < -1) {
         return NaN;
