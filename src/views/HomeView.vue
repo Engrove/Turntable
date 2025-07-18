@@ -67,15 +67,15 @@ useHead({
             <span class="card-action">Explore Estimator →</span>
           </div>
         </RouterLink>
-
-        <RouterLink to="/alignment-calculator" class="tool-card">
+        
+<!--   <RouterLink to="/alignment-calculator" class="tool-card">
           <img src="/images/preview-alignment.webp" alt="Alignment Calculator Preview" class="tool-preview-image" loading="lazy" width="320" height="200"/>
           <div class="card-content">
             <h3>Alignment Calculator</h3>
             <p>Generate printable protractors and visualize tracking error for various alignment geometries like Baerwald, Löfgren, and Stevenson.</p>
             <span class="card-action">Explore Calculator →</span>
           </div>
-        </RouterLink>
+        </RouterLink> -->
 
         <RouterLink to="/data-explorer" class="tool-card">
           <img src="/images/preview-explorer.webp" alt="Data Explorer Preview" class="tool-preview-image" loading="lazy" width="320" height="200"/>
