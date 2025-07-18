@@ -74,36 +74,24 @@ function solveFromNulls(p2s, n1, n2) {
 }
 
 /**
- * Calculates the EXACT tracking error at a specific groove radius using the trigonometric formula.
- * @param {number} r - Groove radius (mm).
- * @param {number} p2s - Pivot-to-spindle distance (mm).
- * @param {number} effectiveLength - Tonearm effective length (mm).
- * @param {number} offsetAngle - Tonearm offset angle (degrees).
- * @returns {number} Tracking error in degrees.
+ * Beräknar spårningsfelet i grader för en given spårradie.
+ * @param {number} r - Spårets radie i mm.
+ * @param {number} L - Tonarmens effektiva längd i mm.
+ * @param {number} d - Pivot-till-spindel-distans i mm.
+ * @param {number} beta_rad - Offsetvinkeln i RADIANER.
+ * @returns {number} Spårningsfelet i GRADER.
  */
-// src/services/alignmentCalculations.js - KORRIGERAD KOD
-function calculateTrackingError(r, p2s, effectiveLength, offsetAngle) {
-    const offsetRad = offsetAngle * (Math.PI / 180);
+function calculateTrackingError(r, L, d, beta_rad) {
+  // Beräkna den geometriska vinkeln med cosinussatsen.
+  // Argumentet till asin måste vara mellan -1 och 1. Kläm värdet för numerisk stabilitet.
+  const asin_arg = Math.max(-1, Math.min(1, (r*r + L*L - d*d) / (2 * r * L)));
+  const geometricAngleRad = Math.asin(asin_arg);
 
-    // Beräkna cosinus för vinkeln vid spindeln (gamma) med cosinussatsen
-    // Korrekt formel: cos(gamma) = (d^2 + r^2 - L^2) / (2 * d * r)
-    const cosAngleSpindle = (p2s**2 + r**2 - effectiveLength**2) / (2 * p2s * r);
+  // Spårningsfelet är skillnaden mellan den geometriska vinkeln och offsetvinkeln.
+  const trackingErrorRad = geometricAngleRad - beta_rad;
 
-    // Säkerställ att argumentet är giltigt för acos
-    if (cosAngleSpindle > 1 || cosAngleSpindle < -1) {
-        return NaN;
-    }
-
-    const angleSpindleRad = Math.acos(cosAngleSpindle);
-
-    // Spårvinkeln (psi) är skillnaden mellan tangentens 90 grader och vinkeln vid spindeln.
-    // Vi använder Math.abs() för att säkerställa att den alltid är positiv.
-    const trackingAngleRad = Math.abs((Math.PI / 2) - angleSpindleRad);
-
-    // Spårfelet är skillnaden mellan den faktiska spårvinkeln och tonarmens fasta offsetvinkel.
-    const errorRad = trackingAngleRad - offsetRad;
-
-    return errorRad * (180 / Math.PI);
+  // Konvertera slutresultatet från radianer till grader för plottning.
+  return trackingErrorRad * (180 / Math.PI);
 }
 
 /**
@@ -125,4 +113,24 @@ export function generateTrackingErrorCurve(p2s, effectiveLength, offsetAngle) {
         }
     }
     return dataPoints;
+}
+
+/**
+ * Genererar en array med datapunkter för spårningsfelsdiagrammet.
+ * @param {number} L - Effektiv längd i mm.
+ * @param {number} d - Pivot-till-spindel-distans i mm.
+ * @param {number} beta_deg - Offsetvinkel i GRADER.
+ * @returns {Array<Object>} En array av {x, y}-punkter för diagrammet.
+ */
+function generateTrackingErrorData(L, d, beta_deg) {
+  // KRITISKT STEG: Konvertera offsetvinkeln från grader till radianer för beräkning.
+  const beta_rad = beta_deg * (Math.PI / 180);
+  
+  const dataPoints =;
+  // Iterera över den standardiserade spelytan enligt IEC.
+  for (let r = 60.325; r <= 146.05; r += 0.5) {
+    const trackingErrorDeg = calculateTrackingError(r, L, d, beta_rad);
+    dataPoints.push({ x: r, y: trackingErrorDeg });
+  }
+  return dataPoints;
 }
