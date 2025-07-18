@@ -4,7 +4,6 @@ import { ref, computed } from 'vue';
 import * as calculator from '@/services/alignmentCalculations.js';
 
 export const useAlignmentStore = defineStore('alignment', () => {
-  // --- STATE ---
   const isLoading = ref(true);
   const error = ref(null);
 
@@ -29,7 +28,7 @@ export const useAlignmentStore = defineStore('alignment', () => {
     pivotToSpindle: 222,
     alignmentType: 'Baerwald',
     standard: 'IEC',
-    paperFormat: 'A4', // NYTT STATE FÖR PAPPER
+    paperFormat: 'A4',
   });
 
   const availableTonearms = ref([]);
@@ -48,13 +47,11 @@ export const useAlignmentStore = defineStore('alignment', () => {
 
   const trackingErrorChartData = ref({ datasets: [] });
 
-  // --- GETTERS ---
   const currentTonearm = computed(() => {
     if (!selectedTonearmId.value) return null;
     return availableTonearms.value.find(t => t.id === selectedTonearmId.value);
   });
 
-  // --- ACTIONS ---
   async function initialize() {
     isLoading.value = true;
     error.value = null;
@@ -85,7 +82,6 @@ export const useAlignmentStore = defineStore('alignment', () => {
     }
   }
 
-  // NY FUNKTION FÖR ATT SÄTTA PAPPER
   function setPaperFormat(format) {
     if (['A4', 'Letter'].includes(format)) {
       userInput.value.paperFormat = format;
@@ -169,7 +165,7 @@ export const useAlignmentStore = defineStore('alignment', () => {
     initialize,
     setAlignment,
     setStandard,
-    setPaperFormat, // Exponerar den nya funktionen
+    setPaperFormat,
     loadTonearmPreset,
     calculateAlignment
   };
