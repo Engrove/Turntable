@@ -44,7 +44,7 @@ const term2 = (R1 * R2) / (D * D);
 offsetAngleRad = Math.asin(term1 * (1 - term2 / (1 + term1 * term1)));
 overhang = D * (term2 / (2 * (1 - term1 * term1)));
 
-Generated code
+
 const sinOffset = Math.sin(offsetAngleRad);
 const termA = 2 * D * sinOffset;
 const termB = D * D - 2 * D * overhang - overhang * overhang;
