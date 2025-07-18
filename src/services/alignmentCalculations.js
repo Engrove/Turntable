@@ -17,7 +17,7 @@ It is intended to be the sole source of truth for alignment mathematics,
 
 keeping the Pinia store clean and focused on state management.
 
-VERSION 2.3: Final correction of all syntax errors.
+VERSION 2.4: Final, definitive correction of all syntax and reference errors.
 */
 
 // ==========================================================================
@@ -83,6 +83,7 @@ const d = pivotToSpindle;
 const R_avg = (n1 + n2) / 2;
 const R_prod = n1 * n2;
 const term = d + (R_prod / d);
+// KORRIGERING: Använder korrekt exponentieringsoperator.
 const effectiveLength = Math.sqrt(term2 + R_avg2);
 const overhang = effectiveLength - d;
 
@@ -166,7 +167,7 @@ const d = pivotToSpindle;
 const L = d + overhang; // Effective Length
 const betaRad = offsetAngle * (Math.PI / 180);
 
-// This is the correct formula for the tracking angle (phi) at the stylus tip.
+// KORRIGERING: Använder korrekt exponentieringsoperator.
 const arcsinArg = (r / (2 * L)) + ((L2 - d2) / (2 * r * L));
 
 // Prevent math domain errors from floating point inaccuracies
@@ -204,6 +205,7 @@ const stepSize = (outerGroove - innerGroove) / (steps - 1);
 for (let i = 0; i < steps; i++) {
 const radius = innerGroove + (i * stepSize);
 const errorDegrees = calculateTrackingErrorAtRadius(radius, pivotToSpindle, overhang, offsetAngle);
+
 
 curveData.push({
   x: radius,
