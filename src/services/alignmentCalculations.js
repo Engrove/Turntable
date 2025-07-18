@@ -60,7 +60,7 @@ nulls = { inner: innerNull, outer: outerNull };
 
 
 } else {
-return { error: Unknown geometry: ${geometry.name} };
+return { error: `Unknown geometry: ${geometry.name}` };
 }
 
 // Konvertera offsetvinkel från radianer till grader.
