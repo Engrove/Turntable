@@ -81,18 +81,26 @@ function solveFromNulls(p2s, n1, n2) {
  * @param {number} offsetAngle - Tonearm offset angle (degrees).
  * @returns {number} Tracking error in degrees.
  */
+// src/services/alignmentCalculations.js - KORRIGERAD KOD
 function calculateTrackingError(r, p2s, effectiveLength, offsetAngle) {
     const offsetRad = offsetAngle * (Math.PI / 180);
 
-    //const arcsinArg = (r**2 + effectiveLength**2 - p2s**2) / (2 * r * effectiveLength);
-    // This CORRECTLY calculates the cosine of the angle at the SPINDLE
-    const arcsinArg = (p2s**2 + r**2 - effectiveLength**2) / (2 * p2s * r);
+    // Beräkna cosinus för vinkeln vid spindeln (gamma) med cosinussatsen
+    // Korrekt formel: cos(gamma) = (d^2 + r^2 - L^2) / (2 * d * r)
+    const cosAngleSpindle = (p2s**2 + r**2 - effectiveLength**2) / (2 * p2s * r);
 
-    if (arcsinArg > 1 || arcsinArg < -1) {
+    // Säkerställ att argumentet är giltigt för acos
+    if (cosAngleSpindle > 1 || cosAngleSpindle < -1) {
         return NaN;
     }
 
-    const trackingAngleRad = Math.asin(arcsinArg);
+    const angleSpindleRad = Math.acos(cosAngleSpindle);
+
+    // Spårvinkeln (psi) är skillnaden mellan tangentens 90 grader och vinkeln vid spindeln.
+    // Vi använder Math.abs() för att säkerställa att den alltid är positiv.
+    const trackingAngleRad = Math.abs((Math.PI / 2) - angleSpindleRad);
+
+    // Spårfelet är skillnaden mellan den faktiska spårvinkeln och tonarmens fasta offsetvinkel.
     const errorRad = trackingAngleRad - offsetRad;
 
     return errorRad * (180 / Math.PI);
