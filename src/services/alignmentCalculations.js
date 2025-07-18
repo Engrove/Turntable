@@ -1,118 +1,187 @@
 // src/services/alignmentCalculations.js
+/**
+@file src/services/alignmentCalculations.js
+@description Denna fil är hjärnan bakom justeringskalkylatorn. Den innehåller all
+kärnlogik och de matematiska formler som krävs för att beräkna optimala
+justeringsgeometrier (överhäng, offsetvinkel, nollpunkter) och för att
+generera data för visualisering av spårningsfel över en skivas yta.
+All logik här är ren JavaScript utan beroenden till externa bibliotek.
+*/
 
 /**
- * This service contains all the core mathematical functions for calculating
- * tonearm alignment geometries (Baerwald, Löfgren B, Stevenson) and tracking error.
- * It uses a robust direct calculation for the geometry and the exact
- * trigonometric formula for tracking error, ensuring high precision.
- */
+Beräknar de optimala värdena för överhäng och offsetvinkel baserat på en given
+pivot-till-spindel-distans och vald justeringsgeometri (t.ex. Baerwald).
+Formlerna är baserade på standardteori från Löfgren och Baerwald.
+@param {number} pivotToSpindle - Avståndet från tonarmens pivotpunkt till skivtallrikens spindel i mm.
+@param {object} geometry - Ett objekt som definierar den valda geometrin (namn, beskrivning).
+@param {object} standard - Ett objekt som definierar inre och yttre spelradier (inner, outer) i mm.
+@returns {object|null} Ett objekt med beräknade värden (overhang, offsetAngle, effectiveLength, nulls) eller null vid fel.
+*/
 
-// --- CONSTANTS ---
-// IEC 60098 standard groove radii (mm)
-const R1 = 60.325; // Inner groove radius
-const R2 = 146.05; // Outer groove radius
+function calculateOptimalAlignment(pivotToSpindle, geometry, standard) {
+// Kontrollerar att indata är giltiga för att undvika beräkningsfel.
+if (!pivotToSpindle || !geometry || !standard || pivotToSpindle <= 0) {
+return { error: "Invalid input for alignment calculation." };
+}
 
-// --- CORE GEOMETRY SOLVERS ---
+const D = pivotToSpindle;
+const R1 = standard.inner; // Inre spelradie
+const R2 = standard.outer; // Yttre spelradie
 
-/**
- * Calculates Baerwald (Löfgren A) geometry for a given pivot-to-spindle distance.
- * @param {number} p2s - Pivot-to-spindle distance in mm.
- * @returns {object} { overhang, offsetAngle, effectiveLength, nulls: { inner, outer } }
- */
-export function calculateBaerwald(p2s) {
-    const n1 = 66.0;
-    const n2 = 120.89;
-    const geometry = solveFromNulls(p2s, n1, n2);
-    return { ...geometry, nulls: { inner: n1, outer: n2 } };
+let overhang, offsetAngleRad, nulls;
+
+// Väljer beräkningslogik baserat på vald geometri.
+// Notera: Baerwald är tekniskt sett samma som Löfgren A.
+if (geometry.name === 'Baerwald' || geometry.name === 'LofgrenA' || geometry.name === 'LofgrenB') {
+const R1_sq = R1 * R1;
+const R2_sq = R2 * R2;
+
+
+// Beräkna nollpunkter först för Löfgren/Baerwald
+const innerNull = (R1_sq + R2_sq - Math.sqrt((R1_sq - R2_sq)**2 + 4 * D**2 * (R1_sq + R2_sq))) / (2 * D);
+const outerNull = (R1_sq + R2_sq + Math.sqrt((R1_sq - R2_sq)**2 + 4 * D**2 * (R1_sq + R2_sq))) / (2 * D);
+
+// För Löfgren B är nollpunkterna annorlunda
+if (geometry.name === 'LofgrenB') {
+    const n1 = Math.sqrt(R1 * R2);
+    const n2 = (R1 + R2) / 2;
+    nulls = { inner: n1, outer: n2 };
+} else { // Baerwald / Löfgren A
+    nulls = { inner: (Math.sqrt(2) * R1 * R2) / Math.sqrt(R1_sq + R2_sq), outer: Math.sqrt((R1_sq + R2_sq) / 2) };
+}
+
+const n_inner = nulls.inner;
+const n_outer = nulls.outer;
+
+overhang = (n_inner * n_outer) / D;
+offsetAngleRad = Math.asin((n_inner + n_outer) / (2 * D));
+
+
+} else if (geometry.name === 'Stevenson') {
+// För Stevenson beräknas överhäng och vinkel direkt från spelradierna.
+const term1 = (R1 + R2) / (2 * D);
+const term2 = (R1 * R2) / (D * D);
+offsetAngleRad = Math.asin(term1 * (1 - term2 / (1 + term1term1)));
+overhang = D * (term2 / (2 * (1 - term1term1)));
+
+
+// Beräkna nollpunkterna för Stevenson
+const sinOffset = Math.sin(offsetAngleRad);
+const termA = 2 * D * sinOffset;
+const termB = D*D - 2*D*overhang - overhang*overhang;
+const innerNull = (termA - Math.sqrt(termA*termA - 4*termB))/2;
+const outerNull = (termA + Math.sqrt(termA*termA - 4*termB))/2;
+nulls = { inner: innerNull, outer: outerNull };
+
+
+} else {
+return { error: Unknown geometry: ${geometry.name} };
+}
+
+// Konvertera offsetvinkel från radianer till grader.
+const offsetAngle = offsetAngleRad * (180 / Math.PI);
+// Beräkna effektiv längd.
+const effectiveLength = Math.sqrt(D * D + overhang * overhang + 2 * D * overhang);
+
+return {
+overhang,
+offsetAngle,
+effectiveLength,
+nulls,
+error: null
+};
 }
 
 /**
- * Calculates Löfgren B geometry for a given pivot-to-spindle distance.
- * @param {number} p2s - Pivot-to-spindle distance in mm.
- * @returns {object} { overhang, offsetAngle, effectiveLength, nulls: { inner, outer } }
- */
-export function calculateLofgrenB(p2s) {
-    const n1 = 70.29;
-    const n2 = 116.60;
-    const geometry = solveFromNulls(p2s, n1, n2);
-    return { ...geometry, nulls: { inner: n1, outer: n2 } };
+
+Beräknar det specifika spårningsfelet (i grader) vid en given radie på skivan.
+
+@param {number} overhang - Tonarmens överhäng i mm.
+
+@param {number} offsetAngle - Tonarmens offsetvinkel i grader.
+
+@param {number} pivotToSpindle - Avståndet från pivot till spindel i mm.
+
+@param {number} radius - Den specifika radien på skivan där felet ska beräknas.
+
+@returns {number} Spårningsfelet i grader.
+*/
+function calculateTrackingErrorAtRadius(overhang, offsetAngle, pivotToSpindle, radius) {
+const D = pivotToSpindle;
+const Le = Math.sqrt((D + overhang) ** 2); // Effektiv längd
+const offsetRad = offsetAngle * (Math.PI / 180);
+
+const trackingAngleRad = Math.asin((radius * radius + D * D - Le * Le) / (2 * radius * D));
+const errorRad = offsetRad - trackingAngleRad;
+
+return errorRad * (180 / Math.PI);
 }
 
 /**
- * Calculates Stevenson A geometry for a given pivot-to-spindle distance.
- * @param {number} p2s - Pivot-to-spindle distance in mm.
- * @returns {object} { overhang, offsetAngle, effectiveLength, nulls: { inner, outer } }
- */
-export function calculateStevensonA(p2s) {
-    const n1 = 60.325; // Stevenson's inner null is fixed at the inner groove radius
-    const n2 = 117.42; // Pre-calculated optimal outer null for Stevenson A with IEC radii
-    const geometry = solveFromNulls(p2s, n1, n2);
-    return { ...geometry, nulls: { inner: n1, outer: n2 } };
+
+Genererar den kompletta datastrukturen för spårningsfelsdiagrammet.
+
+Den itererar igenom alla tillgängliga geometrier, beräknar deras optimala
+
+justering och skapar sedan en dataserie (kurva) för var och en.
+
+@param {number} pivotToSpindle - Avståndet från pivot till spindel i mm.
+
+@param {object} geometries - Ett objekt som innehåller alla justeringsgeometrier.
+
+@param {object} standard - Det valda standardobjektet för spelradier.
+
+@returns {object} Ett objekt redo att användas av Chart.js, innehållande datasets.
+*/
+function generateTrackingErrorData(pivotToSpindle, geometries, standard) {
+const datasets = [];
+
+for (const key in geometries) {
+const geometry = geometries[key];
+const optimal = calculateOptimalAlignment(pivotToSpindle, geometry, standard);
+
+
+if (optimal && !optimal.error) {
+  const curveData = [];
+  
+  // === KORRIGERINGEN STARTAR HÄR ===
+  // Denna loop fanns inte tidigare, vilket resulterade i en tom `curveData`-array.
+  // Nu itererar vi från inre till yttre radie med 1 mm steg för att bygga upp kurvan.
+  for (let r = standard.inner; r <= standard.outer; r += 1) {
+    // Beräkna spårningsfelet vid den aktuella radien `r`.
+    const error = calculateTrackingErrorAtRadius(
+      optimal.overhang,
+      optimal.offsetAngle,
+      pivotToSpindle,
+      r
+    );
+    // Lägg till datapunkten i formatet {x, y} som Chart.js förväntar sig.
+    curveData.push({ x: r, y: error });
+  }
+  // === KORRIGERINGEN SLUTAR HÄR ===
+
+  datasets.push({
+    label: geometry.name.replace('A', ''),
+    data: curveData,
+    borderColor: geometry.color,
+    borderWidth: 2, // Standardbredd
+    pointRadius: 0,
+    fill: false,
+    tension: 0.1,
+  });
 }
 
-// --- HELPER FUNCTIONS ---
 
-/**
- * Solves for overhang, offset angle, AND effective length from two null points and a pivot-to-spindle distance.
- * @param {number} p2s - Pivot-to-spindle distance (d).
- * @param {number} n1 - Inner null point radius.
- * @param {number} n2 - Outer null point radius.
- * @returns {object} { overhang, offsetAngle, effectiveLength }
- */
-function solveFromNulls(p2s, n1, n2) {
-    const avgNull = (n1 + n2) / 2;
-    const effectiveLength = Math.sqrt(p2s**2 + n1*n2 + avgNull**2 + (n1*n2)**2 / (4*p2s**2) - (avgNull*n1*n2)/p2s);
-
-    const overhang = (n1 * n2) / effectiveLength;
-    const offsetRad = Math.asin((n1 + n2) / (2 * effectiveLength));
-
-    return {
-        overhang: overhang,
-        offsetAngle: offsetRad * (180 / Math.PI),
-        effectiveLength: effectiveLength // KORRIGERING: Returnera det exakta värdet
-    };
 }
 
-/**
- * Calculates the EXACT tracking error at a specific groove radius using the trigonometric formula.
- * @param {number} r - Groove radius (mm).
- * @param {number} p2s - Pivot-to-spindle distance (mm).
- * @param {number} effectiveLength - Tonearm effective length (mm).
- * @param {number} offsetAngle - Tonearm offset angle (degrees).
- * @returns {number} Tracking error in degrees.
- */
-function calculateTrackingError(r, p2s, effectiveLength, offsetAngle) {
-    const offsetRad = offsetAngle * (Math.PI / 180);
-
-    const arcsinArg = (r**2 + effectiveLength**2 - p2s**2) / (2 * r * effectiveLength);
-
-    if (arcsinArg > 1 || arcsinArg < -1) {
-        return NaN;
-    }
-
-    const trackingAngleRad = Math.asin(arcsinArg);
-    const errorRad = trackingAngleRad - offsetRad;
-
-    return errorRad * (180 / Math.PI);
+return { datasets };
 }
 
-/**
- * Generates an array of {x, y} points for plotting the tracking error curve.
- * KORRIGERING: Tar nu emot effectiveLength direkt för perfekt konsistens.
- * @param {number} p2s - Pivot-to-spindle distance (mm).
- * @param {number} effectiveLength - The calculated effective length (mm).
- * @param {number} offsetAngle - Tonearm offset angle (degrees).
- * @returns {Array<object>} Array of points for Chart.js.
- */
-export function generateTrackingErrorCurve(p2s, effectiveLength, offsetAngle) {
-    const dataPoints = [];
-    const step = 0.5; // mm per step
-
-    for (let r = R1; r <= R2; r += step) {
-        const error = calculateTrackingError(r, p2s, effectiveLength, offsetAngle);
-        if (!isNaN(error)) {
-            dataPoints.push({ x: r, y: error });
-        }
-    }
-    return dataPoints;
-}
+// Exporterar funktionerna så att de kan användas av andra delar av applikationen,
+// framförallt av alignmentStore.
+export {
+calculateOptimalAlignment,
+generateTrackingErrorData,
+calculateTrackingErrorAtRadius
+};
+// src/services/alignmentCalculations.js
