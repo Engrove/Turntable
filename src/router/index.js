@@ -1,6 +1,6 @@
 // src/router/index.js
-import { createRouter, createWebHistory } from 'vue-router';
-import HomeView from '../views/HomeView.vue';
+import { createRouter, createWebHistory } from 'vue-router'
+import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -9,51 +9,49 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
-      meta: { title: 'Home' }
+      meta: { title: 'Home', isReportPage: false }
     },
     {
       path: '/tonearm-calculator',
       name: 'tonearm-calculator',
-      // Dynamisk import för lazy loading
       component: () => import('../views/TonearmCalculatorView.vue'),
-      meta: { title: 'Resonance Calculator' }
+      meta: { title: 'Resonance Calculator', isReportPage: false }
     },
     {
       path: '/compliance-estimator',
       name: 'compliance-estimator',
-      // Dynamisk import för lazy loading
       component: () => import('../views/ComplianceEstimatorView.vue'),
-      meta: { title: 'Compliance Estimator' }
+      meta: { title: 'Compliance Estimator', isReportPage: false }
     },
-//    {
-//      path: '/alignment-calculator',
-//      name: 'alignment-calculator',
-//      // Dynamisk import för lazy loading
-//      component: () => import('../views/AlignmentCalculatorView.vue'),
-//      meta: { title: 'Alignment Calculator' }
-//    },
+    // --- NY ROUTE TILLAGD HÄR ---
+    {
+      path: '/alignment-calculator',
+      name: 'alignment-calculator',
+      component: () => import('../views/AlignmentCalculatorView.vue'),
+      meta: { title: 'Alignment Calculator', isReportPage: false }
+    },
+    // --- SLUT PÅ NY ROUTE ---
     {
       path: '/data-explorer',
       name: 'data-explorer',
-      // Dynamisk import för lazy loading
       component: () => import('../views/DataExplorerView.vue'),
-      meta: { title: 'Data Explorer' }
+      meta: { title: 'Data Explorer', isReportPage: false }
     },
     {
       path: '/report',
       name: 'report',
-      // Dynamisk import för lazy loading
       component: () => import('../views/ReportView.vue'),
-      meta: { isReportPage: true } // Ingen titel, visas ej i menyn
+      meta: { title: 'Generated Report', isReportPage: true }
     }
   ],
+  // Funktion för att scrolla till toppen vid sidbyte
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
-      return savedPosition;
+      return savedPosition
     } else {
-      return { top: 0 };
+      return { top: 0 }
     }
-  }
-});
+  },
+})
 
-export default router;
+export default router
