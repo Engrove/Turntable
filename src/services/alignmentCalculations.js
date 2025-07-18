@@ -89,9 +89,7 @@ function calculateTrackingErrorAtRadius(radius, pivotToSpindle, overhang, offset
   // KORRIGERING: Återställer den matematiskt korrekta formeln baserad på cosinussatsen.
   const arcsinArg = (r**2 + L**2 - d**2) / (2 * r * L);
 
-  if (arcsinArg > 1 |
-
-| arcsinArg < -1) {
+  if (arcsinArg > 1 || arcsinArg < -1) {
     return NaN;
   }
 
