@@ -49,11 +49,11 @@ this.isLoading = true;
 this.error = null;
 try {
 const response = await fetch('/data/tonearm_data.json');
-if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+if (!response.ok) throw new Error(HTTP error! status: ${response.status});
 this.availableTonearms = await response.json();
 this.calculateAlignment();
 } catch (e) {
-this.error = `Failed to load tonearm database: ${e.message}`;
+this.error = Failed to load tonearm database: ${e.message};
 console.error(e);
 } finally {
 this.isLoading = false;
@@ -103,11 +103,10 @@ calculateAlignment() {
       trackingMethod: 'tangential',
       error: null,
     };
-    this.trackingErrorChartData = { datasets: [] }; // Rensa diagrammet
+    this.trackingErrorChartData = { datasets: [] };
     return;
   }
 
-  // HÄRDNING: Kontrollera att resultatet från beräkningstjänsten är giltigt.
   const results = calculateAlignmentGeometries(this.userInput);
   if (!results) {
       this.error = "Calculation service failed to return a valid result.";
@@ -129,13 +128,21 @@ calculateAlignment() {
 },
 
 updateChartData() {
+    const geometryColors = {
+        Baerwald: '#3498db', // Blå
+        LofgrenB: '#27ae60', // Grön
+        Stevenson: '#8e44ad', // Lila
+    };
+    const activeColor = '#c0392b'; // Röd för aktiv
+
     const datasets = Object.entries(this.allGeometries).map(([key, geo]) => {
         const isActive = key === this.userInput.alignmentType;
         return {
             label: key,
             data: geo.data,
-            borderColor: isActive ? '#c0392b' : '#bdc3c7',
+            borderColor: isActive ? activeColor : geometryColors[key],
             borderWidth: isActive ? 3 : 1.5,
+            borderDash: isActive ? [] :,
             pointRadius: 0,
             tension: 0.1,
             fill: false,
@@ -143,7 +150,6 @@ updateChartData() {
     });
     this.trackingErrorChartData = { datasets };
 },
-
 
 }
 });
