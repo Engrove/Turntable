@@ -1,48 +1,558 @@
 [
-  { "id": 1, "bearing_type": "knife_edge", "headshell_connector": "integrated" },
-  { "id": 2, "bearing_type": "knife_edge", "headshell_connector": "sme_universal" },
-  { "id": 3, "bearing_type": "gimbal", "headshell_connector": "integrated" },
-  { "id": 4, "bearing_type": "gimbal", "arm_material": "titanium", "headshell_connector": "sme_universal" },
-  { "id": 5, "bearing_type": "gimbal", "headshell_connector": "sme_universal" },
-  { "id": 6, "bearing_type": "gimbal", "headshell_connector": "integrated" },
-  { "id": 7, "bearing_type": "gimbal", "headshell_connector": "sme_universal" },
-  { "id": 8, "bearing_type": "gimbal", "arm_material": "carbon_fibre", "headshell_connector": "integrated" },
-  { "id": 9, "bearing_type": "unipivot", "headshell_connector": "integrated" },
-  { "id": 10, "bearing_type": "knife_edge", "arm_material": "carbon_fibre", "headshell_connector": "sme_universal" },
-  { "id": 11, "bearing_type": "gimbal", "headshell_connector": "sme_universal" },
-  { "id": 12, "bearing_type": "gimbal", "arm_material": "magnesium", "headshell_connector": "integrated" },
-  { "id": 13, "bearing_type": "unipivot", "headshell_connector": "integrated" },
-  { "id": 14, "bearing_type": "gimbal", "headshell_connector": "sme_universal" },
-  { "id": 15, "bearing_type": "unipivot", "headshell_connector": "integrated" },
-  { "id": 16, "bearing_type": "unipivot", "arm_material": "stainless_steel", "headshell_connector": "integrated" },
-  { "id": 17, "bearing_type": "knife_edge", "headshell_connector": "sme_universal" },
-  { "id": 18, "bearing_type": "gimbal", "headshell_connector": "proprietary" },
-  { "id": 19, "bearing_type": "gimbal", "arm_material": "titanium", "headshell_connector": "integrated" },
-  { "id": 20, "bearing_type": "gimbal", "headshell_connector": "proprietary" },
-  { "id": 21, "bearing_type": "gimbal", "headshell_connector": "sme_universal" },
-  { "id": 22, "bearing_type": "unipivot", "headshell_connector": "integrated" },
-  { "id": 23, "bearing_type": "gimbal", "headshell_connector": "integrated" },
-  { "id": 24, "bearing_type": "gimbal", "arm_material": "carbon_fibre", "headshell_connector": "sme_universal" },
-  { "id": 25, "bearing_type": "gimbal", "headshell_connector": "integrated" },
-  { "id": 26, "bearing_type": "gimbal", "headshell_connector": "integrated" },
-  { "id": 27, "bearing_type": "gimbal", "headshell_connector": "integrated" },
-  { "id": 28, "bearing_type": "gimbal", "arm_material": "titanium", "headshell_connector": "integrated" },
-  { "id": 29, "bearing_type": "gimbal", "headshell_connector": "sme_universal" },
-  { "id": 30, "bearing_type": "gimbal", "headshell_connector": "integrated" },
-  { "id": 54, "bearing_type": "knife_edge", "headshell_connector": "proprietary" },
-  { "id": 67, "effective_mass_g": 12.5 },
-  { "id": 103, "tracking_method": "tangential_pivot" },
-  { "id": 113, "effective_mass_g": 13.9 },
-  { "id": 150, "effective_mass_g": 15.5 },
-  { "id": 194, "effective_mass_g": 25 },
-  { "id": 208, "effective_mass_g": 11.5 },
-  { "id": 222, "effective_mass_g": 12 },
-  { "id": 227, "effective_mass_g": 12.5 },
-  { "id": 263, "effective_mass_g": 13.1 },
-  { "id": 264, "effective_mass_g": 11 },
-  { "id": 274, "effective_mass_g": 11 },
-  { "id": 281, "effective_mass_g": 10.5 },
-  { "id": 288, "effective_mass_g": 11.5 },
-  { "id": 289, "effective_mass_g": 12 },
-  { "id": 298, "effective_mass_g": 12 }
+  {
+    "id": 1,
+    "data": {
+      "offset_angle_deg": 23.62,
+      "alignment_geometry": "baerwald",
+      "null_points_mm": [66.0, 120.9],
+      "cartridge_weight_range_g": "4-10",
+      "stylus_pressure_range_g": "0-2.5",
+      "vta_adjustment": "threaded_collar",
+      "azimuth_adjustment": false,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": 180
+    }
+  },
+  {
+    "id": 2,
+    "data": {
+      "offset_angle_deg": 23.62,
+      "alignment_geometry": "baerwald",
+      "null_points_mm": [66.0, 120.9],
+      "cartridge_weight_range_g": "4-12",
+      "stylus_pressure_range_g": "0-2.5",
+      "vta_adjustment": "threaded_collar",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": 180
+    }
+  },
+  {
+    "id": 3,
+    "data": {
+      "offset_angle_deg": 22.0,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [60.0, 114.7],
+      "cartridge_weight_range_g": "4-11",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "shims",
+      "azimuth_adjustment": false,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "captive",
+      "external_cable_capacitance_pf": 110,
+      "notes": "A benchmark for budget to mid-priced tonearms for decades. VTA requires shims. Rega's geometry is a Stevenson variant."
+    }
+  },
+  {
+    "id": 4,
+    "data": {
+      "offset_angle_deg": 21.0,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [62.0, 117.0],
+      "cartridge_weight_range_g": "5-11",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "threaded_collar",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": null
+    }
+  },
+  {
+    "id": 5,
+    "data": {
+      "offset_angle_deg": 22.0,
+      "bearing_type": "damped_unipivot",
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [59.0, 113.0],
+      "cartridge_weight_range_g": "4-12",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "threaded_collar",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": null
+    }
+  },
+  {
+    "id": 6,
+    "data": {
+      "offset_angle_deg": 24.0,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [63.0, 119.0],
+      "cartridge_weight_range_g": "3-9",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "threaded_collar",
+      "azimuth_adjustment": false,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": 130
+    }
+  },
+  {
+    "id": 7,
+    "data": {
+      "offset_angle_deg": 21.5,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [59.0, 120.0],
+      "cartridge_weight_range_g": "10-38",
+      "stylus_pressure_range_g": "0-5.0",
+      "vta_adjustment": "threaded_collar",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "silver",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": null
+    }
+  },
+  {
+    "id": 8,
+    "data": {
+      "offset_angle_deg": 23.0,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [65.0, 120.0],
+      "cartridge_weight_range_g": "5-15",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "threaded_collar",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": 100
+    }
+  },
+  {
+    "id": 9,
+    "data": {
+      "offset_angle_deg": 22.0,
+      "bearing_type": "damped_unipivot",
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [60.0, 115.0],
+      "cartridge_weight_range_g": "4-10",
+      "stylus_pressure_range_g": "0-2.5",
+      "vta_adjustment": "shims",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "captive",
+      "external_cable_capacitance_pf": 120
+    }
+  },
+  {
+    "id": 10,
+    "data": {
+      "offset_angle_deg": 22.0,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [60.0, 115.0],
+      "cartridge_weight_range_g": "4-9",
+      "stylus_pressure_range_g": "0-2.0",
+      "vta_adjustment": "shims",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "rca",
+      "external_cable_capacitance_pf": null
+    }
+  },
+  {
+    "id": 11,
+    "data": {
+      "offset_angle_deg": 22.0,
+      "alignment_geometry": "baerwald",
+      "null_points_mm": [64.0, 118.0],
+      "cartridge_weight_range_g": "15-35",
+      "stylus_pressure_range_g": "0-5.0",
+      "vta_adjustment": "threaded_collar",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "silver",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": null
+    }
+  },
+  {
+    "id": 12,
+    "data": {
+      "offset_angle_deg": 23.0,
+      "alignment_geometry": "baerwald",
+      "null_points_mm": [65.5, 120.5],
+      "cartridge_weight_range_g": "5-17",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "threaded_collar",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "silver",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": null
+    }
+  },
+  {
+    "id": 13,
+    "data": {
+      "offset_angle_deg": 22.9,
+      "bearing_type": "damped_unipivot",
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [61.0, 116.0],
+      "cartridge_weight_range_g": "5-14",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "on_the_fly",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": null
+    }
+  },
+  {
+    "id": 14,
+    "data": {
+      "offset_angle_deg": 22.0,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [60.0, 114.0],
+      "cartridge_weight_range_g": "5-10",
+      "stylus_pressure_range_g": "0-4.0",
+      "vta_adjustment": "shims",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "captive",
+      "external_cable_capacitance_pf": 120
+    }
+  },
+  {
+    "id": 15,
+    "data": {
+      "offset_angle_deg": 23.0,
+      "bearing_type": "damped_unipivot",
+      "alignment_geometry": "baerwald",
+      "null_points_mm": [66.0, 120.9],
+      "cartridge_weight_range_g": "6-17",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "on_the_fly",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": null
+    }
+  },
+  {
+    "id": 16,
+    "data": {
+      "offset_angle_deg": 22.8,
+      "bearing_type": "damped_unipivot",
+      "alignment_geometry": "baerwald",
+      "null_points_mm": [66.0, 120.9],
+      "cartridge_weight_range_g": "4-12",
+      "stylus_pressure_range_g": "0-2.5",
+      "vta_adjustment": "threaded_collar",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "silver_plated_copper",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": 90
+    }
+  },
+  {
+    "id": 17,
+    "data": {
+      "offset_angle_deg": 21.0,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [61.0, 115.0],
+      "cartridge_weight_range_g": "8-26",
+      "stylus_pressure_range_g": "0-5.0",
+      "vta_adjustment": "threaded_collar",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": null
+    }
+  },
+  {
+    "id": 18,
+    "data": {
+      "offset_angle_deg": 22.9,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [63.0, 117.0],
+      "cartridge_weight_range_g": "2-10",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "shims",
+      "azimuth_adjustment": false,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "captive",
+      "external_cable_capacitance_pf": 140
+    }
+  },
+  {
+    "id": 19,
+    "data": {
+      "offset_angle_deg": 24.0,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [63.0, 119.0],
+      "cartridge_weight_range_g": "5-12",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "threaded_collar",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "silver",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": null
+    }
+  },
+  {
+    "id": 20,
+    "data": {
+      "offset_angle_deg": 25.0,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [60.0, 108.0],
+      "cartridge_weight_range_g": "4-12",
+      "stylus_pressure_range_g": "0-5.0",
+      "vta_adjustment": "shims",
+      "azimuth_adjustment": false,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "captive",
+      "external_cable_capacitance_pf": 150
+    }
+  },
+  {
+    "id": 21,
+    "data": {
+      "offset_angle_deg": 22.0,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [60.0, 115.0],
+      "cartridge_weight_range_g": "5-12",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "on_the_fly",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": null
+    }
+  },
+  {
+    "id": 22,
+    "data": {
+      "offset_angle_deg": 23.0,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [65.0, 120.0],
+      "cartridge_weight_range_g": "3-12",
+      "stylus_pressure_range_g": "0-2.5",
+      "vta_adjustment": "threaded_collar",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "silver",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": null
+    }
+  },
+  {
+    "id": 23,
+    "data": {
+      "offset_angle_deg": 22.0,
+      "alignment_geometry": "baerwald",
+      "null_points_mm": [66.0, 120.9],
+      "cartridge_weight_range_g": "5-12",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "shims",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "captive",
+      "external_cable_capacitance_pf": 120
+    }
+  },
+  {
+    "id": 24,
+    "data": {
+      "offset_angle_deg": 22.0,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [60.0, 115.0],
+      "cartridge_weight_range_g": "5-12",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "on_the_fly",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": null
+    }
+  },
+  {
+    "id": 25,
+    "data": {
+      "offset_angle_deg": 20.0,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [62.0, 125.0],
+      "cartridge_weight_range_g": "5-18",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "threaded_collar",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": null
+    }
+  },
+  {
+    "id": 26,
+    "data": {
+      "offset_angle_deg": 22.0,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [60.0, 114.7],
+      "cartridge_weight_range_g": "4-11",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "shims",
+      "azimuth_adjustment": false,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "captive",
+      "external_cable_capacitance_pf": 110
+    }
+  },
+  {
+    "id": 27,
+    "data": {
+      "offset_angle_deg": 23.9,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [63.0, 118.0],
+      "cartridge_weight_range_g": "5-10",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "threaded_collar",
+      "azimuth_adjustment": false,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "captive",
+      "external_cable_capacitance_pf": 130
+    }
+  },
+  {
+    "id": 28,
+    "data": {
+      "offset_angle_deg": 24.0,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [63.0, 119.0],
+      "cartridge_weight_range_g": "5-12",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "on_the_fly",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "silver",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": null
+    }
+  },
+  {
+    "id": 29,
+    "data": {
+      "offset_angle_deg": 21.0,
+      "alignment_geometry": "manufacturer_specific",
+      "null_points_mm": [62.0, 117.0],
+      "cartridge_weight_range_g": "5-12",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "threaded_collar",
+      "azimuth_adjustment": true,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "din_5_pin",
+      "external_cable_capacitance_pf": null
+    }
+  },
+  {
+    "id": 30,
+    "data": {
+      "offset_angle_deg": 23.9,
+      "alignment_geometry": "baerwald",
+      "null_points_mm": [66.0, 120.9],
+      "cartridge_weight_range_g": "4-10",
+      "stylus_pressure_range_g": "0-3.0",
+      "vta_adjustment": "threaded_collar",
+      "azimuth_adjustment": false,
+      "internal_wiring_material": "copper",
+      "detachable_cable": "captive",
+      "external_cable_capacitance_pf": 130
+    }
+  },
+  {
+    "id": 54,
+    "data": {
+      "bearing_type": "v_block"
+    }
+  },
+  {
+    "id": 67,
+    "data": {
+      "offset_angle_deg": 23.62,
+      "alignment_geometry": "baerwald",
+      "null_points_mm": [66.0, 120.9]
+    }
+  },
+  {
+    "id": 103,
+    "data": {
+      "offset_angle_deg": null
+    }
+  },
+  {
+    "id": 113,
+    "data": {
+      "offset_angle_deg": 19.5
+    }
+  },
+  {
+    "id": 150,
+    "data": {
+      "offset_angle_deg": 22.0
+    }
+  },
+  {
+    "id": 194,
+    "data": {
+      "effective_mass_g": 25,
+      "offset_angle_deg": 22.0
+    }
+  },
+  {
+    "id": 208,
+    "data": {
+      "effective_mass_g": 11.5,
+      "offset_angle_deg": 23.0
+    }
+  },
+  {
+    "id": 222,
+    "data": {
+      "effective_mass_g": 12
+    }
+  },
+  {
+    "id": 227,
+    "data": {
+      "effective_mass_g": 12.5
+    }
+  },
+  {
+    "id": 263,
+    "data": {
+      "effective_mass_g": 13.1
+    }
+  },
+  {
+    "id": 264,
+    "data": {
+      "effective_mass_g": 11
+    }
+  },
+  {
+    "id": 274,
+    "data": {
+      "effective_mass_g": 11
+    }
+  },
+  {
+    "id": 281,
+    "data": {
+      "effective_mass_g": 10.5
+    }
+  },
+  {
+    "id": 288,
+    "data": {
+      "effective_mass_g": 11.5
+    }
+  },
+  {
+    "id": 289,
+    "data": {
+      "effective_mass_g": 12
+    }
+  },
+  {
+    "id": 298,
+    "data": {
+      "effective_mass_g": 12
+    }
+  }
 ]
