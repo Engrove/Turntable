@@ -1,191 +1,214 @@
-<!-- src/components/AlignmentInputPanel.vue -->
+<!-- src/views/AlignmentCalculatorView.vue -->
+
 <script setup>
 /**
-* @file src/components/AlignmentInputPanel.vue
-* @description Komponent för all användarinteraktion i Alignment Calculator.
-* Hanterar val av tonarmspreset, manuell input, val av geometri och pappersformat.
+* @file src/views/AlignmentCalculatorView.vue
+* @description Huvudvyn för Alignment Calculator-verktyget.
 */
-import { computed, ref, watch } from 'vue';
+import { ref, onMounted, computed } from 'vue';
+import { useHead } from '@unhead/vue';
 import { useAlignmentStore } from '@/store/alignmentStore.js';
+import AlignmentInputPanel from '@/components/AlignmentInputPanel.vue';
+import AlignmentResultsPanel from '@/components/AlignmentResultsPanel.vue';
+import InfoPanel from '@/components/InfoPanel.vue';
+import HelpModal from '@/components/HelpModal.vue';
+import TrackingErrorChart from '@/components/TrackingErrorChart.vue';
+import AlignmentGeometry from '@/components/AlignmentGeometry.vue';
+import AlignmentProtractor from '@/components/AlignmentProtractor.vue';
+import { html as alignmentContent } from '@/content/alignmentCalculator.md';
 
 const store = useAlignmentStore();
-
-const selectedTonearmManufacturer = ref(null);
-const tonearmManufacturers = computed(() => [...new Set(store.availableTonearms.map(t => t.manufacturer))].sort());
-const filteredTonearms = computed(() => {
-if (!selectedTonearmManufacturer.value) return [];
-return store.availableTonearms.filter(t => t.manufacturer === selectedTonearmManufacturer.value);
-});
+const showHelp = ref(false);
 
 const isPivotingArm = computed(() => store.calculatedValues.trackingMethod === 'pivoting');
 
-watch(selectedTonarmManufacturer, () => {
-store.selectedTonearmId = null;
+useHead({
+title: 'Tonearm Alignment Calculator | Engrove Audio Toolkit',
+meta: [
+{
+name: 'description',
+content: 'Dynamically generate printable protractors and visualize tracking error for various tonearm alignment geometries like Baerwald, Löfgren, and Stevenson.'
+},
+{
+property: 'og:title',
+content: 'Tonearm Alignment Calculator | Engrove Audio Toolkit'
+},
+{
+property: 'og:description',
+content: 'Visualize and generate custom alignment protractors for your specific tonearm.'
+},
+],
 });
 
-function resetTonearmSelection() {
-selectedTonearmManufacturer.value = null;
-store.loadTonearmPreset(null);
-}
-
-const selectedStandardInfo = computed(() => {
-return store.GROOVE_STANDARDS[store.userInput.standard] || {};
+onMounted(() => {
+store.initialize();
 });
 </script>
 
 <template>
-<div class="input-panel panel">
-<h2>Setup & Controls</h2>
+<div class="tool-view">
+<div class="tool-header">
+<h1>Alignment Calculator</h1>
+<div class="header-buttons">
+<button
+@click="showHelp = true"
+class="icon-help-button"
+title="Help & Methodology"
+>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="12" cy="12" r="10"></circle>
+<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+<path d="M12 17h.01"></path>
+</svg>
+</button>
+</div>
+</div>
 
-<template v-if="!store.isLoading">
-<fieldset>
-<legend>1. Tonearm Setup</legend>
-<p class="fieldset-description">
-Start by loading a preset or manually entering your tonearm's Pivot-to-Spindle distance.
-</p>
 
+<InfoPanel 
+  :content-html="alignmentContent"
+  @open-technical-help="showHelp = true"
+/>
 
-<div class="preset-group">
-  <label>Load Tonearm Preset (Optional)</label>
-  <div class="preset-selectors">
-    <select v-model="selectedTonearmManufacturer" class="value-select manufacturer">
-      <option :value="null" disabled>Select Manufacturer</option>
-      <option v-for="man in tonearmManufacturers" :key="man" :value="man">{{ man }}</option>
-    </select>
-    <select v-model="store.selectedTonearmId" @change="store.loadTonearmPreset($event.target.value)" :disabled="!selectedTonearmManufacturer" class="value-select model">
-      <option :value="null" disabled>Select Model</option>
-      <option v-for="arm in filteredTonearms" :key="arm.id" :value="arm.id">{{ arm.model }}</option>
-    </select>
-    <button v-if="store.selectedTonearmId" @click="resetTonearmSelection" class="reset-preset-btn" title="Clear tonearm selection">×</button>
+<div v-if="store.isLoading" class="status-container">
+  <h2>Loading Database...</h2>
+</div>
+<div v-else-if="store.error" class="status-container error">
+  <h2>Failed to load data</h2>
+  <p>{{ store.error }}</p>
+</div>
+
+<div v-else class="main-grid">
+  <AlignmentInputPanel />
+  
+  <div class="results-and-visuals-column">
+    <AlignmentResultsPanel />
+
+    <TrackingErrorChart 
+      v-if="!store.calculatedValues.error"
+      :chartData="store.trackingErrorChartData"
+      :nullPoints="store.calculatedValues.nulls"
+      :trackingMethod="store.calculatedValues.trackingMethod"
+      class="tracking-chart"
+    />
+
+    <AlignmentGeometry
+      v-if="isPivotingArm && !store.calculatedValues.error"
+      :pivotToSpindle="store.userInput.pivotToSpindle"
+      :effectiveLength="store.calculatedValues.effectiveLength"
+      :overhang="store.calculatedValues.overhang"
+      :offsetAngle="store.calculatedValues.offsetAngle"
+      :nulls="store.calculatedValues.nulls"
+    />
+
+    <AlignmentProtractor
+      v-if="isPivotingArm && !store.calculatedValues.error"
+      :pivotToSpindle="store.userInput.pivotToSpindle"
+      :effectiveLength="store.calculatedValues.effectiveLength"
+      :nulls="store.calculatedValues.nulls"
+      :alignmentType="store.userInput.alignmentType"
+    />
   </div>
 </div>
 
-<div class="input-group">
-  <label for="p2s">Pivot-to-Spindle Distance (mm)</label>
-  <div class="input-control">
-    <input type="range" id="p2s" min="150" max="400" step="0.1" v-model.number="store.userInput.pivotToSpindle" @input="store.calculateAlignment" :disabled="!isPivotingArm">
-    <input type="number" class="value-display" step="0.1" v-model.number="store.userInput.pivotToSpindle" @change="store.calculateAlignment" :disabled="!isPivotingArm">
-  </div>
-</div>
-
-</fieldset>
-
-<fieldset>
-<legend>2. Alignment Geometry</legend>
-<p v-if="isPivotingArm" class="fieldset-description">
-Choose the alignment geometry you want to use. Each offers a different trade-off in tracking error across the record.
-</p>
-
-
-<div class="mode-switch">
-  <button
-    v-for="(geo, key) in store.ALIGNMENT_GEOMETRIES"
-    :key="key"
-    :class="{ active: store.userInput.alignmentType === key }"
-    @click="store.setAlignment(key)"
-    :title="geo.description"
-    :disabled="!isPivotingArm"
-  >
-    {{ key }}
-  </button>
-</div>
-
-<div v-if="isPivotingArm" class="geometry-info">
-    <strong>{{ store.calculatedValues.geometryName }}:</strong>
-    <span>{{ store.calculatedValues.geometryDescription }}</span>
-</div>
-
-<div v-else class="non-pivoting-info">
-    <strong>{{ store.calculatedValues.geometryName }} Arm Detected</strong>
-    <span>This is a tangential tracking tonearm. Standard alignment geometries do not apply.</span>
-</div>
-
-</fieldset>
-
-<fieldset>
-<legend>3. Groove Standard</legend>
-<p v-if="isPivotingArm" class="fieldset-description">
-Select the recording standard for groove radii. This affects the calculated null points.
-</p>
-<div class="mode-switch">
-<button
-v-for="(standard, key) in store.GROOVE_STANDARDS"
-:key="key"
-:class="{ active: store.userInput.standard === key }"
-@click="store.setStandard(key)"
-:title="`${standard.name} (Inner: ${standard.inner}mm, Outer: ${standard.outer}mm)`"
-:disabled="!isPivotingArm"
->
-{{ key }}
-</button>
-</div>
-<div v-if="isPivotingArm" class="geometry-info">
-<strong>{{ selectedStandardInfo.name }}:</strong>
-<span>Inner Groove at {{ selectedStandardInfo.inner }}mm, Outer Groove at {{ selectedStandardInfo.outer }}mm.</span>
-</div>
-</fieldset>
-
-<fieldset>
-<legend>4. Protractor Paper Format</legend>
-<p class="fieldset-description">
-Choose the paper size for the printable protractor.
-</p>
-<div class="mode-switch paper-format">
-<button
-:class="{ active: store.userInput.paperFormat === 'A4' }"
-@click="store.setPaperFormat('A4')"
-title="A4 Landscape (297 x 210 mm)"
->
-A4
-</button>
-<button
-:class="{ active: store.userInput.paperFormat === 'Letter' }"
-@click="store.setPaperFormat('Letter')"
-title="US Letter Landscape (279.4 x 215.9 mm)"
->
-Letter
-</button>
-</div>
-</fieldset>
-</template>
-
-<div v-else class="loading-placeholder">
-<p>Loading presets...</p>
-</div>
+<HelpModal :isOpen="showHelp" @close="showHelp = false">
+  <template #header>
+    <h2>Alignment Calculator Methodology</h2>
+  </template>
+  <template #default>
+    <!-- Innehåll för modalen kan läggas till här senare -->
+    <p>This section will contain a more detailed breakdown of the alignment formulas, tracking error charts, and a full FAQ, as mentioned in the quick guide.</p>
+  </template>
+</HelpModal>
 
 </div>
 </template>
 
 <style scoped>
-.input-panel { display: flex; flex-direction: column; gap: 1rem; }
-fieldset { border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem 1.5rem 0.5rem; margin: 0; }
-legend { font-weight: 600; color: var(--header-color); padding: 0 0.5rem; font-size: 1.1rem; }
-.fieldset-description { font-size: 0.875rem; color: var(--label-color); margin-top: -0.5rem; margin-bottom: 1.5rem; }
-.preset-group { margin-bottom: 1.5rem; }
-.preset-group label { display: block; font-weight: 500; color: var(--label-color); margin-bottom: 0.5rem; }
-.preset-selectors { display: flex; gap: 0.5rem; align-items: center; }
-.value-select { width: 100%; padding: 0.5rem 0.75rem; font-size: 1rem; background-color: #fff; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; cursor: pointer; }
-.value-select.manufacturer { flex: 1 1 40%; }
-.value-select.model { flex: 1 1 60%; }
-.reset-preset-btn { background: none; border: 1px solid var(--border-color); color: var(--danger-text); cursor: pointer; border-radius: 50%; width: 34px; height: 34px; flex-shrink: 0; line-height: 1; font-size: 1.2rem; font-weight: bold; transition: all 0.2s ease; }
-.reset-preset-btn:hover { background-color: var(--danger-color); color: white; }
-.input-group { margin-bottom: 1.25rem; }
-.input-group label { display: block; font-weight: 500; color: var(--label-color); margin-bottom: 0.5rem; }
-.input-control { display: flex; align-items: center; gap: 1rem; }
-input[type="range"] { flex-grow: 1; cursor: pointer; }
-input[type="number"].value-display { font-weight: 600; width: 80px; text-align: right; background-color: #fff; padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); }
-input:disabled { background-color: #e9ecef; cursor: not-allowed; }
-.mode-switch { display: flex; width: 100%; margin-bottom: 1rem; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
-.mode-switch.paper-format { max-width: 200px; }
-.mode-switch button { flex-grow: 1; padding: 0.75rem 0.5rem; font-size: 1rem; font-weight: 600; background-color: #fff; border: none; cursor: pointer; transition: all 0.2s ease; color: var(--accent-color); }
-.mode-switch button:not(:last-child) { border-right: 1px solid var(--border-color); }
-.mode-switch button.active { background-color: var(--accent-color); color: white; z-index: 2; }
-.mode-switch button:disabled { background-color: #e9ecef; color: #adb5bd; cursor: not-allowed; }
-.geometry-info { background-color: #e9ecef; padding: 0.75rem 1rem; border-radius: 4px; font-size: 0.9rem; line-height: 1.5; color: var(--label-color); margin-bottom: 1rem; }
-.geometry-info strong { color: var(--text-color); }
-.non-pivoting-info { background-color: var(--ideal-color); border: 1px solid var(--ideal-text); padding: 0.75rem 1rem; border-radius: 4px; font-size: 0.9rem; line-height: 1.5; color: var(--ideal-text); margin-bottom: 1rem; text-align: center; }
-.non-pivoting-info strong { display: block; font-size: 1rem; margin-bottom: 0.25rem; }
-.loading-placeholder { text-align: center; padding: 2rem; color: var(--label-color); font-style: italic; }
+.tool-view {
+display: flex;
+flex-direction: column;
+}
+
+.tool-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 0;
+border-bottom: none;
+}
+
+.tool-header h1 {
+margin: 0;
+font-size: 1.75rem;
+color: var(--header-color);
+}
+
+.header-buttons {
+display: flex;
+align-items: center;
+gap: 0.5rem;
+}
+
+.icon-help-button {
+background: none;
+border: 1px solid transparent;
+border-radius: 50%;
+cursor: pointer;
+color: var(--label-color);
+display: flex;
+align-items: center;
+justify-content: center;
+width: 36px;
+height: 36px;
+transition: all 0.2s ease;
+padding: 0;
+}
+
+.icon-help-button:hover {
+background-color: #e9ecef;
+border-color: var(--border-color);
+color: var(--text-color);
+}
+
+.status-container {
+padding: 4rem 2rem;
+text-align: center;
+background-color: var(--panel-bg);
+border: 1px solid var(--border-color);
+border-radius: 6px;
+}
+
+.status-container.error {
+background-color: var(--danger-color);
+color: var(--danger-text);
+border-color: #f5c6cb;
+}
+
+.main-grid {
+display: grid;
+grid-template-columns: 4fr 5fr;
+gap: 2rem;
+align-items: start;
+margin-top: 2rem;
+}
+
+.results-and-visuals-column {
+display: flex;
+flex-direction: column;
+gap: 2rem;
+min-width: 0;
+}
+
+.tracking-chart {
+margin-top: 0;
+}
+
+@media (max-width: 900px) {
+.main-grid {
+grid-template-columns: 1fr;
+}
+}
 </style>
 
-<!-- src/components/AlignmentInputPanel.vue -->
+<!-- src/views/AlignmentCalculatorView.vue -->
