@@ -142,7 +142,7 @@ updateChartData() {
             data: geo.data,
             borderColor: isActive ? activeColor : geometryColors[key],
             borderWidth: isActive ? 3 : 1.5,
-            borderDash: isActive ? [] :,
+            borderDash: isActive ? [] : [5, 5],
             pointRadius: 0,
             tension: 0.1,
             fill: false,
