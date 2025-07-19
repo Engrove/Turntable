@@ -1,108 +1,167 @@
 // src/services/protractorRenderer.js
-/**
-@file src/services/protractorRenderer.js
-@description En ren JavaScript-modul ("grafikmotor") för att generera SVG-kod för olika typer av protraktorer.
-*/
-
-const PAPER_FORMATS = {
-A4: { width: 297, height: 210 },
-Letter: { width: 279.4, height: 215.9 }
-};
-
-// --- SVG Byggstenar ---
-
-function getSvgHeader(paper) {
-return <svg xmlns="http://www.w3.org/2000/svg" width="${paper.width}mm" height="${paper.height}mm" viewBox="0 0 ${paper.width} ${paper.height}" style="font-family: sans-serif; font-size: 4px;">;
-}
-
-function generateSpindleHole(cx, cy) {
-return <g class="spindle" transform="translate(${cx}, ${cy})"> <circle cx="0" cy="0" r="3.6" stroke="#000" stroke-width="0.1" fill="none" /> <path d="M -5 0 L 5 0 M 0 -5 L 0 5" stroke="#000" stroke-width="0.1" /> <text x="0" y="8" text-anchor="middle" fill="#555">Spindle Hole</text> </g>;
-}
-
-function generateScaleRuler(paper) {
-const x = 20;
-const y = paper.height - 20;
-return <g class="ruler" transform="translate(${x}, ${y})"> <path d="M 0 0 L 100 0 M 0 -2.5 L 0 2.5 M 100 -2.5 L 100 2.5" stroke="#555" stroke-width="0.2" /> <text x="50" y="-5" text-anchor="middle" fill="#555">100mm Scale Reference</text> </g>;
-}
-
-function generateNullPointGrid(cx, cy, label, radius) {
-return <g class="null-point" transform="translate(${cx}, ${cy})"> <path class="grid-lines" d="M 0 -20 L 0 20 M -20 0 L 20 0 M -15 -10 L 15 -10 M -15 10 L 15 10 M -10 -15 L 10 -15 M 10 -15 L 10 15 M -10 -15 L -10 15" /> <circle cx="0" cy="0" r="0.2" fill="#e74c3c" /> <text x="0" y="-25" text-anchor="middle" fill="#000">${label}: ${radius.toFixed(2)}mm</text> </g>;
-}
-
-function generateArcPath(spindle, pivotToSpindle, effectiveLength) {
-const r = effectiveLength;
-const pivot_x = spindle.x + pivotToSpindle;
-const startAngleRad = Math.asin(147 / r);
-const endAngleRad = Math.asin(59 / r);
-
-
-const startX = pivot_x - r * Math.cos(startAngleRad);
-const startY = spindle.y + r * Math.sin(startAngleRad);
-const endX = pivot_x - r * Math.cos(endAngleRad);
-const endY = spindle.y + r * Math.sin(endAngleRad);
-
-return `<path class="arc-path" d="M ${startX} ${startY} A ${r} ${r} 0 0 1 ${endX} ${endY}" />`;
-
-
-}
-
-// --- Protraktor-modeller ---
-
-function renderBaerwaldArc(params) {
-const { paperFormat, pivotToSpindle, effectiveLength, nulls, alignmentType } = params;
-const paper = PAPER_FORMATS[paperFormat];
-const spindle = { x: 50, y: paper.height / 2 };
-
-
-let svg = getSvgHeader(paper);
-svg += `<style>.arc-path { fill: none; stroke: #000; stroke-width: 0.2px; stroke-dasharray: 2 2; } .grid-lines { fill: none; stroke: #aaa; stroke-width: 0.1px; }</style>`;
-svg += generateSpindleHole(spindle.x, spindle.y);
-svg += generateScaleRuler(paper);
-
-// Linje från spindel mot pivot
-svg += `<line x1="${spindle.x}" y1="${spindle.y}" x2="${spindle.x + pivotToSpindle}" y2="${spindle.y}" stroke="#000" stroke-width="0.1" stroke-dasharray="2 2" />`;
-
-// Svepbåge
-svg += generateArcPath(spindle, pivotToSpindle, effectiveLength);
-
-// Nollpunkter (placerade längs Y-axeln för enkelhet, bågen är det viktiga)
-const nullYOffset = 40;
-svg += generateNullPointGrid(spindle.x + nulls.inner, spindle.y + nullYOffset, 'Inner Null', nulls.inner);
-svg += generateNullPointGrid(spindle.x + nulls.outer, spindle.y + nullYOffset, 'Outer Null', nulls.outer);
-
-svg += '</svg>';
-return svg;
-IGNORE_WHEN_COPYING_START
-content_copy
-download
-Use code with caution.
-IGNORE_WHEN_COPYING_END
-
-}
-
-// --- Huvudfunktion (Dispatcher) ---
 
 /**
+ * @file src/services/protractorRenderer.js
+ * @description En dedikerad "grafikmotor" för att rita en tonarms-protraktor på en HTML Canvas.
+ * Denna modul är helt frikopplad från Vue och tar emot all nödvändig data för rendering.
+ */
 
-Genererar SVG-koden för en specifik protraktormodell.
+// === HJÄLPFUNKTIONER FÖR ATT RITA ===
 
-@param {string} model - Namnet på protraktormodellen (t.ex. 'Baerwald Arc').
+/**
+ * Ritar spindelhålet och hårkorset.
+ * @param {CanvasRenderingContext2D} ctx - Canvas 2D-kontext.
+ * @param {object} spindle - Spindelns koordinater { x, y }.
+ */
+function drawSpindle(ctx, spindle) {
+  ctx.save();
+  ctx.strokeStyle = '#2c3e50';
+  ctx.lineWidth = 0.2;
 
-@param {object} params - Ett objekt med alla nödvändiga beräknade värden och inställningar.
+  // Hårkors
+  ctx.beginPath();
+  ctx.moveTo(spindle.x - 7, spindle.y);
+  ctx.lineTo(spindle.x + 7, spindle.y);
+  ctx.moveTo(spindle.x, spindle.y - 7);
+  ctx.lineTo(spindle.x, spindle.y + 7);
+  ctx.stroke();
 
-@returns {string} Den fullständiga SVG-koden som en textsträng.
-*/
-export function renderProtractor(model, params) {
-switch (model) {
-case 'Baerwald Arc':
-case 'LofgrenB Arc':
-case 'Stevenson Arc':
-return renderBaerwaldArc(params); // För fas 1 använder alla samma arc-logik
-// Framtida modeller kan läggas till här:
-// case 'Universal Two-Point':
-// return renderUniversalTwoPoint(params);
-default:
-return '<svg><text>Error: Protraktor-modell ej vald eller okänd.</text></svg>';
+  // Spindelhålscirkel
+  ctx.beginPath();
+  ctx.arc(spindle.x, spindle.y, 3.6, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  // Text (endast för utskrift)
+  ctx.fillStyle = '#555';
+  ctx.font = '5px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Spindle Hole', spindle.x, spindle.y + 8);
+  
+  ctx.restore();
 }
+
+/**
+ * Ritar en nollpunkt med dess justeringsrutnät.
+ * @param {CanvasRenderingContext2D} ctx - Canvas 2D-kontext.
+ * @param {object} nullPoint - Nollpunktens data { x, y, tangentAngle }.
+ * @param {string} label - Textetikett för nollpunkten (t.ex. "Inner Null: 66.00mm").
+ */
+function drawNullPoint(ctx, nullPoint, label) {
+  ctx.save();
+  ctx.translate(nullPoint.x, nullPoint.y);
+  ctx.rotate(nullPoint.tangentAngle * (Math.PI / 180));
+
+  // Rita rutnät
+  ctx.strokeStyle = '#aaa';
+  ctx.lineWidth = 0.2;
+  ctx.beginPath();
+  // Horisontella linjer
+  ctx.moveTo(-20, 0); ctx.lineTo(20, 0);
+  ctx.moveTo(-15, -10); ctx.lineTo(15, -10);
+  ctx.moveTo(-15, 10); ctx.lineTo(15, 10);
+  // Vertikala linjer
+  ctx.moveTo(0, -20); ctx.lineTo(0, 20);
+  ctx.moveTo(-10, -15); ctx.lineTo(-10, 15);
+  ctx.moveTo(10, -15); ctx.lineTo(10, 15);
+  ctx.stroke();
+
+  // Nollpunktsprick
+  ctx.beginPath();
+  ctx.arc(0, 0, 0.2, 0, 2 * Math.PI);
+  ctx.fillStyle = 'red';
+  ctx.fill();
+
+  // Rotera tillbaka för att rita texten horisontellt
+  ctx.rotate(-nullPoint.tangentAngle * (Math.PI / 180));
+  ctx.fillStyle = '#555';
+  ctx.font = '5px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, 0, -25);
+  
+  ctx.restore();
+}
+
+/**
+ * Ritar tonarmens svepbåge.
+ * @param {CanvasRenderingContext2D} ctx - Canvas 2D-kontext.
+ * @param {string} arcPath - SVG-sökvägsdata för bågen.
+ */
+function drawStylusArc(ctx, arcPath) {
+  if (!arcPath) return;
+  
+  ctx.save();
+  ctx.strokeStyle = '#3498db';
+  ctx.lineWidth = 0.2;
+  ctx.setLineDash([2, 2]);
+  
+  const path = new Path2D(arcPath);
+  ctx.stroke(path);
+  
+  ctx.restore();
+}
+
+/**
+ * Ritar en 100mm-skalningslinjal för att verifiera utskriftsstorlek.
+ * @param {CanvasRenderingContext2D} ctx - Canvas 2D-kontext.
+ */
+function drawScaleRuler(ctx) {
+  const x = 20, y = 20;
+  ctx.save();
+  ctx.strokeStyle = '#aaa';
+  ctx.lineWidth = 0.2;
+
+  ctx.beginPath();
+  ctx.moveTo(x, y - 5);
+  ctx.lineTo(x, y + 5);
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + 100, y);
+  ctx.moveTo(x + 100, y - 5);
+  ctx.lineTo(x + 100, y + 5);
+  ctx.stroke();
+
+  ctx.fillStyle = '#555';
+  ctx.font = '5px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('100mm Scale Reference', x + 50, y - 8);
+
+  ctx.restore();
+}
+
+
+// === HUVUDFUNKTION ===
+
+/**
+ * Exporterad huvudfunktion som ritar hela protraktorn på en given canvas-kontext.
+ * @param {CanvasRenderingContext2D} ctx - Mål-canvasens 2D-kontext.
+ * @param {object} renderData - Dataobjektet från alignmentStore.protractorRenderData.
+ */
+export function renderProtractor(ctx, renderData) {
+  const { paper, spindle, innerNull, outerNull, arcPath } = renderData;
+
+  // Rensa canvas
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+  // 1. Rita pappersbakgrund (om det behövs, oftast är canvasen redan vit)
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, paper.width, paper.height);
+
+  // 2. Rita skalningslinjal
+  drawScaleRuler(ctx);
+
+  // 3. Rita spindel
+  if (spindle) {
+    drawSpindle(ctx, spindle);
+  }
+
+  // 4. Rita svepbåge
+  if (arcPath) {
+    drawStylusArc(ctx, arcPath);
+  }
+
+  // 5. Rita nollpunkter
+  if (innerNull && outerNull) {
+    drawNullPoint(ctx, innerNull, `Inner Null: ${renderData.nulls.inner.toFixed(2)}mm`);
+    drawNullPoint(ctx, outerNull, `Outer Null: ${renderData.nulls.outer.toFixed(2)}mm`);
+  }
 }
 // src/services/protractorRenderer.js
