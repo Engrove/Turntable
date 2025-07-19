@@ -45,7 +45,7 @@ yMin: 0,
 yMax: 0,
 borderColor: 'rgba(0, 0, 0, 0.5)',
 borderWidth: 1.5,
-borderDash:,
+borderDash: [6, 6],
 }
 };
 
@@ -84,7 +84,7 @@ scaleID: 'x',
 value: props.nullPoints.inner,
 borderColor: activeColor,
 borderWidth: 1.5,
-borderDash:,
+borderDash: [6, 6],
 label: {
 content: `Null ${props.nullPoints.inner.toFixed(1)}mm`,
 display: true,
@@ -101,7 +101,7 @@ scaleID: 'x',
 value: props.nullPoints.outer,
 borderColor: activeColor,
 borderWidth: 1.5,
-borderDash:,
+borderDash: [6, 6],
 label: {
 content: `Null ${props.nullPoints.outer.toFixed(1)}mm`,
 display: true,
