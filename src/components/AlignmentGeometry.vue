@@ -22,7 +22,8 @@ const overhang = props.overhang || 15;
 const padding = 50;
 const width = p2s + overhang + padding * 2;
 const height = width * 0.75;
-return `${-overhang - padding} ${-height / 2} ${width} ${height}`;
+// Justerar y-positionen för att ge mer utrymme nedåt
+return `${-overhang - padding} ${-height / 2.5} ${width} ${height}`;
 });
 
 // === KOORDINATBERÄKNINGAR ===
@@ -40,11 +41,11 @@ const cosGamma = (D**2 + Le**2 - R**2) / (2 * D * Le);
 if (cosGamma < -1 || cosGamma > 1) return null;
 const gamma = Math.acos(cosGamma);
 
-// Returnera stylusens position
+// KORRIGERING: Säkerställer att Y-koordinaten alltid är negativ för att rita nedåt
 return {
 x: pivot.value.x - Le * Math.cos(gamma),
-y: -Le * Math.sin(gamma), // Negativ för att rita nedåt
-armAngle: -radToDeg(gamma),
+y: -Le * Math.sin(gamma),
+armAngle: radToDeg(gamma), // Vinkeln är nu positiv för rotation medurs
 };
 };
 
@@ -52,12 +53,13 @@ const innerNullData = computed(() => calculateCoordsOnArc(props.nulls.inner));
 const outerNullData = computed(() => calculateCoordsOnArc(props.nulls.outer));
 
 const radToDeg = (rad) => rad * (180 / Math.PI);
-const degToRad = (deg) => deg * (Math.PI / 180);
 
+// Beräknar transformationssträngen för pickup-huset
 const headshellTransform = computed(() => {
 if (!outerNullData.value) return '';
 const { x, y, armAngle } = outerNullData.value;
-const totalRotation = armAngle + props.offsetAngle;
+// Rotation: Vinkeln på armen minus offset-vinkeln
+const totalRotation = -armAngle + props.offsetAngle;
 return `translate(${x}, ${y}) rotate(${totalRotation})`;
 });
 </script>
@@ -73,11 +75,22 @@ return `translate(${x}, ${y}) rotate(${totalRotation})`;
 </marker>
 </defs>
 
+<!-- Måttlinjer (ritas först för att hamna underst) -->
+
+<g class="dimension-line p2s" :transform="`translate(0, ${effectiveLength * 0.6})`">
+<line :x1="spindle.x" :y1="0" :x2="pivot.x" :y2="0" marker-start="url(#arrowhead-dim)" marker-end="url(#arrowhead-dim)" />
+<text :x="pivot.x / 2" y="-8">Pivot-to-Spindle: {{ pivotToSpindle.toFixed(1) }}mm</text>
+</g>
+<g class="dimension-line overhang" :transform="`translate(0, ${effectiveLength * 0.7})`">
+<line :x1="spindle.x" y1="0" :x2="-overhang" y2="0" marker-start="url(#arrowhead-dim)" marker-end="url(#arrowhead-dim)" />
+<text :x="-overhang / 2" y="-8">Overhang: {{ overhang.toFixed(1) }}mm</text>
+</g>
+
 <!-- Referensgeometri -->
 
 <circle :cx="spindle.x" :cy="spindle.y" r="146.05" class="record-edge" />
 <circle :cx="spindle.x" :cy="spindle.y" r="60.325" class="record-edge inner" />
-<path :d="`M ${pivot.x} ${effectiveLength} A ${effectiveLength} ${effectiveLength} 0 1 1 ${pivot.x} ${-effectiveLength}`" class="arc-path" />
+<path :d="`M ${pivot.x} ${-effectiveLength} A ${effectiveLength} ${effectiveLength} 0 0 0 ${pivot.x} ${effectiveLength}`" class="arc-path" />
 
 <!-- Nollpunkter och Tangentlinjer -->
 
@@ -97,32 +110,20 @@ return `translate(${x}, ${y}) rotate(${totalRotation})`;
 <g v-if="outerNullData" class="tonearm-assembly">
 <line :x1="pivot.x" :y1="pivot.y" :x2="outerNullData.x" :y2="outerNullData.y" class="tonearm-line" />
 <g class="headshell" :transform="headshellTransform">
-<path d="M 0 0 L 15 0 L 18 5 L 18 15 L 15 20 L 0 20 Z" transform="translate(-10, -10)" />
+<path d="M 0 0 L 15 0 L 18 -5 L 18 -15 L 15 -20 L 0 -20 Z" transform="translate(-10, 10)" />
+<line x1="0" y1="0" x2="25" y2="0" class="tangent-line" />
 </g>
-<!-- Tangentlinje vid nollpunkt -->
-<line :x1="outerNullData.x - 20" :y1="outerNullData.y" :x2="outerNullData.x + 20" :y2="outerNullData.y" class="tangent-line" />
 </g>
 
 <!-- Spindel och Pivot -->
 
 <g class="spindle" transform="translate(0, 0)">
 <circle cx="0" cy="0" r="3.6" class="spindle-point" />
-<text y="15">Spindle</text>
+<text y="-10">Spindle</text>
 </g>
 <g class="pivot" :transform="`translate(${pivot.x}, 0)`">
 <circle cx="0" cy="0" r="4" class="pivot-point" />
-<text y="15">Pivot</text>
-</g>
-
-<!-- Måttlinjer -->
-
-<g class="dimension-line p2s" :transform="`translate(0, ${effectiveLength * 0.5})`">
-<line :x1="spindle.x" :y1="0" :x2="pivot.x" :y2="0" marker-start="url(#arrowhead-dim)" marker-end="url(#arrowhead-dim)" />
-<text :x="pivot.x / 2" y="-8">Pivot-to-Spindle: {{ pivotToSpindle.toFixed(1) }}mm</text>
-</g>
-<g class="dimension-line overhang" :transform="`translate(0, -${effectiveLength * 0.5})`">
-<line :x1="spindle.x" y1="0" :x2="-overhang" y2="0" marker-start="url(#arrowhead-dim)" marker-end="url(#arrowhead-dim)" />
-<text :x="-overhang / 2" y="18">Overhang: {{ overhang.toFixed(1) }}mm</text>
+<text y="-10">Pivot</text>
 </g>
 </svg>
 </div>
@@ -145,7 +146,8 @@ svg { width: 100%; height: 100%; font-family: sans-serif; }
 .null-point-dot { stroke-width: 1.5px; fill: #fff; }
 .null-point-dot.inner { stroke: #9b59b6; }
 .null-point-dot.outer { stroke: #16a085; }
-.radius-line, .tangent-line { stroke: #e74c3c; stroke-width: 0.5px; stroke-dasharray: 2 2; }
+.radius-line { stroke: #bdc3c7; stroke-width: 0.5px; stroke-dasharray: 2 2; }
+.tangent-line { stroke: #e74c3c; stroke-width: 1px; }
 .dimension-line line { stroke: #7f8c8d; stroke-width: 1px; }
 .dimension-line text { font-size: 11px; text-anchor: middle; fill: #34495e; font-weight: 600; }
 .p2s text { fill: #2980b9; }
