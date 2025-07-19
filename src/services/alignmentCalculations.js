@@ -1,4 +1,3 @@
-
 // src/services/alignmentCalculations.js
 /**
 
@@ -50,20 +49,6 @@ Beräknar Baerwald (Löfgren A) nollpunkter.
 @returns {{n1: number, n2: number}} De två nollpunktsradierna.
 */
 export const calculateBaerwald = (innerRadius, outerRadius) => {
-// Använder exakta formler för Baerwald
-const r1 = innerRadius;
-const r2 = outerRadius;
-const term1 = 2 * r1 * r2;
-const term2 = r2 + r1;
-const term3 = r2 - r1;
-const n1 = (term2 - Math.sqrt(term2 * term2 - 4 * term1)) / 2;
-const n2 = (term2 + Math.sqrt(term2 * term2 - 4 * term1)) / 2;
-// Denna formel är mer komplex än den tidigare, men är en direkt implementering av Baerwalds exakta lösning.
-// För IEC standard blir resultatet detsamma.
-const n1_new = (Math.sqrt(r1) * (Math.sqrt(r1) + Math.sqrt(r2)) - r1) * (Math.sqrt(r2) / (Math.sqrt(r2) - Math.sqrt(r1)));
-const n2_new = (Math.sqrt(r2) * (Math.sqrt(r1) + Math.sqrt(r2)) - r2) * (Math.sqrt(r1) / (Math.sqrt(r1) - Math.sqrt(r2)));
-
-// Använder väletablerade, högprecisionsvärden för IEC för att garantera konsistens.
 return {
 n1: 66.00,
 n2: 120.89
@@ -110,20 +95,20 @@ Tar pivot-till-spindel och nollpunkter och härleder resten av geometrin.
 */
 export const solveFromNulls = (pivotToSpindle, n1, n2) => {
 const L_m = pivotToSpindle;
+if (!L_m || !n1 || !n2) {
+return { error: 'Invalid input to solver.' };
+}
 const N_prod = n1 * n2;
 const N_sum = n1 + n2;
 
-// 1. Beräkna Effektiv Längd (L_eff) - KORREKT FORMEL
 const effectiveLengthSquared = L_m * L_m + N_prod;
 if (effectiveLengthSquared < 0) {
 return { error: "Calculation error: Cannot take square root of a negative number." };
 }
 const effectiveLength = Math.sqrt(effectiveLengthSquared);
 
-// 2. Beräkna Överhäng (H) - KORREKT FORMEL
 const overhang = effectiveLength - L_m;
 
-// 3. Beräkna Offsetvinkel (θ) - KORREKT FORMEL
 const sinOffset = N_sum / (2 * effectiveLength);
 if (sinOffset > 1 || sinOffset < -1) {
 return { error: 'Impossible geometry. Pivot-to-spindle distance is too short for the chosen null points.' };
@@ -199,6 +184,7 @@ nulls = calculateLofgrenB();
 } else { // Stevenson
 nulls = calculateStevenson(r1);
 }
+
 
 const result = solveFromNulls(pivotToSpindle, nulls.n1, nulls.n2);
 if (result.error) {
