@@ -95,19 +95,18 @@ return radToDeg(Math.atan2(dy, dx));
 <text :x="innerNullData.x" :y="innerNullData.y + 25" class="null-label">Inner Null</text>
 </g>
 
-<!-- Måttlinjer (flyttade ovanför) -->
+<!-- Måttlinjer (justerad position) -->
 
 <g class="dimension-lines">
 <line :x1="pivot.x" :y1="pivot.y" :x2="spindle.x" :y2="spindle.y" class="dim-line p2s" />
 <line v-if="outerNullData" :x1="pivot.x" :y1="pivot.y" :x2="outerNullData.x" :y2="outerNullData.y" class="dim-line effective-length" />
 <line :x1="spindle.x" :y1="spindle.y" :x2="-overhang" :y2="0" class="dim-line overhang" />
 
-
-<g :transform="`translate(0, -${effectiveLength * 0.45})`">
+<g :transform="`translate(0, -${effectiveLength * 0.25})`">
     <line :x1="spindle.x" y1="0" :x2="pivot.x" y2="0" marker-start="url(#arrowhead-dim-final)" marker-end="url(#arrowhead-dim-final)" class="dim-arrow p2s" />
     <text :x="pivot.x / 2" y="-8">Pivot-to-Spindle: {{ pivotToSpindle.toFixed(1) }}mm</text>
 </g>
-<g :transform="`translate(0, -${effectiveLength * 0.55})`">
+<g :transform="`translate(0, -${effectiveLength * 0.35})`">
     <line :x1="-overhang" y1="0" :x2="spindle.x" y2="0" marker-start="url(#arrowhead-dim-final)" marker-end="url(#arrowhead-dim-final)" class="dim-arrow overhang" />
     <text :x="-overhang / 2" y="-8">Overhang: {{ overhang.toFixed(1) }}mm</text>
 </g>
