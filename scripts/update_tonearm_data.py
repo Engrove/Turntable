@@ -1,105 +1,146 @@
 # scripts/update_tonearm_data.py
 import json
 import os
+import sys
 
-# Define file paths
+# Define file paths relative to the project root
 TONEARM_DATA_PATH = os.path.join('public', 'data', 'tonearm_data.json')
 TONEARM_DIFF_PATH = os.path.join('public', 'data', 'tonearm_diff.json')
 
-# --- Schema Definition ---
-# This dictionary defines the complete structure for every tonearm object.
-# All new fields must be added here with a default value (usually None).
+# --- New, Comprehensive Schema Definition (Version 2.0) ---
+# This dictionary defines the complete, authoritative structure for every tonearm object,
+# based on the technical report. All records will be conformed to this schema.
 DEFAULT_TONEARM_SCHEMA = {
     "id": None,
+    "rectype": "A",
     "manufacturer": None,
     "model": None,
     "effective_length_mm": None,
     "pivot_to_spindle_mm": None,
     "overhang_mm": None,
+    "offset_angle_deg": None,
     "effective_mass_g": None,
-    "bearing_type": None,          # NEW
-    "arm_material": None,        # NEW
-    "arm_shape": None,           # NEW
-    "headshell_connector": None, # NEW
-    "tracking_method": "pivoting", # NEW (with a default value)
+    "arm_shape": None,
+    "arm_material": None,
+    "bearing_type": None,
+    "headshell_connector": None,
+    "cartridge_weight_range_g": None,
+    "stylus_pressure_range_g": None,
+    "vta_adjustment": None,
+    "azimuth_adjustment": None,
+    "internal_wiring_material": None,
+    "detachable_cable": None,
+    "external_cable_capacitance_pf": None,
+    "alignment_geometry": None,
+    "null_points_mm": None,
+    "tracking_method": "pivoting",
     "notes": None,
     "example_params_for_calculator": None
 }
 
+def load_json_file(filepath):
+    """
+    Loads a JSON file with robust error handling.
+    """
+    if not os.path.exists(filepath):
+        print(f"Error: File not found at '{filepath}'", file=sys.stderr)
+        return None
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"Error: Failed to decode JSON from '{filepath}'. Details: {e}", file=sys.stderr)
+        return None
+    except IOError as e:
+        print(f"Error: Could not read file at '{filepath}'. Details: {e}", file=sys.stderr)
+        return None
+
+def save_json_file(data, filepath):
+    """
+    Saves data to a JSON file with pretty printing (indent=2).
+    """
+    try:
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+        print(f"Successfully saved updated data to '{filepath}'")
+        return True
+    except IOError as e:
+        print(f"Error: Could not write to file at '{filepath}'. Details: {e}", file=sys.stderr)
+        return False
+
 def update_tonearm_data():
     """
-    Loads tonearm data and a diff file, then merges the diff into the main
-    data, ensuring all records conform to the schema. The updated data
-    is written back to the tonearm_data.json file.
+    Main processing function. Loads main data, applies diffs, enforces the
+    new schema across all records, and saves the result.
     """
-    print("Starting tonearm data update process...")
+    print("Starting tonearm data update process with schema v2.0...")
 
-    # Load original tonearm data
-    try:
-        with open(TONEARM_DATA_PATH, 'r', encoding='utf-8') as f:
-            original_data = json.load(f)
-        print(f"Successfully loaded {len(original_data)} records from '{TONEARM_DATA_PATH}'.")
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        print(f"Error loading original tonearm data: {e}. Aborting.")
-        return
+    main_data = load_json_file(TONEARM_DATA_PATH)
+    if main_data is None:
+        sys.exit(1)
+    print(f"Loaded {len(main_data)} records from '{TONEARM_DATA_PATH}'.")
 
-    # Load diff data
-    try:
-        with open(TONEARM_DIFF_PATH, 'r', encoding='utf-8') as f:
-            diff_data = json.load(f)
-        print(f"Successfully loaded {len(diff_data)} diff records from '{TONEARM_DIFF_PATH}'.")
-    except FileNotFoundError:
-        print(f"No diff file found at '{TONEARM_DIFF_PATH}'. No changes will be applied.")
+    diff_data = load_json_file(TONEARM_DIFF_PATH)
+    if diff_data is None:
+        # If diff file is missing, we still proceed to enforce the new schema.
+        print(f"Warning: Diff file not found at '{TONEARM_DIFF_PATH}'. Proceeding with schema enforcement only.")
         diff_data = []
-    except json.JSONDecodeError as e:
-        print(f"Error decoding JSON from diff file: {e}. Aborting.")
-        return
+    else:
+        print(f"Loaded {len(diff_data)} transaction(s) from '{TONEARM_DIFF_PATH}'.")
 
-    # Create a dictionary for quick lookup of diffs by ID
-    diff_map = {item['id']: item for item in diff_data if 'id' in item}
+    # --- Core Logic: Apply Diffs and Add New Records ---
+    data_map = {record['id']: record for record in main_data}
+    added_count, updated_count, deactivated_count = 0, 0, 0
+    updated_ids = set()
 
-    updated_data = []
-    processed_ids = set()
-
-    # Process original data, applying diffs and ensuring schema conformance
-    for item in original_data:
-        if 'id' not in item or item['id'] is None:
-            print(f"Skipping record with missing ID: {item}")
+    for transaction in diff_data:
+        record_id = transaction.get('id')
+        if not record_id:
+            print(f"Warning: Skipping transaction with no 'id': {transaction}", file=sys.stderr)
             continue
         
-        item_id = item['id']
-        if item_id in processed_ids:
-            print(f"Warning: Duplicate ID {item_id} found in original data. Skipping.")
-            continue
+        transaction_data = transaction.get('data', {})
+
+        if record_id in data_map:
+            # Update existing record
+            data_map[record_id].update(transaction_data)
+            if record_id not in updated_ids:
+                updated_count += 1
+                updated_ids.add(record_id)
+            if transaction_data.get('rectype') == 'I':
+                deactivated_count += 1
+        else:
+            # Add new record
+            new_record = DEFAULT_TONEARM_SCHEMA.copy()
+            new_record.update(transaction_data) # Apply data from diff
+            new_record['id'] = record_id       # Set ID
+            if 'rectype' not in transaction_data:
+                new_record['rectype'] = 'A'    # Default to Active
             
-        processed_ids.add(item_id)
+            main_data.append(new_record)
+            data_map[record_id] = new_record   # Add to map for subsequent diffs
+            added_count += 1
 
-        # Create a new, clean record based on the schema
-        new_item = DEFAULT_TONEARM_SCHEMA.copy()
-        
-        # Populate with existing data from the original file
-        for key in new_item:
-            if key in item:
-                new_item[key] = item[key]
-        
-        # Update with data from the diff file if a match is found
-        if item_id in diff_map:
-            diff_item = diff_map[item_id]
-            for key, value in diff_item.items():
-                if key in new_item:
-                    new_item[key] = value
-                else:
-                    print(f"Warning: Unknown key '{key}' for ID {item_id} in diff file. Ignoring.")
+    print("\nDiff processing summary:")
+    print(f"  - Records added: {added_count}")
+    print(f"  - Records updated: {updated_count} (including {deactivated_count} deactivated)")
+    
+    # --- Final Step: Schema Enforcement ---
+    # Ensure every record in the final list conforms to the new default schema.
+    # This adds any new keys with their default values to all existing records.
+    final_data = []
+    for record in main_data:
+        conformed_record = DEFAULT_TONEARM_SCHEMA.copy()
+        conformed_record.update(record)
+        final_data.append(conformed_record)
+    
+    # Sort data by ID to maintain a consistent order
+    final_data.sort(key=lambda x: x.get('id', 0))
 
-        updated_data.append(new_item)
+    if not save_json_file(final_data, TONEARM_DATA_PATH):
+        sys.exit(1)
 
-    # Write the updated data back to the file
-    try:
-        with open(TONEARM_DATA_PATH, 'w', encoding='utf-8') as f:
-            json.dump(updated_data, f, indent=2)
-        print(f"Successfully updated and wrote {len(updated_data)} records to '{TONEARM_DATA_PATH}'.")
-    except Exception as e:
-        print(f"Error writing updated data to file: {e}")
+    print(f"\nProcess complete. '{TONEARM_DATA_PATH}' has been updated with {len(final_data)} records conformed to the new schema.")
 
 if __name__ == '__main__':
     update_tonearm_data()
