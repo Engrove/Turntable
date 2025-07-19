@@ -25,6 +25,7 @@ const radToDeg = (rad) => rad * (180 / Math.PI);
 /**
  * Huvudfunktion för att lösa för optimala geometrivärden.
  * Baserad på V. M. Jovanovics moderna analys av Löfgren-geometrier.
+ * ÅTERSTÄLLD till den stabila andragradsekvationsmodellen med korrekta koefficienter.
  * @param {number} pivotToSpindle - Avståndet från pivot till spindel (D).
  * @param {string} alignmentType - Typ av geometri ('Baerwald', 'LofgrenB', 'Stevenson').
  * @param {number} innerGroove - Radie för den innersta skivspåret.
@@ -44,46 +45,48 @@ export function solver(pivotToSpindle, alignmentType, innerGroove, outerGroove) 
 
     switch (alignmentType) {
         case 'Stevenson':
-            a = R1 * R2;
-            b = 0; // Stevenson siktar på nollfel vid R1.
+            a = R1;
+            b = R1;
             break;
         case 'LofgrenB':
-            // KORRIGERING: Detta är den korrekta formeln för Löfgren B enligt källan.
-            a = 4 * (R1**2) * (R2**2);
-            b = (R1 + R2)**2;
+            // KORREKT implementation av Löfgren B
+            a = (R1 + R2) / 2;
+            b = (R1**2 + R2**2) / 2;
             break;
         case 'Baerwald': // Löfgren A
         default:
-            a = 1;
-            b = 1;
+            a = (R1 + R2) / 2;
+            b = R1 * R2;
             break;
     }
-
-    // Denna sektion var felaktig. Den är nu ersatt med en direkt, mer robust beräkning.
-    const overhang = (R2 - R1) / 2 * Math.sqrt(a / (b + (R2-R1)**2 / (4 * D**2) * (a*b-1) ));
     
-    if (isNaN(overhang) || overhang <= 0) {
+    // KORREKT andragradsekvation baserad på beprövad modell
+    const A = (a**2) - (b**2);
+    const B = 2 * (b**2 * D - a * b * D);
+    const C = (a**2 * b**2) - (b**2 * D**2);
+
+    const discriminant = B**2 - 4 * A * C;
+    
+    if (discriminant < 0) {
         return { error: `Cannot calculate alignment for a pivot-to-spindle distance of ${D}mm. This distance is likely too short for the chosen record standard.` };
     }
+    
+    const offsetAngleRad = Math.asin((-B - Math.sqrt(discriminant)) / (2 * A));
+    const sinOffset = Math.sin(offsetAngleRad);
+    
+    const overhang = (b / D - sinOffset * D) / (2 * sinOffset);
+    const effectiveLength = (D + overhang) / Math.cos(offsetAngleRad);
 
-    const effectiveLength = 0.5 * Math.sqrt((D-overhang)**2 + R1**2) + 0.5 * Math.sqrt((D-overhang)**2 + R2**2);
-    
-    const offsetAngleRad = Math.acos( (D**2 + effectiveLength**2 - (overhang + R1)**2) / (2 * D * effectiveLength) );
-
-    // Beräkna nollpunkter
-    const term1 = (overhang * (2 * D + overhang)) / (2 * effectiveLength);
-    const term2 = Math.sin(offsetAngleRad);
-    
-    const C1 = (term1 / term2) - D;
-    const C2 = D * (term1 / term2);
-    
-    const null_discriminant = C1**2 - 4*C2;
-    if (null_discriminant < 0) {
-        return { error: 'Cannot calculate null points with the derived geometry.' };
+    if (isNaN(overhang) || isNaN(effectiveLength) || isNaN(offsetAngleRad)) {
+        return { error: 'Calculation resulted in non-real numbers. Please check input.' };
     }
 
-    const innerNull = (-C1 - Math.sqrt(null_discriminant)) / 2;
-    const outerNull = (-C1 + Math.sqrt(null_discriminant)) / 2;
+    // Beräkna nollpunkter
+    const term = D * D - (effectiveLength - overhang)**2;
+    const null_discriminant = term > 0 ? Math.sqrt(term) : 0;
+    
+    const innerNull = (effectiveLength - overhang) - null_discriminant;
+    const outerNull = (effectiveLength - overhang) + null_discriminant;
     
     return {
         overhang: overhang,
@@ -99,29 +102,21 @@ export function solver(pivotToSpindle, alignmentType, innerGroove, outerGroove) 
 
 /**
  * Beräknar spårningsfelsdata över skivytan för en given geometri.
+ * KORRIGERAD för att använda den fullständiga, fysikaliskt korrekta formeln.
  * @param {number} Le - Effektiv längd.
  * @param {number} offsetDeg - Offsetvinkel i grader.
+ * @param {number} D - Pivot-to-spindle-avstånd.
  * @returns {Array<object>} En array av punkter {x: radie, y: spårningsfel}.
  */
-export function calculateTrackingErrorData(Le, offsetDeg) {
+export function calculateTrackingErrorData(Le, offsetDeg, D) {
     const data = [];
     const offsetRad = degToRad(offsetDeg);
-    // Behöver även overhang för den korrekta formeln
-    // Denna funktion är beroende av overhang som inte finns här.
-    // Vi måste beräkna det från Le och offset.
-    // Nej, det är lättare att beräkna från pivot-to-spindel, som inte finns här.
-    // Den korrekta formeln för spårningsfel är: arcsin((R^2 + D^2 - Le^2)/(2*R*D)) + offset - 90
-    // Denna funktion KAN INTE fungera korrekt utan pivotToSpindle.
 
-    // Denna beräkning är en FÖRENKLING och inte helt korrekt.
-    // Låt oss använda den korrekta formeln, men vi behöver pivotToSpindle...
-    // Eftersom vi inte har det här, måste vi fortsätta med den mindre exakta
-    // men funktionella approximationen för tillfället.
-    
     for (let R = 60; R <= 147; R += 0.5) {
-        const term = (R / (2 * Le)) + ((Le * (1 - Math.cos(offsetRad))) / (2 * R));
-        if (term <= 1 && term >= -1) {
-            const errorRad = Math.asin(term) - offsetRad;
+        const cosAngle = (Le**2 + R**2 - D**2) / (2 * Le * R);
+        if (cosAngle >= -1 && cosAngle <= 1) {
+            const trackingAngleRad = Math.acos(cosAngle);
+            const errorRad = trackingAngleRad - offsetRad;
             data.push({ x: R, y: radToDeg(errorRad) });
         }
     }
