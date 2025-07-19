@@ -15,6 +15,7 @@ userInput: {
   alignmentType: 'Baerwald',
   standard: 'IEC',
   paperFormat: 'A4',
+  protractorModel: 'Baerwald Arc', // NY state för vald protraktormodell
 },
 
 calculatedValues: {
@@ -28,7 +29,7 @@ calculatedValues: {
   error: null,
 },
 
-allGeometries: {}, // To store results for all three types for the chart
+allGeometries: {},
 trackingErrorChartData: {},
 
 
@@ -49,11 +50,11 @@ this.isLoading = true;
 this.error = null;
 try {
 const response = await fetch('/data/tonearm_data.json');
-if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+if (!response.ok) throw new Error(HTTP error! status: ${response.status});
 this.availableTonearms = await response.json();
 this.calculateAlignment();
 } catch (e) {
-this.error = `Failed to load tonearm database: ${e.message}`;
+this.error = Failed to load tonearm database: ${e.message};
 console.error(e);
 } finally {
 this.isLoading = false;
@@ -64,8 +65,8 @@ this.isLoading = false;
 loadTonearmPreset(tonearmId) {
   this.selectedTonearmId = tonearmId;
   if (!tonearmId) {
-    this.userInput.pivotToSpindle = 222; // Reset to default
-    this.calculatedValues.trackingMethod = 'pivoting'; // Reset
+    this.userInput.pivotToSpindle = 222;
+    this.calculatedValues.trackingMethod = 'pivoting';
   } else {
     const selected = this.availableTonearms.find(t => t.id === parseInt(tonearmId));
     if (selected) {
@@ -78,6 +79,8 @@ loadTonearmPreset(tonearmId) {
 
 setAlignment(type) {
   this.userInput.alignmentType = type;
+  // Uppdatera protraktormodellen för att matcha
+  this.userInput.protractorModel = `${type} Arc`;
   this.calculateAlignment();
 },
 
@@ -129,11 +132,11 @@ calculateAlignment() {
 
 updateChartData() {
     const geometryColors = {
-        Baerwald: '#3498db', // Blå
-        LofgrenB: '#27ae60', // Grön
-        Stevenson: '#8e44ad', // Lila
+        Baerwald: '#3498db',
+        LofgrenB: '#27ae60',
+        Stevenson: '#8e44ad',
     };
-    const activeColor = '#c0392b'; // Röd för aktiv
+    const activeColor = '#c0392b';
 
     const datasets = Object.entries(this.allGeometries).map(([key, geo]) => {
         const isActive = key === this.userInput.alignmentType;
@@ -142,7 +145,7 @@ updateChartData() {
             data: geo.data,
             borderColor: isActive ? activeColor : geometryColors[key],
             borderWidth: isActive ? 3 : 1.5,
-            borderDash: isActive ? [] : [5, 5],
+            borderDash: isActive ? [] :,
             pointRadius: 0,
             tension: 0.1,
             fill: false,
