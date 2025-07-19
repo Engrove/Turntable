@@ -1,5 +1,4 @@
 <!-- src/components/AlignmentInputPanel.vue -->
-
 <script setup>
 /**
 * @file src/components/AlignmentInputPanel.vue
@@ -18,24 +17,20 @@ if (!selectedTonearmManufacturer.value) return [];
 return store.availableTonearms.filter(t => t.manufacturer === selectedTonearmManufacturer.value);
 });
 
-/**
-* @description Beräknad egenskap för att avgöra om den aktuella tonarmen är pivoterande.
-* Används för att dynamiskt aktivera/inaktivera delar av gränssnittet.
-* @returns {boolean}
-*/
 const isPivotingArm = computed(() => store.calculatedValues.trackingMethod === 'pivoting');
 
-watch(selectedTonearmManufacturer, () => {
+watch(selectedTonarmManufacturer, () => {
 store.selectedTonearmId = null;
 });
 
-/**
-* @description Återställer valet av tonarmspreset.
-*/
 function resetTonearmSelection() {
 selectedTonearmManufacturer.value = null;
 store.loadTonearmPreset(null);
 }
+
+const selectedStandardInfo = computed(() => {
+return store.GROOVE_STANDARDS[store.userInput.standard] || {};
+});
 </script>
 
 <template>
@@ -48,6 +43,7 @@ store.loadTonearmPreset(null);
 <p class="fieldset-description">
 Start by loading a preset or manually entering your tonearm's Pivot-to-Spindle distance.
 </p>
+
 
 <div class="preset-group">
   <label>Load Tonearm Preset (Optional)</label>
@@ -80,6 +76,7 @@ Start by loading a preset or manually entering your tonearm's Pivot-to-Spindle d
 Choose the alignment geometry you want to use. Each offers a different trade-off in tracking error across the record.
 </p>
 
+
 <div class="mode-switch">
   <button
     v-for="(geo, key) in store.ALIGNMENT_GEOMETRIES"
@@ -102,6 +99,7 @@ Choose the alignment geometry you want to use. Each offers a different trade-off
     <strong>{{ store.calculatedValues.geometryName }} Arm Detected</strong>
     <span>This is a tangential tracking tonearm. Standard alignment geometries do not apply.</span>
 </div>
+
 </fieldset>
 
 <fieldset>
@@ -120,6 +118,10 @@ v-for="(standard, key) in store.GROOVE_STANDARDS"
 >
 {{ key }}
 </button>
+</div>
+<div v-if="isPivotingArm" class="geometry-info">
+<strong>{{ selectedStandardInfo.name }}:</strong>
+<span>Inner Groove at {{ selectedStandardInfo.inner }}mm, Outer Groove at {{ selectedStandardInfo.outer }}mm.</span>
 </div>
 </fieldset>
 
