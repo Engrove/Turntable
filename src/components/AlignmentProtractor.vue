@@ -1,120 +1,92 @@
+<!-- src/components/AlignmentProtractor.vue -->
+
 <script setup>
 /**
 * @file src/components/AlignmentProtractor.vue
-* @description Genererar en dynamisk, utskriftsvänlig SVG-baserad protraktor.
-* Denna komponent ritar upp spindelhål, nollpunkter och justeringsrutnät
-* i en exakt 1:1-skala (mm) för antingen A4- eller Letter-pappersformat.
+* @description En värdkomponent som renderar en utskriftsvänlig protraktor
+* med hjälp av en HTML Canvas och den dedikerade protractorRenderer-tjänsten.
 */
-import { computed } from 'vue';
+import { ref, onMounted, watchEffect } from 'vue';
 import { useAlignmentStore } from '@/store/alignmentStore.js';
+import { renderProtractor } from '@/services/protractorRenderer.js';
 
 const store = useAlignmentStore();
+const canvasRef = ref(null);
 
-const props = defineProps({
-    pivotToSpindle: Number,
-    effectiveLength: Number,
-    nulls: Object,
-    alignmentType: String
+watchEffect(() => {
+  if (canvasRef.value) {
+    const ctx = canvasRef.value.getContext('2d');
+    
+    // Sätt canvasens interna upplösning till samma som pappersmåtten i mm.
+    // Detta skapar en 1:1 pixel-till-mm mappning.
+    ctx.canvas.width = store.protractorRenderData.paper.width;
+    ctx.canvas.height = store.protractorRenderData.paper.height;
+    
+    renderProtractor(ctx, store.protractorRenderData);
+  }
 });
 
-// === PAPPERSFORMAT OCH DIMENSIONER ===
-const PAPER_FORMATS = {
-    A4: { width: 297, height: 210 },
-    Letter: { width: 279.4, height: 215.9 }
-};
+function printProtractor() {
+    if (!canvasRef.value) return;
 
-const paper = computed(() => PAPER_FORMATS[store.userInput.paperFormat] || PAPER_FORMATS.A4);
+    const dataUrl = canvasRef.value.toDataURL('image/png');
+    const paper = store.protractorRenderData.paper;
 
-// === SVG-VIEWBOX & SKALNING ===
-const viewBox = computed(() => `0 0 ${paper.value.width} ${paper.value.height}`);
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Engrove Audio Toolkit - Printable Protractor</title>
+                <style>
+                    @page {
+                        size: ${paper.width}mm ${paper.height}mm;
+                        margin: 0;
+                    }
+                    body {
+                        margin: 0;
+                        padding: 0;
+                        background-color: #FFF;
+                    }
+                    img {
+                        width: ${paper.width}mm;
+                        height: ${paper.height}mm;
+                        display: block;
+                    }
+                </style>
+            </head>
+            <body>
+                <img src="${dataUrl}" alt="Printable Tonearm Protractor">
+                <script>
+                    window.onload = function() {
+                        window.print();
+                        window.close();
+                    }
+                </script>
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
 
-// === KOORDINATBERÄKNINGAR ===
-const spindle = computed(() => ({ x: paper.value.width / 2, y: paper.value.height / 2 }));
-
-/**
-* @description Beräknar den exakta skärmpositionen och tangentvinkeln för en nollpunkt.
-* @param {number} radius - Nollpunktens radie från spindeln i mm.
-* @returns {{x: number, y: number, tangentAngle: number}} Koordinater och vinkel.
-*/
-const getNullPointRenderData = (radius) => {
-    if (!radius) return { x: 0, y: 0, tangentAngle: 0 };
-    const x = spindle.value.x + radius;
-    const y = spindle.value.y;
-    const tangentAngle = 90;
-    return { x, y, tangentAngle };
-};
-
-const innerNull = computed(() => getNullPointRenderData(props.nulls.inner));
-const outerNull = computed(() => getNullPointRenderData(props.nulls.outer));
-
-// Beräknar svepbågen för stylusen för visuell kontext.
-const arcPath = computed(() => {
-    if (!props.effectiveLength || !props.pivotToSpindle) return "";
-    const r = props.effectiveLength;
-    const pivot_x_relative = props.pivotToSpindle;
-
-    const pivot_x_absolute = spindle.value.x - pivot_x_relative;
-    const pivot_y_absolute = spindle.value.y;
-
-    const startRadius = 60;
-    const endRadius = 147;
-
-    // Beräkna start- och slutvinklar för bågen
-    const startAngle = Math.acos((pivot_x_relative**2 + r**2 - startRadius**2) / (2 * pivot_x_relative * r));
-    const endAngle = Math.acos((pivot_x_relative**2 + r**2 - endRadius**2) / (2 * pivot_x_relative * r));
-
-    const startX = pivot_x_absolute + r * Math.cos(startAngle);
-    const startY = pivot_y_absolute - r * Math.sin(startAngle);
-    const endX = pivot_x_absolute + r * Math.cos(endAngle);
-    const endY = pivot_y_absolute - r * Math.sin(endAngle);
-
-    return `M ${startX} ${startY} A ${r} ${r} 0 0 0 ${endX} ${endY}`;
-});
 </script>
 
 <template>
-    <div class="protractor-panel panel" id="protractor-section-for-print">
+    <div class="protractor-panel panel" id="protractor-section">
         <div class="protractor-header">
-            <h3>Printable Protractor ({{ alignmentType.replace('A','') }})</h3>
-            <div class="print-info">
-                <p><strong>Printing Instructions:</strong> Use your browser's print function (Ctrl/Cmd + P). Ensure the printer is set to <strong>100% scale ("Actual Size")</strong> with no "fit to page" scaling. Set page orientation to **Landscape**. Verify the printed 100mm scale with a ruler before use.</p>
+            <h3>Printable Protractor Preview</h3>
+            <div class="header-controls">
+                 <button @click="printProtractor" class="print-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                    Print Protractor
+                </button>
             </div>
+        </div>
+        <div class="print-info">
+            <p><strong>Printing Instructions:</strong> Click the "Print Protractor" button. In the print dialog, ensure scaling is set to <strong>100% or "Actual Size"</strong> and orientation is <strong>Landscape</strong>. Verify the printed 100mm scale with a ruler before use.</p>
         </div>
 
         <div class="protractor-container">
-            <svg :viewBox="viewBox" :width="`${paper.width}mm`" :height="`${paper.height}mm`" preserveAspectRatio="xMidYMid meet">
-                <!-- Dimensioneringslinjal för verifiering av utskriftsskala -->
-                <g class="ruler" transform="translate(20, 20)">
-                    <path d="M 0 0 L 100 0 M 0 -5 L 0 5 M 100 -5 L 100 5" stroke="#aaa" stroke-width="0.2" />
-                    <text x="50" y="-8">100mm Scale Reference</text>
-                </g>
-                
-                <!-- Spindelhål -->
-                <g class="spindle" :transform="`translate(${spindle.x}, ${spindle.y})`">
-                    <circle cx="0" cy="0" r="3.6" stroke="#2c3e50" stroke-width="0.2" fill="none" />
-                    <path d="M -5 0 L 5 0 M 0 -5 L 0 5" stroke="#2c3e50" stroke-width="0.2" />
-                    <text x="0" y="8" class="print-only-text">Spindle Hole</text>
-                </g>
-
-                <!-- Svepbåge -->
-                <path :d="arcPath" class="arc-path" />
-
-                <!-- Nollpunkter & Rutnät -->
-                <g class="null-point inner" :transform="`translate(${innerNull.x}, ${innerNull.y})`">
-                    <g :transform="`rotate(${innerNull.tangentAngle})`">
-                        <path class="grid-lines" d="M 0 -20 L 0 20 M -20 0 L 20 0 M -15 -10 L 15 -10 M -15 10 L 15 10 M -10 -15 L 10 -15 M 10 -15 L 10 15 M -10 -15 L -10 15" />
-                    </g>
-                    <circle cx="0" cy="0" r="0.2" fill="red" />
-                    <text x="0" y="-25" class="print-only-text">Inner Null: {{ nulls.inner.toFixed(2) }}mm</text>
-                </g>
-                <g class="null-point outer" :transform="`translate(${outerNull.x}, ${outerNull.y})`">
-                    <g :transform="`rotate(${outerNull.tangentAngle})`">
-                        <path class="grid-lines" d="M 0 -20 L 0 20 M -20 0 L 20 0 M -15 -10 L 15 -10 M -15 10 L 15 10 M -10 -15 L 10 -15 M 10 -15 L 10 15 M -10 -15 L -10 15" />
-                    </g>
-                    <circle cx="0" cy="0" r="0.2" fill="red" />
-                    <text x="0" y="-25" class="print-only-text">Outer Null: {{ nulls.outer.toFixed(2) }}mm</text>
-                </g>
-            </svg>
+            <canvas ref="canvasRef" class="protractor-canvas"></canvas>
         </div>
     </div>
 </template>
@@ -127,7 +99,7 @@ const arcPath = computed(() => {
 .protractor-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     gap: 1rem;
     margin-bottom: 1rem;
 }
@@ -135,7 +107,6 @@ const arcPath = computed(() => {
     margin: 0;
     color: var(--header-color);
     font-size: 1.25rem;
-    flex-shrink: 0;
 }
 .print-info {
     font-size: 0.8rem;
@@ -144,9 +115,28 @@ const arcPath = computed(() => {
     padding: 0.5rem 1rem;
     border-radius: 4px;
     border-left: 3px solid var(--accent-color);
+    margin-bottom: 1rem;
 }
 .print-info p {
     margin: 0;
+}
+.print-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #fff;
+    background-color: var(--accent-color);
+    border: 1px solid var(--accent-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.print-button:hover {
+    background-color: #2980b9;
+    border-color: #2980b9;
 }
 .protractor-container {
     width: 100%;
@@ -156,44 +146,10 @@ const arcPath = computed(() => {
     padding: 1rem;
     overflow: auto;
 }
-svg {
-    font-family: sans-serif;
-    font-size: 4px;
-}
-.ruler text, .print-only-text {
-    text-anchor: middle;
-    fill: #555;
-}
-.arc-path {
-    fill: none;
-    stroke: #3498db;
-    stroke-width: 0.2px;
-    stroke-dasharray: 2 2;
-}
-.grid-lines {
-    fill: none;
-    stroke: #aaa;
-    stroke-width: 0.2px;
-}
-
-@media print {
-    .protractor-header {
-        display: none;
-    }
-    .protractor-container {
-        border: none;
-        padding: 0;
-        margin: 0;
-        width: auto;
-        height: auto;
-    }
-    .arc-path {
-        stroke-width: 0.1px;
-    }
-    :deep(.panel) {
-        border: none !important;
-        box-shadow: none !important;
-        padding: 0 !important;
-    }
+.protractor-canvas {
+    width: 100%;
+    height: auto;
+    display: block;
 }
 </style>
+<!-- src/components/AlignmentProtractor.vue -->
