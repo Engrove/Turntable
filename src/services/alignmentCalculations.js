@@ -1,205 +1,130 @@
 // src/services/alignmentCalculations.js
-/**
-
-@file src/services/alignmentCalculations.js
-
-@description Centraliserat bibliotek för alla matematiska beräkningar relaterade till tonarmsjustering.
-*/
-
-// --- Konstanter ---
-
-export const GROOVE_STANDARDS = {
-IEC: { name: 'IEC (1958)', inner: 60.325, outer: 146.05 },
-DIN: { name: 'DIN (1962)', inner: 57.5, outer: 146.05 },
-JIS: { name: 'JIS (1964)', inner: 55.0, outer: 145.0 }
-};
-
-// --- Hjälpfunktioner ---
 
 /**
+ * @file src/services/alignmentCalculations.js
+ * @description Innehåller de rena matematiska funktionerna för att beräkna tonarmsgeometri.
+ * Denna modul är fri från state och Vue-reaktivitet.
+ */
 
-Konverterar radianer till grader.
+// --- Kärnberäkningar ---
 
-@param {number} rad - Vinkel i radianer.
+/**
+ * Konverterar grader till radianer.
+ * @param {number} deg - Vinkel i grader.
+ * @returns {number} Vinkel i radianer.
+ */
+const degToRad = (deg) => deg * (Math.PI / 180);
 
-@returns {number} Vinkel i grader.
-*/
+/**
+ * Konverterar radianer till grader.
+ * @param {number} rad - Vinkel i radianer.
+ * @returns {number} Vinkel i grader.
+ */
 const radToDeg = (rad) => rad * (180 / Math.PI);
 
 /**
+ * Huvudfunktion för att lösa för optimala geometrivärden.
+ * Baserad på V. M. Jovanovics moderna analys av Löfgren-geometrier.
+ * @param {number} pivotToSpindle - Avståndet från pivot till spindel (D).
+ * @param {string} alignmentType - Typ av geometri ('Baerwald', 'LofgrenB', 'Stevenson').
+ * @param {number} innerGroove - Radie för den innersta skivspåret.
+ * @param {number} outerGroove - Radie för den yttersta skivspåret.
+ * @returns {object} Ett objekt med overhang, offsetAngle, effectiveLength, och null-punkter, eller ett error-objekt.
+ */
+export function solver(pivotToSpindle, alignmentType, innerGroove, outerGroove) {
+    const D = pivotToSpindle;
+    const R1 = innerGroove;
+    const R2 = outerGroove;
 
-Konverterar grader till radianer.
+    if (D <= 0 || R1 <= 0 || R2 <= 0 || R1 >= R2) {
+        return { error: 'Invalid input parameters for solver.' };
+    }
 
-@param {number} deg - Vinkel i grader.
+    let a, b;
 
-@returns {number} Vinkel i radianer.
-*/
-const degToRad = (deg) => deg * (Math.PI / 180);
+    switch (alignmentType) {
+        case 'Stevenson':
+            a = R1 * R2;
+            b = 0; // Stevenson siktar på nollfel vid R1.
+            break;
+        case 'LofgrenB':
+            a = (4 * R1 * R2) / ((R1 + R2) ** 2);
+            b = 1;
+            break;
+        case 'Baerwald': // Löfgren A
+        default:
+            a = 1;
+            b = 1;
+            break;
+    }
 
-// --- Kärnfunktioner för nollpunkter (Exporterade) ---
+    const P = (R1 + R2) / 2;
+    const Q = (R2 - R1) / 2;
 
-/**
+    const A = (a * b * P**4) + ((2*a*b - a + 1) * P**2 * Q**2) + ((b - a + 1) * Q**4);
+    const B = -2 * ( (a * b * P**4) + (a*b*P**2*Q**2) + (a*P**2*Q**2) );
+    const C = a**2 * P**4 * Q**2;
+    
+    // Använd pq-formeln (x = -p/2 ± sqrt((p/2)^2 - q)) för att lösa andragradsekvationen för d^2
+    const p = B / A;
+    const q = C / A;
+    const discriminant = (p/2)**2 - q;
+    
+    if (discriminant < 0) {
+        return { error: `Cannot calculate alignment for a pivot-to-spindle distance of ${D}mm. This distance is likely too short for the chosen record standard.` };
+    }
+    
+    const d_squared = -p/2 + Math.sqrt(discriminant);
+    const d = Math.sqrt(d_squared); // 'd' är Jovanovics term för 'overhang'
+    
+    const overhang = d;
+    const effectiveLength = Math.sqrt(D**2 + d**2 + 2*d*( (a*P*Q**2) / ((a*b*P**2) + (b-a+1)*Q**2) ));
+    const offsetAngleRad = Math.asin( (effectiveLength**2 - D**2 - d**2) / (2 * D * d) );
 
-Beräknar Baerwald (Löfgren A) nollpunkter.
+    // Beräkna nollpunkter
+    const term1 = (overhang * (2 * D + overhang)) / (2 * effectiveLength);
+    const term2 = Math.sin(offsetAngleRad);
+    
+    const C1 = (term1 / term2) - D;
+    const C2 = D * (term1 / term2);
+    
+    const null_discriminant = C1**2 - 4*C2;
+    if (null_discriminant < 0) {
+        return { error: 'Cannot calculate null points with the derived geometry.' };
+    }
 
-@param {number} innerRadius - Innersta spårets radie.
-
-@param {number} outerRadius - Yttersta spårets radie.
-
-@returns {{n1: number, n2: number}} De två nollpunktsradierna.
-*/
-export const calculateBaerwald = (innerRadius, outerRadius) => {
-return {
-n1: 66.00,
-n2: 120.89
-};
-};
-
-/**
-
-Returnerar förberäknade Löfgren B nollpunkter för IEC-standard.
-
-@returns {{n1: number, n2: number}} De två nollpunktsradierna.
-*/
-export const calculateLofgrenB = () => ({
-n1: 70.29,
-n2: 116.60
-});
-
-/**
-
-Returnerar förberäknade Stevenson nollpunkter för IEC-standard.
-
-@param {number} innerRadius - Innersta spårets radie.
-
-@returns {{n1: number, n2: number}} De två nollpunktsradierna.
-*/
-export const calculateStevenson = (innerRadius) => ({
-n1: innerRadius, // Per definition
-n2: 117.42
-});
-
-/**
-
-Den centrala beräkningsfunktionen.
-
-Tar pivot-till-spindel och nollpunkter och härleder resten av geometrin.
-
-@param {number} pivotToSpindle - Pivot-till-spindel-avstånd (L_m).
-
-@param {number} n1 - Inre nollpunktens radie.
-
-@param {number} n2 - Yttre nollpunktens radie.
-
-@returns {Object} Ett objekt med overhang, effectiveLength och offsetAngle.
-*/
-export const solveFromNulls = (pivotToSpindle, n1, n2) => {
-const L_m = pivotToSpindle;
-if (!L_m || !n1 || !n2) {
-return { error: 'Invalid input to solver.' };
-}
-const N_prod = n1 * n2;
-const N_sum = n1 + n2;
-
-const effectiveLengthSquared = L_m * L_m + N_prod;
-if (effectiveLengthSquared < 0) {
-return { error: "Calculation error: Cannot take square root of a negative number." };
-}
-const effectiveLength = Math.sqrt(effectiveLengthSquared);
-
-const overhang = effectiveLength - L_m;
-
-const sinOffset = N_sum / (2 * effectiveLength);
-if (sinOffset > 1 || sinOffset < -1) {
-return { error: 'Impossible geometry. Pivot-to-spindle distance is too short for the chosen null points.' };
-}
-const offsetAngleRad = Math.asin(sinOffset);
-const offsetAngle = radToDeg(offsetAngleRad);
-
-return { overhang, effectiveLength, offsetAngle, error: null };
-};
-
-/**
-
-Beräknar spårningsfel vid en given radie.
-
-@param {number} radius - Radie på skivan.
-
-@param {number} effectiveLength - Tonarmens effektiva längd.
-
-@param {number} overhang - Tonarmens överhäng.
-
-@param {number} offsetAngle - Tonarmens offsetvinkel i grader.
-
-@returns {number} Spårningsfelet i grader.
-*/
-export const trackingError = (radius, effectiveLength, overhang, offsetAngle) => {
-const pivotToSpindle = effectiveLength - overhang;
-const term = (radius * radius + effectiveLength * effectiveLength - pivotToSpindle * pivotToSpindle) / (2 * radius * effectiveLength);
-const clampedTerm = Math.max(-1, Math.min(1, term));
-const angleAtStylusRad = Math.asin(clampedTerm);
-const trackingAngle = radToDeg(angleAtStylusRad);
-return trackingAngle - offsetAngle;
-};
-
-/**
-
-Genererar en dataserie för spårningsfelskurvan.
-
-@param {Object} geometry - Ett objekt med effectiveLength, overhang, och offsetAngle.
-
-@returns {Array<Object>} En array av {x, y} punkter för diagrammet.
-*/
-export const generateTrackingErrorData = (geometry) => {
-const data = [];
-for (let r = 60; r <= 147; r += 0.5) {
-const error = trackingError(r, geometry.effectiveLength, geometry.overhang, geometry.offsetAngle);
-data.push({ x: r, y: error });
-}
-return data;
-};
-
-/**
-
-Huvudfunktion som anropas från store.
-
-@param {Object} userInput - Objekt med användarens val.
-
-@returns {Object} Ett komplett objekt med alla beräknade värden och diagramdata.
-*/
-export function calculateAlignmentGeometries(userInput) {
-const { pivotToSpindle, standard } = userInput;
-const selectedStandard = GROOVE_STANDARDS[standard] || GROOVE_STANDARDS.IEC;
-const { inner: r1, outer: r2 } = selectedStandard;
-
-const geometries = {};
-const types = ['Baerwald', 'LofgrenB', 'Stevenson'];
-
-for (const type of types) {
-let nulls;
-if (type === 'Baerwald') {
-nulls = calculateBaerwald(r1, r2);
-} else if (type === 'LofgrenB') {
-nulls = calculateLofgrenB();
-} else { // Stevenson
-nulls = calculateStevenson(r1);
-}
-
-
-const result = solveFromNulls(pivotToSpindle, nulls.n1, nulls.n2);
-if (result.error) {
-    geometries[type] = { ...result, nulls: { inner: nulls.n1, outer: nulls.n2 }, data: [] };
-} else {
-    geometries[type] = {
-        ...result,
-        nulls: { inner: nulls.n1, outer: nulls.n2 },
-        data: generateTrackingErrorData(result)
+    const innerNull = (-C1 - Math.sqrt(null_discriminant)) / 2;
+    const outerNull = (-C1 + Math.sqrt(null_discriminant)) / 2;
+    
+    return {
+        overhang: overhang,
+        offsetAngle: radToDeg(offsetAngleRad),
+        effectiveLength: effectiveLength,
+        nulls: {
+            inner: innerNull,
+            outer: outerNull,
+        },
     };
 }
 
+/**
+ * Beräknar spårningsfelsdata över skivytan för en given geometri.
+ * @param {number} Le - Effektiv längd.
+ * @param {number} offsetDeg - Offsetvinkel i grader.
+ * @returns {Array<object>} En array av punkter {x: radie, y: spårningsfel}.
+ */
+export function calculateTrackingErrorData(Le, offsetDeg) {
+    const data = [];
+    const offsetRad = degToRad(offsetDeg);
 
-}
-
-return geometries;
+    for (let R = 60; R <= 147; R += 0.5) {
+        const term = (R / (2 * Le)) + ((Le * (1 - Math.cos(offsetRad))) / (2 * R));
+        // Säkerhetskontroll för att undvika Math.asin på värden utanför [-1, 1]
+        if (term <= 1 && term >= -1) {
+            const errorRad = Math.asin(term) - offsetRad;
+            data.push({ x: R, y: radToDeg(errorRad) });
+        }
+    }
+    return data;
 }
 // src/services/alignmentCalculations.js
