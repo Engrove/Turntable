@@ -1,4 +1,5 @@
 <!-- src/components/AlignmentGeometry.vue -->
+
 <script setup>
 /**
 * @file src/components/AlignmentGeometry.vue
@@ -18,8 +19,8 @@ nulls: Object,
 const viewBox = computed(() => {
 const p2s = props.pivotToSpindle || 222;
 const overhang = props.overhang || 15;
-const padding = 50; // Ökad padding för att ge plats åt allt
-const width = p2s + overhang + padding * 3;
+const padding = 50;
+const width = p2s + overhang + padding * 2.5;
 const height = width * 0.8;
 return `${-overhang - padding * 1.5} ${-height / 2.2} ${width} ${height}`;
 });
@@ -94,18 +95,19 @@ return radToDeg(Math.atan2(dy, dx));
 <text :x="innerNullData.x" :y="innerNullData.y + 25" class="null-label">Inner Null</text>
 </g>
 
-<!-- Måttlinjer och geometriska samband -->
+<!-- Måttlinjer (flyttade ovanför) -->
 
 <g class="dimension-lines">
 <line :x1="pivot.x" :y1="pivot.y" :x2="spindle.x" :y2="spindle.y" class="dim-line p2s" />
 <line v-if="outerNullData" :x1="pivot.x" :y1="pivot.y" :x2="outerNullData.x" :y2="outerNullData.y" class="dim-line effective-length" />
 <line :x1="spindle.x" :y1="spindle.y" :x2="-overhang" :y2="0" class="dim-line overhang" />
 
-<g :transform="`translate(0, ${effectiveLength * 0.65})`">
+
+<g :transform="`translate(0, -${effectiveLength * 0.45})`">
     <line :x1="spindle.x" y1="0" :x2="pivot.x" y2="0" marker-start="url(#arrowhead-dim-final)" marker-end="url(#arrowhead-dim-final)" class="dim-arrow p2s" />
     <text :x="pivot.x / 2" y="-8">Pivot-to-Spindle: {{ pivotToSpindle.toFixed(1) }}mm</text>
 </g>
-<g :transform="`translate(0, ${effectiveLength * 0.75})`">
+<g :transform="`translate(0, -${effectiveLength * 0.55})`">
     <line :x1="-overhang" y1="0" :x2="spindle.x" y2="0" marker-start="url(#arrowhead-dim-final)" marker-end="url(#arrowhead-dim-final)" class="dim-arrow overhang" />
     <text :x="-overhang / 2" y="-8">Overhang: {{ overhang.toFixed(1) }}mm</text>
 </g>
@@ -121,7 +123,7 @@ return radToDeg(Math.atan2(dy, dx));
 <circle cx="-50" cy="0" r="12" class="counterweight" />
 </g>
 <g class="headshell" :transform="headshellTransform">
-<path d="M 0 0 L 18 0 L 22 -4 L 22 -16 L 18 -20 L 0 -20 Z" transform="translate(-12, 10)" />
+<path d="M 0 0 L 18 0 L 22 4 L 22 16 L 18 20 L 0 20 Z" transform="translate(-12, -10)" />
 <line x1="0" y1="0" x2="30" y2="0" class="tangent-line" />
 </g>
 </g>
