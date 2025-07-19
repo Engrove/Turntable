@@ -1,174 +1,150 @@
 // src/store/alignmentStore.js
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
-import * as calculator from '@/services/alignmentCalculations.js';
+import { calculateAlignmentGeometries, GROOVE_STANDARDS, trackingError, solveFromNulls, calculateBaerwald, calculateLofgrenB, calculateStevenson } from '@/services/alignmentCalculations.js';
 
-export const useAlignmentStore = defineStore('alignment', () => {
-  const isLoading = ref(true);
-  const error = ref(null);
+export const useAlignmentStore = defineStore('alignment', {
+state: () => ({
+isLoading: true,
+error: null,
+availableTonearms: [],
+selectedTonearmId: null,
 
-  const GROOVE_STANDARDS = calculator.GROOVE_STANDARDS;
 
-  const ALIGNMENT_GEOMETRIES = {
-    Baerwald: {
-      solver: calculator.calculateBaerwald,
-      description: "Also known as Löfgren A. Aims for the lowest average distortion across the entire record by balancing the error peaks.",
-    },
-    LofgrenB: {
-      solver: calculator.calculateLofgrenB,
-      description: "Minimizes the absolute maximum distortion. The error peaks at the inner and outer grooves are lower than with Baerwald.",
-    },
-    StevensonA: {
-      solver: calculator.calculateStevensonA,
-      description: "Prioritizes minimizing distortion at the innermost groove, where it is most audible, at the cost of higher error elsewhere.",
+userInput: {
+  pivotToSpindle: 222,
+  alignmentType: 'Baerwald',
+  standard: 'IEC',
+  paperFormat: 'A4',
+},
+
+calculatedValues: {
+  overhang: 0,
+  offsetAngle: 0,
+  effectiveLength: 0,
+  nulls: { inner: 0, outer: 0 },
+  geometryName: '',
+  geometryDescription: '',
+  trackingMethod: 'pivoting',
+  error: null,
+},
+
+allGeometries: {}, // To store results for all three types for the chart
+trackingErrorChartData: {},
+
+
+}),
+
+getters: {
+ALIGNMENT_GEOMETRIES: () => ({
+Baerwald: { name: 'Baerwald (Löfgren A)', description: 'Also known as Löfgren A. Aims for the lowest average distortion across the entire record by balancing the error peaks.' },
+LofgrenB: { name: 'Löfgren B', description: 'Minimizes the absolute maximum distortion. The error peaks at the inner and outer grooves are lower than with Baerwald.' },
+Stevenson: { name: 'Stevenson', description: 'Prioritizes minimizing distortion at the innermost groove, where it is most audible, at the cost of higher error elsewhere.' },
+}),
+GROOVE_STANDARDS: () => GROOVE_STANDARDS,
+},
+
+actions: {
+async initialize() {
+this.isLoading = true;
+this.error = null;
+try {
+const response = await fetch('/data/tonearm_data.json');
+if (!response.ok) throw new Error(HTTP error! status: ${response.status});
+this.availableTonearms = await response.json();
+this.calculateAlignment();
+} catch (e) {
+this.error = Failed to load tonearm database: ${e.message};
+console.error(e);
+} finally {
+this.isLoading = false;
+}
+},
+
+
+loadTonearmPreset(tonearmId) {
+  this.selectedTonearmId = tonearmId;
+  if (!tonearmId) {
+    this.userInput.pivotToSpindle = 222; // Reset to default
+    this.calculatedValues.trackingMethod = 'pivoting'; // Reset
+  } else {
+    const selected = this.availableTonearms.find(t => t.id === parseInt(tonearmId));
+    if (selected) {
+      this.userInput.pivotToSpindle = selected.pivot_to_spindle_mm;
+      this.calculatedValues.trackingMethod = selected.tracking_method || 'pivoting';
     }
+  }
+  this.calculateAlignment();
+},
+
+setAlignment(type) {
+  this.userInput.alignmentType = type;
+  this.calculateAlignment();
+},
+
+setStandard(standard) {
+  this.userInput.standard = standard;
+  this.calculateAlignment();
+},
+
+setPaperFormat(format) {
+  this.userInput.paperFormat = format;
+},
+
+calculateAlignment() {
+  if (this.calculatedValues.trackingMethod !== 'pivoting') {
+    const selected = this.availableTonearms.find(t => t.id === parseInt(this.selectedTonearmId));
+    this.calculatedValues = {
+      overhang: null,
+      offsetAngle: null,
+      effectiveLength: selected ? selected.effective_length_mm : 'N/A',
+      nulls: { inner: null, outer: null },
+      geometryName: 'Tangential',
+      geometryDescription: '',
+      trackingMethod: 'tangential',
+      error: null,
+    };
+    this.trackingErrorChartData = { datasets: [] }; // Rensa diagrammet
+    return;
+  }
+
+  // HÄRDNING: Kontrollera att resultatet från beräkningstjänsten är giltigt.
+  const results = calculateAlignmentGeometries(this.userInput);
+  if (!results) {
+      this.error = "Calculation service failed to return a valid result.";
+      this.calculatedValues.error = "Calculation service failed.";
+      return;
+  }
+
+  this.allGeometries = results;
+  const currentResult = this.allGeometries[this.userInput.alignmentType];
+  
+  this.calculatedValues = {
+    ...this.calculatedValues,
+    ...currentResult,
+    geometryName: this.ALIGNMENT_GEOMETRIES[this.userInput.alignmentType].name,
+    geometryDescription: this.ALIGNMENT_GEOMETRIES[this.userInput.alignmentType].description,
   };
 
-  const userInput = ref({
-    pivotToSpindle: 222,
-    alignmentType: 'Baerwald',
-    standard: 'IEC',
-    paperFormat: 'A4',
-  });
+  this.updateChartData();
+},
 
-  const availableTonearms = ref([]);
-  const selectedTonearmId = ref(null);
+updateChartData() {
+    const datasets = Object.entries(this.allGeometries).map(([key, geo]) => {
+        const isActive = key === this.userInput.alignmentType;
+        return {
+            label: key,
+            data: geo.data,
+            borderColor: isActive ? '#c0392b' : '#bdc3c7',
+            borderWidth: isActive ? 3 : 1.5,
+            pointRadius: 0,
+            tension: 0.1,
+            fill: false,
+        };
+    });
+    this.trackingErrorChartData = { datasets };
+},
 
-  const calculatedValues = ref({
-    overhang: 0,
-    offsetAngle: 0,
-    effectiveLength: 0,
-    nulls: { inner: 0, outer: 0 },
-    geometryName: '',
-    geometryDescription: '',
-    trackingMethod: 'pivoting',
-    error: null
-  });
 
-  const trackingErrorChartData = ref({ datasets: [] });
-
-  const currentTonearm = computed(() => {
-    if (!selectedTonearmId.value) return null;
-    return availableTonearms.value.find(t => t.id === selectedTonearmId.value);
-  });
-
-  async function initialize() {
-    isLoading.value = true;
-    error.value = null;
-    try {
-      const response = await fetch('/data/tonearm_data.json');
-      if (!response.ok) throw new Error('Network response was not ok.');
-      availableTonearms.value = await response.json();
-      calculateAlignment();
-    } catch (e) {
-      error.value = `Failed to load tonearm database: ${e.message}`;
-      console.error(error.value);
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  function setAlignment(type) {
-    if (ALIGNMENT_GEOMETRIES[type]) {
-      userInput.value.alignmentType = type;
-      calculateAlignment();
-    }
-  }
-
-  function setStandard(standard) {
-    if (GROOVE_STANDARDS[standard]) {
-      userInput.value.standard = standard;
-      calculateAlignment();
-    }
-  }
-
-  function setPaperFormat(format) {
-    if (['A4', 'Letter'].includes(format)) {
-      userInput.value.paperFormat = format;
-    }
-  }
-
-  function loadTonearmPreset(id) {
-    selectedTonearmId.value = id ? parseInt(id, 10) : null;
-    if (currentTonearm.value && currentTonearm.value.pivot_to_spindle_mm) {
-      userInput.value.pivotToSpindle = currentTonearm.value.pivot_to_spindle_mm;
-    }
-    calculateAlignment();
-  }
-
-  function calculateAlignment() {
-    const p2s = userInput.value.pivotToSpindle;
-    const standard = userInput.value.standard;
-
-    if (currentTonearm.value && currentTonearm.value.tracking_method !== 'pivoting') {
-      calculatedValues.value = {
-        overhang: 0,
-        offsetAngle: 0,
-        effectiveLength: currentTonearm.value.effective_length_mm || 'N/A',
-        nulls: { inner: 0, outer: 0 },
-        geometryName: currentTonearm.value.tracking_method.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        geometryDescription: 'Tangential arms have theoretically zero tracking error across the entire record.',
-        trackingMethod: currentTonearm.value.tracking_method,
-        error: null
-      };
-      trackingErrorChartData.value = { datasets: [] };
-      return;
-    }
-
-    calculatedValues.value.trackingMethod = 'pivoting';
-
-    if (!p2s || p2s < 150 || p2s > 400) {
-      calculatedValues.value.error = "Pivot-to-Spindle distance must be between 150 and 400 mm.";
-      trackingErrorChartData.value = { datasets: [] };
-      return;
-    }
-
-    calculatedValues.value.error = null;
-
-    const chartDatasets = [];
-    for (const [key, geo] of Object.entries(ALIGNMENT_GEOMETRIES)) {
-      const result = geo.solver(p2s, standard);
-      const isActive = key === userInput.value.alignmentType;
-      
-      chartDatasets.push({
-        label: key.replace('A', ''),
-        // data: calculator.generateTrackingErrorCurve(p2s, result.overhang, result.offsetAngle, standard),
-        // src/store/alignmentStore.js - KORRIGERAD KOD
-        data: calculator.generateTrackingErrorCurve(p2s, result.effectiveLength, result.offsetAngle, standard),
-        borderColor: isActive ? '#c0392b' : '#bdc3c7',
-        borderWidth: isActive ? 3 : 1.5,
-        pointRadius: 0,
-        tension: 0.1,
-      });
-
-      if (isActive) {
-        calculatedValues.value.overhang = result.overhang;
-        calculatedValues.value.offsetAngle = result.offsetAngle;
-        calculatedValues.value.effectiveLength = result.effectiveLength;
-        calculatedValues.value.nulls = result.nulls;
-        calculatedValues.value.geometryName = key.replace('A', '');
-        calculatedValues.value.geometryDescription = geo.description;
-      }
-    }
-    trackingErrorChartData.value = { datasets: chartDatasets };
-  }
-
-  return {
-    isLoading,
-    error,
-    userInput,
-    availableTonearms,
-    selectedTonearmId,
-    calculatedValues,
-    trackingErrorChartData,
-    ALIGNMENT_GEOMETRIES,
-    GROOVE_STANDARDS,
-    currentTonearm,
-    initialize,
-    setAlignment,
-    setStandard,
-    setPaperFormat,
-    loadTonearmPreset,
-    calculateAlignment
-  };
+}
 });
+// src/store/alignmentStore.js
