@@ -127,7 +127,14 @@ export function generateTrackingErrorCurve(p2s, effectiveLength, offsetAngle) {
     const step = 0.5; // mm per step
 
     for (let r = R1; r <= R2; r += step) {
-        const error = calculateTrackingError(r, p2s, effectiveLength, offsetAngle);
+
+        // Konvertera vinkeln från grader till radianer
+        const offsetAngleRad = offsetAngle * (Math.PI / 180);
+
+        // Anropa med korrekta variabler i rätt ordning
+        const error = calculateTrackingError(r, effectiveLength, p2s, offsetAngleRad);
+        //const error = calculateTrackingError(r, p2s, effectiveLength, offsetAngle);
+        
         if (!isNaN(error)) {
             dataPoints.push({ x: r, y: error });
         }
