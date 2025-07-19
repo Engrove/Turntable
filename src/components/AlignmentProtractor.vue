@@ -33,38 +33,22 @@ function printProtractor() {
     const paper = store.protractorRenderData.paper;
 
     const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>Engrove Audio Toolkit - Printable Protractor</title>
-                <style>
-                    @page {
-                        size: ${paper.width}mm ${paper.height}mm;
-                        margin: 0;
-                    }
-                    body {
-                        margin: 0;
-                        padding: 0;
-                        background-color: #FFF;
-                    }
-                    img {
-                        width: ${paper.width}mm;
-                        height: ${paper.height}mm;
-                        display: block;
-                    }
-                </style>
-            </head>
-            <body>
-                <img src="${dataUrl}" alt="Printable Tonearm Protractor"></img>
-                <script>
-                    window.onload = function() {
-                        window.print();
-                        window.close();
-                    }
-                </script>
-            </body>
-        </html>
-    `);
+    
+    // Bygg HTML-strängen genom konkatenering för att undvika parser-problem med Vite/Vue.
+    let html = '<html><head><title>Engrove Audio Toolkit - Printable Protractor</title>';
+    html += '<style>';
+    html += '@page { size: ' + paper.width + 'mm ' + paper.height + 'mm; margin: 0; }';
+    html += 'body { margin: 0; padding: 0; background-color: #FFF; }';
+    html += 'img { width: ' + paper.width + 'mm; height: ' + paper.height + 'mm; display: block; }';
+    html += '</style></head><body>';
+    // Använd korrekt HTML-syntax för img-taggen
+    html += '<img src="' + dataUrl + '" alt="Printable Tonearm Protractor">';
+    html += '<script>';
+    html += 'window.onload = function() { window.print(); window.close(); }';
+    html += '<\/script>'; // Escapa script-taggen för att undvika problem
+    html += '</body></html>';
+
+    printWindow.document.write(html);
     printWindow.document.close();
 }
 
