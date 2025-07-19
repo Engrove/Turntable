@@ -55,7 +55,7 @@ function printProtractor() {
                 </style>
             </head>
             <body>
-                <img src="${dataUrl}" alt="Printable Tonearm Protractor">
+                <img src="${dataUrl}" alt="Printable Tonearm Protractor"></img>
                 <script>
                     window.onload = function() {
                         window.print();
