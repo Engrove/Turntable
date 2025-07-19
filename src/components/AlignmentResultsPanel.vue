@@ -5,11 +5,19 @@
 * @file src/components/AlignmentResultsPanel.vue
 * @description Visar de beräknade, optimala justeringsvärdena.
 * Hanterar olika vyer för pivoterande och tangentiella tonarmar samt felmeddelanden.
+* NYTT: Visar även referensvärden från en laddad tonarmspreset.
 */
 import { computed } from 'vue';
 import { useAlignmentStore } from '@/store/alignmentStore.js';
 
 const store = useAlignmentStore();
+
+const props = defineProps({
+  tonearmPreset: {
+    type: Object,
+    default: null
+  }
+});
 
 /**
 * @description En beräknad egenskap (computed property) som returnerar true om den valda
@@ -32,22 +40,37 @@ const isPivotingArm = computed(() => store.calculatedValues.trackingMethod === '
   <div class="result-item">
     <span class="label">Overhang</span>
     <span class="value">{{ store.calculatedValues.overhang.toFixed(2) }} <span class="unit">mm</span></span>
+    <span v-if="tonearmPreset && tonearmPreset.overhang_mm !== null" class="reference-value">
+      (Preset: {{ tonearmPreset.overhang_mm.toFixed(2) }} mm)
+    </span>
   </div>
   <div class="result-item">
     <span class="label">Offset Angle</span>
     <span class="value">{{ store.calculatedValues.offsetAngle.toFixed(2) }} <span class="unit">°</span></span>
+     <span v-if="tonearmPreset && tonearmPreset.offset_angle_deg !== null" class="reference-value">
+      (Preset: {{ tonearmPreset.offset_angle_deg.toFixed(2) }}°)
+    </span>
   </div>
   <div class="result-item full-width">
     <span class="label">Effective Length</span>
     <span class="value">{{ store.calculatedValues.effectiveLength.toFixed(2) }} <span class="unit">mm</span></span>
+     <span v-if="tonearmPreset && tonearmPreset.effective_length_mm !== null" class="reference-value">
+      (Preset: {{ tonearmPreset.effective_length_mm.toFixed(2) }} mm)
+    </span>
   </div>
   <div class="result-item">
     <span class="label">Inner Null Point</span>
     <span class="value">{{ store.calculatedValues.nulls.inner.toFixed(2) }} <span class="unit">mm</span></span>
+    <span v-if="tonearmPreset && tonearmPreset.null_points_mm && tonearmPreset.null_points_mm.length === 2" class="reference-value">
+      (Preset: {{ tonearmPreset.null_points_mm[0].toFixed(2) }} mm)
+    </span>
   </div>
   <div class="result-item">
     <span class="label">Outer Null Point</span>
     <span class="value">{{ store.calculatedValues.nulls.outer.toFixed(2) }} <span class="unit">mm</span></span>
+    <span v-if="tonearmPreset && tonearmPreset.null_points_mm && tonearmPreset.null_points_mm.length === 2" class="reference-value">
+      (Preset: {{ tonearmPreset.null_points_mm[1].toFixed(2) }} mm)
+    </span>
   </div>
 </div>
 
@@ -139,6 +162,13 @@ margin-left: 0.25rem;
 .result-item.special .unit {
 color: var(--ideal-text);
 opacity: 0.8;
+}
+/* NYTT: Styling för referensvärden */
+.reference-value {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--label-color);
+  margin-top: 0.5rem;
 }
 </style>
 
