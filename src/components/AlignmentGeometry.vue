@@ -51,10 +51,12 @@ armAngleDeg: radToDeg(gammaRad),
 const innerNullData = computed(() => calculateCoordsOnArc(props.nulls.inner));
 const outerNullData = computed(() => calculateCoordsOnArc(props.nulls.outer));
 
-// Beräknar transformationssträngen för pickup-huset
 const headshellTransform = computed(() => {
 if (!outerNullData.value) return '';
 const { x, y, armAngleDeg } = outerNullData.value;
+// KORREKT KINEMATISK MODELL: Rotationen av pickup-huset.
+// Armens vinkel (medurs från pivot) är -armAngleDeg.
+// Offset-vinkeln adderas till detta.
 const totalRotation = -armAngleDeg + props.offsetAngle;
 return `translate(${x}, ${y}) rotate(${totalRotation})`;
 });
@@ -84,11 +86,8 @@ return `translate(${x}, ${y}) rotate(${totalRotation})`;
 <!-- Måttlinjer och geometriska samband -->
 
 <g class="dimension-lines">
-<!-- Pivot till Spindel -->
 <line :x1="pivot.x" :y1="pivot.y" :x2="spindle.x" :y2="spindle.y" class="dim-line p2s" />
-<!-- Effektiv längd -->
 <line v-if="outerNullData" :x1="pivot.x" :y1="pivot.y" :x2="outerNullData.x" :y2="outerNullData.y" class="dim-line effective-length" />
-<!-- Överhäng -->
 <line :x1="spindle.x" :y1="spindle.y" :x2="-overhang" :y2="0" class="dim-line overhang" />
 </g>
 
