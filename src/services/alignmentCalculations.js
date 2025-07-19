@@ -105,7 +105,7 @@ function generateTrackingErrorData(L, d, beta_deg) {
   // KRITISKT STEG: Konvertera offsetvinkeln från grader till radianer för beräkning.
   const beta_rad = beta_deg * (Math.PI / 180);
   
-  const dataPoints =;
+  const dataPoints = [];
   // Iterera över den standardiserade spelytan enligt IEC.
   for (let r = 60.325; r <= 146.05; r += 0.5) {
     const trackingErrorDeg = calculateTrackingError(r, L, d, beta_rad);
