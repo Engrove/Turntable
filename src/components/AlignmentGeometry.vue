@@ -22,7 +22,8 @@ const overhang = props.overhang || 15;
 const padding = 50;
 const width = p2s + overhang + padding * 2.5;
 const height = width * 0.8;
-return `${-overhang - padding * 1.5} ${-height / 2} ${width} ${height}`;
+// Justerar y-positionen för att ge mer utrymme nedåt för den korrekta renderingen
+return `${-overhang - padding * 1.5} ${-height / 3} ${width} ${height}`;
 });
 
 // === KOORDINATBERÄKNINGAR ===
@@ -43,7 +44,8 @@ const gammaRad = Math.acos(cosGamma);
 
 return {
 x: pivot.value.x - Le * Math.cos(gammaRad),
-y: -Le * Math.sin(gammaRad),
+// SLUTGILTIG KORRIGERING: Y-koordinaten måste vara POSITIV för att renderas NEDANFÖR axeln i SVG.
+y: Le * Math.sin(gammaRad),
 armAngleDeg: radToDeg(gammaRad),
 };
 };
@@ -53,12 +55,18 @@ const outerNullData = computed(() => calculateCoordsOnArc(props.nulls.outer));
 
 const headshellTransform = computed(() => {
 if (!outerNullData.value) return '';
-const { x, y, armAngleDeg } = outerNullData.value;
-// KORREKT KINEMATISK MODELL: Rotationen av pickup-huset.
-// Armens vinkel (medurs från pivot) är -armAngleDeg.
-// Offset-vinkeln adderas till detta.
-const totalRotation = -armAngleDeg + props.offsetAngle;
-return `translate(${x}, ${y}) rotate(${totalRotation})`;
+const { x, y } = outerNullData.value;
+const radiusAngleRad = Math.atan2(y, x);
+const tangentAngleRad = radiusAngleRad + (Math.PI / 2);
+const tangentAngleDeg = radToDeg(tangentAngleRad);
+return `translate(${x}, ${y}) rotate(${tangentAngleDeg})`;
+});
+
+const tonearmRotationDeg = computed(() => {
+if (!outerNullData.value) return 0;
+const dx = outerNullData.value.x - pivot.value.x;
+const dy = outerNullData.value.y - pivot.value.y;
+return radToDeg(Math.atan2(dy, dx));
 });
 </script>
 
@@ -72,18 +80,18 @@ return `translate(${x}, ${y}) rotate(${totalRotation})`;
 <circle :cx="spindle.x" :cy="spindle.y" r="60.325" class="record-edge inner" />
 <path :d="`M ${pivot.x} ${-effectiveLength} A ${effectiveLength} ${effectiveLength} 0 0 0 ${pivot.x} ${effectiveLength}`" class="arc-path" />
 
-<!-- Nollpunkter (endast punkter och text) -->
+<!-- Nollpunkter -->
 
 <g v-if="outerNullData" class="null-point-group">
 <circle class="null-point-dot outer" :cx="outerNullData.x" :cy="outerNullData.y" r="2" />
-<text :x="outerNullData.x - 10" :y="outerNullData.y - 10" class="null-label">Outer Null</text>
+<text :x="outerNullData.x - 10" :y="outerNullData.y + 25" class="null-label">Outer Null</text>
 </g>
 <g v-if="innerNullData" class="null-point-group">
 <circle class="null-point-dot inner" :cx="innerNullData.x" :cy="innerNullData.y" r="2" />
-<text :x="innerNullData.x + 10" :y="innerNullData.y - 10" class="null-label">Inner Null</text>
+<text :x="innerNullData.x + 10" :y="innerNullData.y + 25" class="null-label">Inner Null</text>
 </g>
 
-<!-- Måttlinjer och geometriska samband -->
+<!-- Måttlinjer -->
 
 <g class="dimension-lines">
 <line :x1="pivot.x" :y1="pivot.y" :x2="spindle.x" :y2="spindle.y" class="dim-line p2s" />
@@ -91,13 +99,15 @@ return `translate(${x}, ${y}) rotate(${totalRotation})`;
 <line :x1="spindle.x" :y1="spindle.y" :x2="-overhang" :y2="0" class="dim-line overhang" />
 </g>
 
-<!-- Tonarm (visas vid yttre nollpunkt) -->
+<!-- Tonarm & Headshell -->
 
 <g v-if="outerNullData" class="tonearm-assembly">
-<line :x1="pivot.x" :y1="pivot.y" :x2="outerNullData.x" :y2="outerNullData.y" class="tonearm-tube" />
+<g :transform="`translate(${pivot.x}, ${pivot.y}) rotate(${tonearmRotationDeg})`">
+<line :x1="0" y1="0" :x2="effectiveLength" y2="0" class="tonearm-tube" />
+</g>
 <g class="headshell" :transform="headshellTransform">
-<path d="M 0 0 L 15 0 L 18 -5 L 18 -15 L 15 -20 L 0 -20 Z" transform="translate(-10, 10)" />
-<line x1="0" y1="0" x2="25" y2="0" class="tangent-line" />
+<path d="M 0 0 L 18 0 L 22 4 L 22 16 L 18 20 L 0 20 Z" transform="translate(-12, -10)" />
+<line x1="0" y1="0" x2="30" y2="0" class="tangent-line" />
 </g>
 </g>
 
