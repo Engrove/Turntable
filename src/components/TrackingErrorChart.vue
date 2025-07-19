@@ -61,12 +61,10 @@ return yValue > (yMax - (yMax - yMin) * 0.2) ? 'start' : 'end';
 
 const getYAdjust = (position) => (position === 'start' ? 15 : -15);
 
-// Hitta Y-värdet på den aktiva kurvan vid nollpunkterna för att placera etiketten korrekt
 const activeDataset = props.chartData.datasets.find(ds => ds.borderWidth > 2);
 let innerYValue = 0;
 let outerYValue = 0;
 if (activeDataset && activeDataset.data) {
-// Hitta närmaste datapunkt
 const innerPoint = activeDataset.data.reduce((prev, curr) =>
 Math.abs(curr.x - props.nullPoints.inner) < Math.abs(prev.x - props.nullPoints.inner) ? curr : prev
 );
