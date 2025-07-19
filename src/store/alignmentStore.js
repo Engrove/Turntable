@@ -49,11 +49,11 @@ this.isLoading = true;
 this.error = null;
 try {
 const response = await fetch('/data/tonearm_data.json');
-if (!response.ok) throw new Error(HTTP error! status: ${response.status});
+if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 this.availableTonearms = await response.json();
 this.calculateAlignment();
 } catch (e) {
-this.error = Failed to load tonearm database: ${e.message};
+this.error = `Failed to load tonearm database: ${e.message}`;
 console.error(e);
 } finally {
 this.isLoading = false;
