@@ -1,5 +1,4 @@
 <!-- src/components/AlignmentGeometry.vue -->
-
 <script setup>
 /**
 * @file src/components/AlignmentGeometry.vue
