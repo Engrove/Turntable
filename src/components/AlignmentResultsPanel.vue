@@ -1,5 +1,3 @@
-Absolut. Här är den andra filen enligt planen, AlignmentResultsPanel.vue, uppdaterad för att korrekt visa felmeddelanden från storen.
-
 <!-- src/components/AlignmentResultsPanel.vue -->
 
 <script setup>
@@ -26,7 +24,6 @@ const isPivotingArm = computed(() => store.calculatedValues.trackingMethod === '
 <h2>Optimal Alignment Values</h2>
 
 
-<!-- KORRIGERING: Ny logik för att visa felmeddelandet från storen -->
 <div v-if="store.calculatedValues.error" class="error-box">
   <p>{{ store.calculatedValues.error }}</p>
 </div>

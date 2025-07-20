@@ -1,16 +1,10 @@
-Jag förstår. Här är den sista och slutgiltiga filen för att lösa detta problem, AlignmentGeometry.vue. Den innehåller den helt omskrivna, robusta logiken för arcPath samt ytterligare refaktorisering för maximal säkerhet, enligt min godkända plan.
-
 <!-- src/components/AlignmentGeometry.vue -->
-
 <script setup>
 /**
 * @file src/components/AlignmentGeometry.vue
 * @description En avancerad, geometriskt korrekt SVG-visualisering av en pivoterande tonarmsjustering.
 */
 import { computed } from 'vue';
-import { useAlignmentStore } from '@/store/alignmentStore';
-
-const store = useAlignmentStore();
 
 const props = defineProps({
 pivotToSpindle: Number,
@@ -37,21 +31,14 @@ const spindle = { x: 0, y: 0 };
 const pivot = computed(() => ({ x: props.pivotToSpindle || 0, y: 0 }));
 
 const calculateCoordsOnArc = (radius) => {
-// Förbättrad skyddsklausul: Kontrollerar att alla props är giltiga nummer.
-if (typeof props.pivotToSpindle !== 'number' || typeof props.effectiveLength !== 'number' || typeof radius !== 'number') {
-return null;
-}
+if (!props.pivotToSpindle || !props.effectiveLength || !radius) return null;
 const D = props.pivotToSpindle;
 const Le = props.effectiveLength;
 const R = radius;
 
-// Om armen är för kort för att nå, returnera null direkt.
-if (Le < R - D || Le < D - R) return null;
-
 const cosGamma = (D**2 + Le**2 - R**2) / (2 * D * Le);
 // Skyddsklausul för att förhindra Math.acos() från att returnera NaN
 if (cosGamma < -1 || cosGamma > 1) return null;
-
 const gammaRad = Math.acos(cosGamma);
 
 return {
@@ -64,8 +51,7 @@ const innerNullData = computed(() => calculateCoordsOnArc(props.nulls.inner));
 const outerNullData = computed(() => calculateCoordsOnArc(props.nulls.outer));
 
 const headshellTransform = computed(() => {
-// Refaktorisering: Använder optional chaining.
-if (!outerNullData.value?.x || !outerNullData.value?.y) return '';
+if (!outerNullData.value) return '';
 const { x, y } = outerNullData.value;
 const radiusAngleRad = Math.atan2(y, x);
 const tangentAngleRad = radiusAngleRad + (Math.PI / 2);
@@ -74,7 +60,7 @@ return `translate(${x}, ${y}) rotate(${tangentAngleDeg})`;
 });
 
 const tonearmRotationDeg = computed(() => {
-if (!outerNullData.value?.x || !outerNullData.value?.y) return 0;
+if (!outerNullData.value) return 0;
 const dx = outerNullData.value.x - pivot.value.x;
 const dy = outerNullData.value.y - pivot.value.y;
 return radToDeg(Math.atan2(dy, dx));
@@ -82,10 +68,7 @@ return radToDeg(Math.atan2(dy, dx));
 
 // KORRIGERING: Helt omskriven logik för att återanvända den robusta `calculateCoordsOnArc`-funktionen.
 const arcPath = computed(() => {
-// Om storen indikerar ett fel, rita ingen båge.
-if (store.calculatedValues.error) return "";
-
-const r = props.effectiveLength;
+if (!props.effectiveLength) return "";
 
 // Använd standard yttre och inre skivradier för att definiera bågens ändpunkter.
 const outerArcPoint = calculateCoordsOnArc(146.05);
@@ -96,6 +79,8 @@ const innerArcPoint = calculateCoordsOnArc(60.325);
 if (!outerArcPoint || !innerArcPoint) {
 return "";
 }
+
+const r = props.effectiveLength;
 
 // Konstruera SVG-sökvägen med de garanterat giltiga koordinaterna.
 return `M ${outerArcPoint.x} ${outerArcPoint.y} A ${r} ${r} 0 0 0 ${innerArcPoint.x} ${innerArcPoint.y}`;
