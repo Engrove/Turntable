@@ -1,4 +1,5 @@
 <!-- src/components/AlignmentGeometry.vue -->
+
 <script setup>
 /**
 * @file src/components/AlignmentGeometry.vue
@@ -51,7 +52,6 @@ const innerNullData = computed(() => calculateCoordsOnArc(props.nulls.inner));
 const outerNullData = computed(() => calculateCoordsOnArc(props.nulls.outer));
 
 const headshellTransform = computed(() => {
-// Refaktorisering: Använder optional chaining för att förhindra fel om outerNullData är null.
 if (!outerNullData.value) return '';
 const { x, y } = outerNullData.value;
 const radiusAngleRad = Math.atan2(y, x);
@@ -61,42 +61,30 @@ return `translate(${x}, ${y}) rotate(${tangentAngleDeg})`;
 });
 
 const tonearmRotationDeg = computed(() => {
-// Refaktorisering: Använder optional chaining.
 if (!outerNullData.value) return 0;
 const dx = outerNullData.value.x - pivot.value.x;
 const dy = outerNullData.value.y - pivot.value.y;
 return radToDeg(Math.atan2(dy, dx));
 });
 
-// KORRIGERING: Lade till skyddsklausuler för Math.acos()
+// KORRIGERING: Helt omskriven logik för att återanvända den robusta `calculateCoordsOnArc`-funktionen.
 const arcPath = computed(() => {
-if (!props.effectiveLength || !props.pivotToSpindle) return "";
-const r = props.effectiveLength;
-const D = props.pivotToSpindle;
+if (!props.effectiveLength) return "";
 
-const pivot_x_absolute = spindle.x - D;
-const pivot_y_absolute = spindle.y;
+// Använd standard yttre och inre skivradier för att definiera bågens ändpunkter.
+const outerArcPoint = calculateCoordsOnArc(146.05);
+const innerArcPoint = calculateCoordsOnArc(60.325);
 
-const startRadius = 60;
-const endRadius = 147;
-
-const cosStartAngle = (D**2 + r**2 - startRadius**2) / (2 * D * r);
-const cosEndAngle = (D**2 + r**2 - endRadius**2) / (2 * D * r);
-
-// Skyddsklausul: Om någon vinkel är odefinierbar, rita inte bågen.
-if (cosStartAngle < -1 || cosStartAngle > 1 || cosEndAngle < -1 || cosEndAngle > 1) {
+// Robust felhantering: Om någon av punkterna är geometriskt omöjlig att beräkna,
+// returnera en tom sträng för att förhindra rendering av en felaktig path.
+if (!outerArcPoint || !innerArcPoint) {
 return "";
 }
 
-const startAngle = Math.acos(cosStartAngle);
-const endAngle = Math.acos(cosEndAngle);
+const r = props.effectiveLength;
 
-const startX = pivot_x_absolute + r * Math.cos(startAngle);
-const startY = pivot_y_absolute - r * Math.sin(startAngle);
-const endX = pivot_x_absolute + r * Math.cos(endAngle);
-const endY = pivot_y_absolute - r * Math.sin(endAngle);
-
-return `M ${startX} ${startY} A ${r} ${r} 0 0 0 ${endX} ${endY}`;
+// Konstruera SVG-sökvägen med de garanterat giltiga koordinaterna.
+return `M ${outerArcPoint.x} ${outerArcPoint.y} A ${r} ${r} 0 0 0 ${innerArcPoint.x} ${innerArcPoint.y}`;
 });
 </script>
 
@@ -110,7 +98,6 @@ return `M ${startX} ${startY} A ${r} ${r} 0 0 0 ${endX} ${endY}`;
 <polygon points="0 0, 10 3.5, 0 7" fill="#7f8c8d" />
 </marker>
 </defs>
-
 
 <!-- Background Elements -->
     <circle :cx="spindle.x" :cy="spindle.y" r="146.05" class="record-edge" />
