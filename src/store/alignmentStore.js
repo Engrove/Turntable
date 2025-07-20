@@ -1,7 +1,7 @@
 // src/store/alignmentStore.js
 import { defineStore } from 'pinia';
 import { ref, reactive, computed } from 'vue';
-import { calculateAlignmentGeometry, calculateTrackingErrorData } from '@/services/alignmentCalculations.js';
+import { calculateAlignmentGeometries, calculateTrackingErrorData } from '@/services/alignmentCalculations.js';
 import { useTonearmStore } from '@/store/tonearmStore.js';
 
 export const useAlignmentStore = defineStore('alignment', () => {
