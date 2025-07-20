@@ -1,5 +1,4 @@
 <!-- src/components/AlignmentGeometry.vue -->
-
 <script setup>
 /**
 * @file src/components/AlignmentGeometry.vue
@@ -38,6 +37,7 @@ const Le = props.effectiveLength;
 const R = radius;
 
 const cosGamma = (D**2 + Le**2 - R**2) / (2 * D * Le);
+// Skyddsklausul för att förhindra Math.acos() från att returnera NaN
 if (cosGamma < -1 || cosGamma > 1) return null;
 const gammaRad = Math.acos(cosGamma);
 
@@ -51,6 +51,7 @@ const innerNullData = computed(() => calculateCoordsOnArc(props.nulls.inner));
 const outerNullData = computed(() => calculateCoordsOnArc(props.nulls.outer));
 
 const headshellTransform = computed(() => {
+// Refaktorisering: Använder optional chaining för att förhindra fel om outerNullData är null.
 if (!outerNullData.value) return '';
 const { x, y } = outerNullData.value;
 const radiusAngleRad = Math.atan2(y, x);
@@ -60,10 +61,42 @@ return `translate(${x}, ${y}) rotate(${tangentAngleDeg})`;
 });
 
 const tonearmRotationDeg = computed(() => {
+// Refaktorisering: Använder optional chaining.
 if (!outerNullData.value) return 0;
 const dx = outerNullData.value.x - pivot.value.x;
 const dy = outerNullData.value.y - pivot.value.y;
 return radToDeg(Math.atan2(dy, dx));
+});
+
+// KORRIGERING: Lade till skyddsklausuler för Math.acos()
+const arcPath = computed(() => {
+if (!props.effectiveLength || !props.pivotToSpindle) return "";
+const r = props.effectiveLength;
+const D = props.pivotToSpindle;
+
+const pivot_x_absolute = spindle.x - D;
+const pivot_y_absolute = spindle.y;
+
+const startRadius = 60;
+const endRadius = 147;
+
+const cosStartAngle = (D**2 + r**2 - startRadius**2) / (2 * D * r);
+const cosEndAngle = (D**2 + r**2 - endRadius**2) / (2 * D * r);
+
+// Skyddsklausul: Om någon vinkel är odefinierbar, rita inte bågen.
+if (cosStartAngle < -1 || cosStartAngle > 1 || cosEndAngle < -1 || cosEndAngle > 1) {
+return "";
+}
+
+const startAngle = Math.acos(cosStartAngle);
+const endAngle = Math.acos(cosEndAngle);
+
+const startX = pivot_x_absolute + r * Math.cos(startAngle);
+const startY = pivot_y_absolute - r * Math.sin(startAngle);
+const endX = pivot_x_absolute + r * Math.cos(endAngle);
+const endY = pivot_y_absolute - r * Math.sin(endAngle);
+
+return `M ${startX} ${startY} A ${r} ${r} 0 0 0 ${endX} ${endY}`;
 });
 </script>
 
@@ -78,67 +111,63 @@ return radToDeg(Math.atan2(dy, dx));
 </marker>
 </defs>
 
-<!-- Bakgrundselement -->
 
-<circle :cx="spindle.x" :cy="spindle.y" r="146.05" class="record-edge" />
-<circle :cx="spindle.x" :cy="spindle.y" r="60.325" class="record-edge inner" />
-<path :d="`M ${pivot.x} ${-effectiveLength} A ${effectiveLength} ${effectiveLength} 0 0 0 ${pivot.x} ${effectiveLength}`" class="arc-path" />
+<!-- Background Elements -->
+    <circle :cx="spindle.x" :cy="spindle.y" r="146.05" class="record-edge" />
+    <circle :cx="spindle.x" :cy="spindle.y" r="60.325" class="record-edge inner" />
+    <path :d="arcPath" class="arc-path" />
 
-<!-- Nollpunkter -->
+    <!-- Null Points -->
+    <g v-if="outerNullData" class="null-point-group">
+      <circle class="null-point-dot outer" :cx="outerNullData.x" :cy="outerNullData.y" r="2" />
+      <text :x="outerNullData.x" :y="outerNullData.y + 25" class="null-label">Outer Null</text>
+    </g>
+    <g v-if="innerNullData" class="null-point-group">
+      <circle class="null-point-dot inner" :cx="innerNullData.x" :cy="innerNullData.y" r="2" />
+      <text :x="innerNullData.x" :y="innerNullData.y + 25" class="null-label">Inner Null</text>
+    </g>
 
-<g v-if="outerNullData" class="null-point-group">
-<circle class="null-point-dot outer" :cx="outerNullData.x" :cy="outerNullData.y" r="2" />
-<text :x="outerNullData.x" :y="outerNullData.y + 25" class="null-label">Outer Null</text>
-</g>
-<g v-if="innerNullData" class="null-point-group">
-<circle class="null-point-dot inner" :cx="innerNullData.x" :cy="innerNullData.y" r="2" />
-<text :x="innerNullData.x" :y="innerNullData.y + 25" class="null-label">Inner Null</text>
-</g>
+    <!-- Dimension Lines -->
+    <g class="dimension-lines">
+      <line :x1="pivot.x" :y1="pivot.y" :x2="spindle.x" :y2="spindle.y" class="dim-line p2s" />
+      <line v-if="outerNullData" :x1="pivot.x" :y1="pivot.y" :x2="outerNullData.x" :y2="outerNullData.y" class="dim-line effective-length" />
+      <line :x1="spindle.x" :y1="spindle.y" :x2="-overhang" :y2="0" class="dim-line overhang" />
 
-<!-- Måttlinjer (justerad position) -->
+      <g :transform="`translate(0, -${effectiveLength * 0.25})`">
+        <line :x1="spindle.x" y1="0" :x2="pivot.x" y2="0" marker-start="url(#arrowhead-dim-final)" marker-end="url(#arrowhead-dim-final)" class="dim-arrow p2s" />
+        <text :x="pivot.x / 2" y="-8">Pivot-to-Spindle: {{ pivotToSpindle.toFixed(1) }}mm</text>
+      </g>
+      <g :transform="`translate(0, -${effectiveLength * 0.35})`">
+        <line :x1="-overhang" y1="0" :x2="spindle.x" y2="0" marker-start="url(#arrowhead-dim-final)" marker-end="url(#arrowhead-dim-final)" class="dim-arrow overhang" />
+        <text :x="-overhang / 2" y="-8">Overhang: {{ overhang.toFixed(1) }}mm</text>
+      </g>
+    </g>
 
-<g class="dimension-lines">
-<line :x1="pivot.x" :y1="pivot.y" :x2="spindle.x" :y2="spindle.y" class="dim-line p2s" />
-<line v-if="outerNullData" :x1="pivot.x" :y1="pivot.y" :x2="outerNullData.x" :y2="outerNullData.y" class="dim-line effective-length" />
-<line :x1="spindle.x" :y1="spindle.y" :x2="-overhang" :y2="0" class="dim-line overhang" />
+    <!-- Tonearm & Headshell -->
+    <g v-if="outerNullData" class="tonearm-assembly">
+      <g :transform="`translate(${pivot.x}, ${pivot.y}) rotate(${tonearmRotationDeg})`">
+        <line :x1="0" y1="0" :x2="effectiveLength" y2="0" class="tonearm-tube" />
+        <line x1="0" y1="0" x2="-50" y2="0" class="tonearm-stub" />
+        <circle cx="-50" cy="0" r="12" class="counterweight" />
+      </g>
+      <g class="headshell" :transform="headshellTransform">
+        <path d="M 0 0 L 18 0 L 22 4 L 22 16 L 18 20 L 0 20 Z" transform="translate(-12, -10)" />
+        <line x1="0" y1="0" x2="30" y2="0" class="tangent-line" />
+      </g>
+    </g>
 
-<g :transform="`translate(0, -${effectiveLength * 0.25})`">
-    <line :x1="spindle.x" y1="0" :x2="pivot.x" y2="0" marker-start="url(#arrowhead-dim-final)" marker-end="url(#arrowhead-dim-final)" class="dim-arrow p2s" />
-    <text :x="pivot.x / 2" y="-8">Pivot-to-Spindle: {{ pivotToSpindle.toFixed(1) }}mm</text>
-</g>
-<g :transform="`translate(0, -${effectiveLength * 0.35})`">
-    <line :x1="-overhang" y1="0" :x2="spindle.x" y2="0" marker-start="url(#arrowhead-dim-final)" marker-end="url(#arrowhead-dim-final)" class="dim-arrow overhang" />
-    <text :x="-overhang / 2" y="-8">Overhang: {{ overhang.toFixed(1) }}mm</text>
-</g>
-
-</g>
-
-<!-- Tonarm & Headshell -->
-
-<g v-if="outerNullData" class="tonearm-assembly">
-<g :transform="`translate(${pivot.x}, ${pivot.y}) rotate(${tonearmRotationDeg})`">
-<line :x1="0" y1="0" :x2="effectiveLength" y2="0" class="tonearm-tube" />
-<line x1="0" y1="0" x2="-50" y2="0" class="tonearm-stub" />
-<circle cx="-50" cy="0" r="12" class="counterweight" />
-</g>
-<g class="headshell" :transform="headshellTransform">
-<path d="M 0 0 L 18 0 L 22 4 L 22 16 L 18 20 L 0 20 Z" transform="translate(-12, -10)" />
-<line x1="0" y1="0" x2="30" y2="0" class="tangent-line" />
-</g>
-</g>
-
-<!-- Spindel och Pivot (ritas överst) -->
-
-<g class="spindle" transform="translate(0, 0)">
-<circle cx="0" cy="0" r="3.6" class="spindle-point" />
-<text y="-10">Spindle</text>
-</g>
-<g class="pivot" :transform="`translate(${pivot.x}, 0)`">
-<circle cx="0" cy="0" r="4" class="pivot-point" />
-<text y="-10">Pivot</text>
-</g>
-</svg>
+    <!-- Spindle and Pivot (drawn on top) -->
+    <g class="spindle" transform="translate(0, 0)">
+      <circle cx="0" cy="0" r="3.6" class="spindle-point" />
+      <text y="-10">Spindle</text>
+    </g>
+    <g class="pivot" :transform="`translate(${pivot.x}, 0)`">
+      <circle cx="0" cy="0" r="4" class="pivot-point" />
+      <text y="-10">Pivot</text>
+    </g>
+  </svg>
 </div>
+
 </div>
 </template>
 
