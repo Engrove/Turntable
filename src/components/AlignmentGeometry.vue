@@ -1,5 +1,4 @@
 <!-- src/components/AlignmentGeometry.vue -->
-
 <script setup>
 /**
 * @file src/components/AlignmentGeometry.vue
@@ -98,6 +97,7 @@ return `M ${outerArcPoint.x} ${outerArcPoint.y} A ${r} ${r} 0 0 0 ${innerArcPoin
 <polygon points="0 0, 10 3.5, 0 7" fill="#7f8c8d" />
 </marker>
 </defs>
+
 
 <!-- Background Elements -->
     <circle :cx="spindle.x" :cy="spindle.y" r="146.05" class="record-edge" />
