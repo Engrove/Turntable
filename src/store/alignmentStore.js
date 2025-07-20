@@ -151,7 +151,7 @@ return {
     pointRadius: 0,
     tension: 0.1,
     // KORRIGERING: Lade till ett giltigt värde för "else"-villkoret.
-    borderDash: isActive ? [] :
+     borderDash: isActive ? [] : [5, 5], 
   };
 });
 return { datasets };
