@@ -150,7 +150,7 @@ return {
     borderWidth: isActive ? 3 : 2,
     pointRadius: 0,
     tension: 0.1,
-    // KORRIGERING: Lade till ett värde för "else"-villkoret.
+    // KORRIGERING: Lade till ett giltigt värde för "else"-villkoret.
     borderDash: isActive ? [] :
   };
 });
