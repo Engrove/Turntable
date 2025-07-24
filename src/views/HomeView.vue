@@ -96,6 +96,9 @@ useHead({
       <p>
         While every effort is made to verify accuracy, there is no guarantee of the absolute correctness of the data or calculations. Users are encouraged to cross-reference the results with their own measurements and practical experience. The ultimate responsibility for any physical build or component matching rests with the user.
       </p>
+      <p>
+        To build and maintain a comprehensive database, AI is utilized to enrich, standardize, and verify technical data. While this process aims for a high degree of accuracy, all information should be treated as a reference and verified against the manufacturer's official specifications.
+      </p>
       <br>
       <center>
         <a href="https://dashboard.simpleanalytics.com/engrove.pages.dev?utm_source=engrove.pages.dev&utm_content=badge&affiliate=kurof" referrerpolicy="origin" target="_blank"><picture><source srcset="https://simpleanalyticsbadges.com/engrove.pages.dev?mode=dark" media="(prefers-color-scheme: dark)" /><img src="https://simpleanalyticsbadges.com/engrove.pages.dev?mode=light" loading="lazy" referrerpolicy="no-referrer" crossorigin="anonymous" /></picture></a>
