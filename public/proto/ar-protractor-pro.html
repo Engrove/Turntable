@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="utf-8">
+    <title>AR Arc Protractor PRO</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!-- THREE.js bibliotek -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- AR.js bibliotek -->
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/three.js/build/ar-threex.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: white;
+            background-color: #222;
+        }
+        .ui-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 2em;
+            border-radius: 10px;
+            text-align: left;
+            z-index: 100;
+            max-width: 90%;
+            width: 500px;
+        }
+        .ui-container h1 { margin-top: 0; }
+        .ui-container p, .ui-container li { max-width: 450px; margin: 0.8em auto; line-height: 1.5; }
+        .ui-container strong { color: #4CAF50; }
+        #start-button {
+            display: block;
+            width: 100%;
+            font-size: 1.2em;
+            padding: 0.8em 1.5em;
+            cursor: pointer;
+            border: 1px solid white;
+            background: transparent;
+            color: white;
+            border-radius: 5px;
+            margin-top: 1.5em;
+        }
+        #start-button:hover { background: rgba(255, 255, 255, 0.2); }
+        .ar-started #ui-container { display: none; }
+        
+        #feedback-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            box-sizing: border-box;
+            text-align: center;
+            font-size: 1.1em;
+            display: none; /* Dold från start */
+        }
+        .ar-started #feedback-container { display: block; }
+        .feedback-value { font-weight: bold; }
+        .ok { color: #4CAF50; }
+        .error { color: #F44336; }
+        .info { color: #2196F3; }
+    </style>
+</head>
+
+<body>
+    <!-- Användargränssnitt för instruktioner -->
+    <div id="ui-container" class="ui-container">
+        <h1>AR Arc Protractor PRO</h1>
+        <p>Detta verktyg mäter och verifierar din tonarmsjustering i realtid med hjälp av tre AR-markörer.</p>
+        <h3>Förberedelser:</h3>
+        <ol>
+            <li>
+                <strong>Skriv ut 3 OLIKA markörer.</strong> Klicka för att öppna och spara:
+                <ul>
+                    <li><a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank">Markör 1: <strong>HIRO</strong></a> (för Spindeln)</li>
+                    <li><a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/kanji.png" target="_blank">Markör 2: <strong>KANJI</strong></a> (för Pivot-punkten)</li>
+                    <li><a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/letterA.png" target="_blank">Markör 3: <strong>Bokstav A</strong></a> (för Nålen)</li>
+                </ul>
+            </li>
+            <li>Placera <strong>HIRO</strong>-markören på tallrikens spindel (använd en anpassad "donut"-markör eller offset-jigg).</li>
+            <li>Placera <strong>KANJI</strong>-markören exakt på tonarmens pivotpunkt.</li>
+            <li>Bygg en "mät-jigg" för nålen: Fäst <strong>Bokstav A</strong>-markören på en bit kartong och gör ett litet hål i markörens exakta mittpunkt för nålen.</li>
+        </ol>
+        <button id="start-button">Starta Kamera</button>
+    </div>
+
+    <!-- Realtids-feedback -->
+    <div id="feedback-container">
+        <span id="feedback-text">Startar kamera...</span>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const startButton = document.getElementById('start-button');
+        startButton.addEventListener('click', () => {
+            document.body.classList.add('ar-started');
+            initializeAR();
+        });
+    });
+
+    function initializeAR() {
+        const scene = new THREE.Scene();
+        const camera = new THREE.Camera();
+        scene.add(camera);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const arToolkitSource = new THREEx.ArToolkitSource({ sourceType: 'webcam' });
+        arToolkitSource.init(() => setTimeout(() => onResize(), 500));
+        window.addEventListener('resize', onResize);
+        function onResize() {
+            arToolkitSource.onResizeElement();
+            arToolkitSource.copyElementSizeTo(renderer.domElement);
+            if (arToolkitContext.arController !== null) {
+                arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas);
+            }
+        }
+
+        const arToolkitContext = new THREEx.ArToolkitContext({
+            cameraParametersUrl: 'https://raw.githack.com/AR-js-org/AR.js/3.4.5/data/data/camera_para.dat',
+            detectionMode: 'mono',
+        });
+        arToolkitContext.init(() => camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix()));
+
+        // === 3 MARKÖRER ===
+        // Vi måste ange den fysiska storleken på markörerna i meter för att få korrekt skala.
+        // Antag att alla markörer är utskrivna med 40mm bredd.
+        const markerSize = 0.04; // 40 mm
+
+        // Markör 1: Spindel (Hiro)
+        const markerRootSpindle = new THREE.Group();
+        scene.add(markerRootSpindle);
+        new THREEx.ArMarkerControls(arToolkitContext, markerRootSpindle, {
+            type: 'pattern',
+            patternUrl: 'https://raw.githack.com/AR-js-org/AR.js/3.4.5/data/data/patt.hiro',
+            size: markerSize,
+        });
+
+        // Markör 2: Pivot (Kanji)
+        const markerRootPivot = new THREE.Group();
+        scene.add(markerRootPivot);
+        new THREEx.ArMarkerControls(arToolkitContext, markerRootPivot, {
+            type: 'pattern',
+            patternUrl: 'https://raw.githack.com/AR-js-org/AR.js/3.4.5/data/data/patt.kanji',
+            size: markerSize,
+        });
+
+        // Markör 3: Nål (Bokstav A)
+        const markerRootNeedle = new THREE.Group();
+        scene.add(markerRootNeedle);
+        new THREEx.ArMarkerControls(arToolkitContext, markerRootNeedle, {
+            type: 'pattern',
+            patternUrl: 'https://raw.githack.com/AR-js-org/AR.js/3.4.5/data/data/patt.a',
+            size: markerSize,
+        });
+
+        // === 3D GEOMETRI ===
+        const protractorGroup = new THREE.Group();
+        
+        // Linje mellan pivot och spindel
+        const pivotLineMaterial = new THREE.LineBasicMaterial({ color: 0xffa500 });
+        const pivotLineGeometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+        const pivotLine = new THREE.Line(pivotLineGeometry, pivotLineMaterial);
+        protractorGroup.add(pivotLine);
+
+        // Justeringsbågen (Arc)
+        const arcMaterial = new THREE.LineBasicMaterial({ color: 0x00bfff, linewidth: 2 });
+        let arc = new THREE.Line(new THREE.BufferGeometry(), arcMaterial);
+        protractorGroup.add(arc);
+        
+        // Rutnät vid en nollpunkt (66mm)
+        const gridGroup = createAlignmentGrid(0.066);
+        protractorGroup.add(gridGroup);
+
+        // Vi fäster geometrin vid spindelmarkören
+        markerRootSpindle.add(protractorGroup);
+        
+        const feedbackText = document.getElementById('feedback-text');
+
+        // === ANIMATIONSLOOP ===
+        function animate() {
+            requestAnimationFrame(animate);
+            if (!arToolkitSource.ready) return;
+            arToolkitContext.update(arToolkitSource.domElement);
+
+            if (markerRootSpindle.visible && markerRootPivot.visible && markerRootNeedle.visible) {
+                protractorGroup.visible = true;
+
+                // Hämta världspositionen för varje markör
+                const spindlePos = new THREE.Vector3();
+                const pivotPos = new THREE.Vector3();
+                const needlePos = new THREE.Vector3();
+                markerRootSpindle.getWorldPosition(spindlePos);
+                markerRootPivot.getWorldPosition(pivotPos);
+                markerRootNeedle.getWorldPosition(needlePos);
+
+                // --- BERÄKNINGAR ---
+                const pivotToSpindleDistance = spindlePos.distanceTo(pivotPos);
+                const needleToSpindleDistance = needlePos.distanceTo(spindlePos);
+
+                // 1. Överhängsfel
+                const overhangError = needleToSpindleDistance - pivotToSpindleDistance;
+
+                // 2. Vinkelfel
+                const needleForward = new THREE.Vector3(0, 0, 1).applyQuaternion(markerRootNeedle.quaternion);
+                const spindleToNeedleVec = new THREE.Vector3().subVectors(needlePos, spindlePos).normalize();
+                const tangentVec = new THREE.Vector3(-spindleToNeedleVec.y, spindleToNeedleVec.x, 0); // Förenklad 2D-tangent
+                const angleError = needleForward.angleTo(tangentVec) * (180 / Math.PI) - 90;
+
+                // --- UPPDATERA GRAFIK ---
+                // Uppdatera pivot-linjen
+                const localPivotPos = markerRootSpindle.worldToLocal(pivotPos.clone());
+                pivotLine.geometry.setFromPoints([new THREE.Vector3(0,0,0), localPivotPos]);
+                pivotLine.geometry.verticesNeedUpdate = true;
+                
+                // Uppdatera bågen
+                arc.geometry.dispose(); // Ta bort gammal geometri
+                arc.geometry = createArcGeometry(pivotToSpindleDistance);
+                
+                // Uppdatera rutnätets position längs bågen
+                gridGroup.position.x = 0.066; // Fast på 66mm nollpunkt från spindeln
+                
+                // --- UPPDATERA FEEDBACK ---
+                const overhangOk = Math.abs(overhangError * 1000) < 0.5;
+                const angleOk = Math.abs(angleError) < 0.5;
+
+                let feedbackHTML = `
+                    <span class="feedback-value ${overhangOk ? 'ok' : 'error'}">
+                        Överhäng: ${(overhangError * 1000).toFixed(2)} mm
+                    </span> | 
+                    <span class="feedback-value ${angleOk ? 'ok' : 'error'}">
+                        Vinkel: ${angleError.toFixed(2)}°
+                    </span>`;
+                
+                if(overhangOk && angleOk) {
+                    feedbackHTML += ` <span class="ok">(Perfekt!)</span>`;
+                }
+                feedbackText.innerHTML = feedbackHTML;
+
+            } else {
+                protractorGroup.visible = false;
+                feedbackText.innerHTML = `<span class="info">Letar efter alla 3 markörer... (Spindel: ${markerRootSpindle.visible}, Pivot: ${markerRootPivot.visible}, Nål: ${markerRootNeedle.visible})</span>`;
+            }
+            renderer.render(scene, camera);
+        }
+        animate();
+    }
+
+    // Skapar justeringsrutnätet
+    function createAlignmentGrid() {
+        const group = new THREE.Group();
+        const material = new THREE.LineBasicMaterial({ color: 0x00ff00 });
+        const lineLength = 0.04; // 40 mm
+
+        for (let i = 0; i <= 4; i++) {
+            const offset = i * 0.005; // 5 mm mellanrum
+            const points = [new THREE.Vector3(-lineLength / 2, offset, 0), new THREE.Vector3(lineLength / 2, offset, 0)];
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(geometry, i === 0 ? new THREE.LineBasicMaterial({ color: 0xff0000 }) : material);
+            group.add(line);
+            if (i > 0) {
+                 const points2 = [new THREE.Vector3(-lineLength / 2, -offset, 0), new THREE.Vector3(lineLength / 2, -offset, 0)];
+                 const geometry2 = new THREE.BufferGeometry().setFromPoints(points2);
+                 const line2 = new THREE.Line(geometry2, material);
+                 group.add(line2);
+            }
+        }
+        group.rotation.x = -Math.PI / 2; // Lägg plant
+        return group;
+    }
+
+    // Skapar båg-geometrin dynamiskt
+    function createArcGeometry(radius) {
+        const points = [];
+        const startAngle = -Math.PI / 3;
+        const endAngle = Math.PI / 3;
+        const segments = 50;
+
+        for (let i = 0; i <= segments; i++) {
+            const angle = startAngle + (i / segments) * (endAngle - startAngle);
+            const x = radius * Math.cos(angle);
+            const y = radius * Math.sin(angle);
+            points.push(new THREE.Vector3(x, y, 0));
+        }
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        geometry.rotateX(-Math.PI / 2); // Lägg plant
+        return geometry;
+    }
+    </script>
+</body>
+</html>
