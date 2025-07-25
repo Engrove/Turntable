@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="utf-8">
+    <title>AR Protraktor MVP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/three.js/build/ar-threex.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: white;
+            background-color: #222;
+        }
+        /* Behållare för användargränssnittet */
+        #ui-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 2em;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 100;
+            max-width: 90%;
+        }
+        #ui-container h1 { margin-top: 0; }
+        #ui-container p { max-width: 400px; margin: 1em auto; }
+        #start-button {
+            font-size: 1.2em;
+            padding: 0.8em 1.5em;
+            cursor: pointer;
+            border: 1px solid white;
+            background: transparent;
+            color: white;
+            border-radius: 5px;
+        }
+        #start-button:hover { background: rgba(255, 255, 255, 0.2); }
+        /* Dölj UI när AR startar */
+        .ar-started #ui-container { display: none; }
+    </style>
+</head>
+
+<body>
+
+    <div id="ui-container">
+        <h1>AR Protraktor MVP</h1>
+        <p>Detta är ett proof-of-concept. Skriv ut 'Hiro'-markören och placera den på skivtallriken. Klicka sedan på start och rikta kameran mot markören.</p>
+        <button id="start-button">Starta Kamera</button>
+    </div>
+
+    <script>
+    // Vänta tills sidan är fullt laddad
+    document.addEventListener('DOMContentLoaded', () => {
+        const startButton = document.getElementById('start-button');
+
+        startButton.addEventListener('click', () => {
+            // Dölj UI och lägg till en klass för att indikera att AR har startat
+            document.body.classList.add('ar-started');
+            
+            // Starta AR-initialiseringen
+            initializeAR();
+        });
+    });
+
+    function initializeAR() {
+        // === GRUNDLÄGGANDE THREE.JS SETUP ===
+        const scene = new THREE.Scene();
+        const camera = new THREE.Camera();
+        scene.add(camera);
+
+        const renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            alpha: true // Viktigt för transparent bakgrund
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // === AR.JS SETUP ===
+        const arToolkitSource = new THREEx.ArToolkitSource({
+            sourceType: 'webcam',
+        });
+
+        arToolkitSource.init(() => {
+            // Hantera fönsterstorleksändring
+            setTimeout(() => {
+                onResize();
+            }, 1000);
+        });
+
+        window.addEventListener('resize', onResize);
+        function onResize() {
+            arToolkitSource.onResizeElement();
+            arToolkitSource.copyElementSizeTo(renderer.domElement);
+            if (arToolkitContext.arController !== null) {
+                arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas);
+            }
+        }
+
+        const arToolkitContext = new THREEx.ArToolkitContext({
+            cameraParametersUrl: 'https://raw.githack.com/AR-js-org/AR.js/3.4.5/data/data/camera_para.dat',
+            detectionMode: 'mono',
+        });
+
+        arToolkitContext.init(() => {
+            camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix());
+        });
+
+        // === MARKER SETUP ===
+        const markerRoot = new THREE.Group();
+        scene.add(markerRoot);
+
+        const markerControls = new THREEx.ArMarkerControls(arToolkitContext, markerRoot, {
+            type: 'pattern',
+            // .patt filen för Hiro-markören laddas från AR.js GitHub repo.
+            // Detta är den enda externa filen som behövs utöver biblioteken.
+            patternUrl: 'https://raw.githack.com/AR-js-org/AR.js/3.4.5/data/data/patt.hiro',
+        });
+
+        // === SKAPA PROTRAKTOR-GEOMETRIN (MVP-version) ===
+        // Som ett MVP använder vi fasta värden för nollpunkterna för en typisk tonarm.
+        // I en fullständig version skulle dessa beräknas dynamiskt.
+        // Nollpunkter enligt Baerwald (IEC) är ca 66.0 mm och 120.9 mm från centrum.
+        
+        const protractorGroup = createProtractor(66.0, 120.9);
+        markerRoot.add(protractorGroup);
+
+        // === ANIMATIONSLOOP ===
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (!arToolkitSource.ready) return;
+
+            arToolkitContext.update(arToolkitSource.domElement);
+            scene.visible = camera.visible; // Göm scenen om markören inte hittas
+            
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    }
+
+    /**
+     * Skapar den visuella 3D-modellen för protraktorn.
+     * @param {number} nullPoint1 - Avstånd från centrum till första nollpunkten (mm).
+     * @param {number} nullPoint2 - Avstånd från centrum till andra nollpunkten (mm).
+     * @returns {THREE.Group} - En three.js-grupp som innehåller all geometri.
+     */
+    function createProtractor(nullPoint1, nullPoint2) {
+        const group = new THREE.Group();
+        const material = new THREE.LineBasicMaterial({ color: 0x00ff00 }); // Ljusgrön färg
+
+        // Skivspelarens centrumspindel är 7.24 mm i diameter. Vi gör ett litet hål.
+        const spindleHole = new THREE.Mesh(
+            new THREE.RingGeometry(3.5 / 1000, 4 / 1000, 32),
+            new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide })
+        );
+        spindleHole.rotation.x = -Math.PI / 2; // Lägg den plant
+        group.add(spindleHole);
+
+        // Skapa rutnät för den första nollpunkten
+        const grid1 = createAlignmentGrid();
+        grid1.position.x = nullPoint1 / 1000; // Konvertera mm till meter (three.js enheter)
+        group.add(grid1);
+
+        // Skapa rutnät för den andra nollpunkten
+        const grid2 = createAlignmentGrid();
+        grid2.position.x = nullPoint2 / 1000;
+        group.add(grid2);
+        
+        // Rotera allt för att ligga plant i AR-rymden
+        group.rotation.x = -Math.PI / 2;
+
+        return group;
+    }
+
+    /**
+     * Hjälpfunktion för att skapa ett justeringsrutnät.
+     * @returns {THREE.Group}
+     */
+    function createAlignmentGrid() {
+        const gridGroup = new THREE.Group();
+        const material = new THREE.LineBasicMaterial({ color: 0x00bfff }); // Deep sky blue
+        const lineLength = 50 / 1000; // 50 mm långa linjer
+
+        // Central linje
+        const centerPoints = [new THREE.Vector3(-lineLength / 2, 0, 0), new THREE.Vector3(lineLength / 2, 0, 0)];
+        const centerGeometry = new THREE.BufferGeometry().setFromPoints(centerPoints);
+        const centerLine = new THREE.Line(centerGeometry, new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 2 })); // Röd mittlinje
+        gridGroup.add(centerLine);
+
+        // Parallella linjer
+        for (let i = 1; i <= 4; i++) {
+            const offset = i * 5 / 1000; // 5 mm mellanrum
+            const points1 = [new THREE.Vector3(-lineLength / 2, offset, 0), new THREE.Vector3(lineLength / 2, offset, 0)];
+            const geometry1 = new THREE.BufferGeometry().setFromPoints(points1);
+            const line1 = new THREE.Line(geometry1, material);
+            gridGroup.add(line1);
+
+            const points2 = [new THREE.Vector3(-lineLength / 2, -offset, 0), new THREE.Vector3(lineLength / 2, -offset, 0)];
+            const geometry2 = new THREE.BufferGeometry().setFromPoints(points2);
+            const line2 = new THREE.Line(geometry2, material);
+            gridGroup.add(line2);
+        }
+
+        return gridGroup;
+    }
+
+    </script>
+</body>
+</html>
