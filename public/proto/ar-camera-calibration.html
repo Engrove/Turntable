@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="utf-8">
+    <title>AR Kamerakalibrering</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <style>
+        :root {
+            --bg-color: #282c34;
+            --text-color: #abb2bf;
+            --primary-color: #61afef;
+            --success-color: #98c379;
+            --error-color: #e06c75;
+            --card-bg: #21252b;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2em;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container { max-width: 900px; width: 100%; }
+        h1, h2, h3 { color: var(--primary-color); border-bottom: 1px solid #444; padding-bottom: 0.3em; }
+        .card { background: var(--card-bg); padding: 1.5em; border-radius: 8px; margin-bottom: 2em; }
+        button {
+            font-size: 1em;
+            padding: 0.8em 1.5em;
+            cursor: pointer;
+            border: 1px solid var(--primary-color);
+            background: transparent;
+            color: var(--primary-color);
+            border-radius: 5px;
+            margin: 0.5em;
+            transition: all 0.2s ease;
+        }
+        button:hover { background: var(--primary-color); color: white; }
+        button:disabled { cursor: not-allowed; opacity: 0.5; }
+        .calibration-ui { display: none; text-align: center; }
+        video {
+            width: 100%;
+            max-width: 640px;
+            border-radius: 8px;
+            border: 2px solid #444;
+            background: #111;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: auto;
+        }
+        #status { font-size: 1.2em; margin: 1em 0; min-height: 1.5em; }
+        .success { color: var(--success-color); }
+        .error { color: var(--error-color); }
+        a { color: var(--primary-color); }
+        .marker-image { border: 2px solid white; margin-top: 1em; }
+    </style>
+    <!-- Laddar OpenCV.js -->
+    <script async src="https://docs.opencv.org/4.x/opencv.js" onload="onCvReady();"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Interaktiv Kamerakalibrering för AR</h1>
+        
+        <!-- STEG 1: INSTRUKTIONER -->
+        <div id="instructions" class="card">
+            <h2>Steg 1: Förberedelser</h2>
+            <p>Denna process kommer att beräkna din kameras unika egenskaper för att maximera precisionen i AR-applikationen. Följ stegen noggrant.</p>
+            <h3>A. Skriv ut Kalibreringsmönstret (Schackbräde)</h3>
+            <p>Du behöver ett fysiskt schackbräde. Det är viktigt att du vet den exakta storleken på rutorna.</p>
+            <p>Ladda ner ett standard <strong>9x6</strong> schackbräde <a href="https://github.com/opencv/opencv/blob/4.x/doc/pattern.png?raw=true" download="checkerboard_9x6.png">här</a>. Skriv ut det på ett A4-papper utan marginaler och mät en rutas sida. Ange måttet nedan.</p>
+            <label for="squareSize">En rutas storlek (mm):</label>
+            <input type="number" id="squareSize" value="25">
+            
+            <h3>B. Starta Kalibreringen</h3>
+            <p>När du är redo, klicka nedan för att starta kameran.</p>
+            <button id="initButton" disabled>Laddar OpenCV...</button>
+        </div>
+
+        <!-- STEG 2: KALIBRERINGS-UI -->
+        <div id="calibration-ui" class="calibration-ui card">
+            <h2>Steg 2: Ta bilder</h2>
+            <p>Ta minst <strong>15 bilder</strong> av schackbrädet från olika vinklar och avstånd. Försök fylla kamerabilden och se till att hela brädet syns.</p>
+            <div class="video-container">
+                <video id="video" playsinline></video>
+                <canvas id="overlay"></canvas>
+            </div>
+            <div id="status">Riktar kameran...</div>
+            <button id="captureButton">Ta Bild (<span id="captureCount">0</span>/15)</button>
+            <button id="calibrateButton" disabled>Kalibrera Nu</button>
+            <button id="resetButton">Börja Om</button>
+        </div>
+
+        <!-- STEG 3: RESULTAT & NÄSTA STEG -->
+        <div id="results" class="card" style="display:none;">
+            <h2>Steg 3: Resultat</h2>
+            <p>Kalibrering slutförd! Ditt Reprojection Error blev <strong id="reprojectionError" class="success"></strong>. (Lägre är bättre, under 0.5 är utmärkt).</p>
+            <p>Ladda ner din anpassade kalibreringsfil och lägg den i samma mapp som din AR-app. Uppdatera sedan sökvägen i koden.</p>
+            <a id="downloadLink" download="camera_para.dat"><button>Ladda Ner camera_para.dat</button></a>
+            <h3>Kalibreringsdata:</h3>
+            <pre id="datFileContent" style="background:#1c1e22; padding: 1em; border-radius: 4px; white-space: pre-wrap;"></pre>
+        </div>
+
+        <!-- STEG 4: AR-MARKÖR FÖR SKALA -->
+        <div class="card">
+             <h2>Steg 4: Förbered AR-Markör för Skalning</h2>
+             <p>Kalibreringen ovan korrigerar linsens förvrängning. För att din huvud-AR-app ska veta hur stor världen är, behöver den en "linjal". Det är syftet med denna AR-markör.</p>
+             <p>Högerklicka på bilden nedan och spara den. Skriv ut den så att den är <strong>exakt 100mm x 100mm</strong>. Detta är markören du ska använda i `AR Arc Protractor PRO`-appen för att sätta en korrekt världsskala.</p>
+             <img id="ar-marker" class="marker-image" width="200" alt="100x100mm AR Marker">
+        </div>
+    </div>
+
+    <script>
+        // --- Globala variabler ---
+        let cvReady = false;
+        const initButton = document.getElementById('initButton');
+        const statusEl = document.getElementById('status');
+        
+        const video = document.getElementById('video');
+        const overlay = document.getElementById('overlay');
+        const overlayCtx = overlay.getContext('2d');
+        
+        const captureButton = document.getElementById('captureButton');
+        const calibrateButton = document.getElementById('calibrateButton');
+        const resetButton = document.getElementById('resetButton');
+        const captureCountEl = document.getElementById('captureCount');
+
+        const boardSize = { width: 9, height: 6 };
+        let squareSizeMM = 25;
+
+        let imagePoints = [];
+        let objectPoints = [];
+        let objectP;
+        let streaming = false;
+
+        // Base64 för en 7x5 checkerboard som fungerar bra som AR-markör
+        const arMarkerBase64 = "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAAAAABVicqIAAACGUlEQVR4nO3WzW3cMBAF0Pz/T5/uKEEg25K1pAOSqJj22EciWwBJQvPz+fl8LBYL+B/B/zP8v6D/L0X8P/l/1+c/0/23/l/u/4s5/H+h/t/9+v/mP/f0/+X4f8/t/7d+D/F/Gf9v/P/h/y/x/y3f7P/5/y30f8f/z/j/6/x/q/5f7n+p/q/q/w3/L/3/rfr/3f7f8f/x/wf+X/l/U/y/qv8X+79X/V/n/9v/B/q/5/3P9v6b/1/R/U/z/qv6v6v4N/6/4f3P9v7X/1/z/kv+X9n/X/x/y/yX+X9b/K/+/0v8b/y/+/0L/f4n/l/3/qv8t+X9d/x/zv6b/N/+v+X+Z/9f0f9P/W/R/S/xf2/8b/6/0f1P8X+D/hf83/b/k/0v9X+b/tf1f8v/S/w/8v/P/5v8V/zfx/1L/r+j/Tf1f2v87/V/1/xL/N/+v+H+Z/1f8P/X/Zv5f1/9r+7+m/xf8v8T/m/hf1P0b/V/R/5f2f13/3/B/1f8v/f+k/xf9vyT/L/N/W/8/8/+W/p/0/9v/D/0/8/+K/7f0/03/b+n+3/F/S/9P/H+Z/7f1f9f/G/x/of/f+v+S/7f8f+f/1f8f/V/y/0L/r+j+Df2/5P8l/1/a/3f8v9H/bf3f9P+W/n+l/xf8v9z/l/F/S/8/6v/N/Bv6f+f/N/9f+v/R/y35f0n/b+n/Tf5f0f8n/l/y/xv8f6H/V/S/Vf1v/b+1/9f0f8//i/0/+/+m/xf8v/D/Rv+v9v/a/q/0/5b+X/L/Mv9f9P8y/z/p/4f+X+H/V/R/y/4b+v8G/i/+Xx//AAg2Y9z2hIuFAAAAAElFTkSuQmCC";
+        document.getElementById('ar-marker').src = 'data:image/png;base64,' + arMarkerBase64;
+        
+        // --- FUNKTIONER ---
+
+        // Körs när opencv.js är laddat
+        function onCvReady() {
+            cvReady = true;
+            initButton.disabled = false;
+            initButton.textContent = 'Starta Kalibrering';
+        }
+
+        // Initierar hela processen
+        initButton.addEventListener('click', () => {
+            if (!cvReady) return;
+            squareSizeMM = parseFloat(document.getElementById('squareSize').value) || 25;
+            
+            // Skapa 3D-koordinaterna för ett schackbräde
+            objectP = new cv.Mat(boardSize.height * boardSize.width, 1, cv.CV_32FC3);
+            for (let j = 0; j < boardSize.height; j++) {
+                for (let i = 0; i < boardSize.width; i++) {
+                    objectP.data32F[j * boardSize.width * 3 + i * 3] = i * squareSizeMM;
+                    objectP.data32F[j * boardSize.width * 3 + i * 3 + 1] = j * squareSizeMM;
+                    objectP.data32F[j * boardSize.width * 3 + i * 3 + 2] = 0;
+                }
+            }
+            
+            document.getElementById('instructions').style.display = 'none';
+            document.getElementById('calibration-ui').style.display = 'block';
+            startCamera();
+        });
+
+        // Startar kameraströmmen
+        async function startCamera() {
+            if (streaming) return;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'environment' }
+                });
+                video.srcObject = stream;
+                video.play();
+                streaming = true;
+                video.addEventListener('canplay', processVideo, false);
+            } catch (err) {
+                statusEl.textContent = 'Kunde inte starta kameran: ' + err.message;
+                statusEl.className = 'error';
+            }
+        }
+
+        // Huvudloop som processerar video
+        function processVideo() {
+            if (!streaming) return;
+            
+            overlay.width = video.videoWidth;
+            overlay.height = video.videoHeight;
+            overlayCtx.drawImage(video, 0, 0, overlay.width, overlay.height);
+            
+            const src = cv.imread(overlay);
+            const gray = new cv.Mat();
+            cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+
+            const corners = new cv.Mat();
+            const found = cv.findChessboardCorners(gray, boardSize, corners, cv.CALIB_CB_ADAPTIVE_THRESH + cv.CALIB_CB_FAST_CHECK + cv.CALIB_CB_NORMALIZE_IMAGE);
+            
+            if (found) {
+                statusEl.textContent = 'Schackbräde hittat! Ta bild.';
+                statusEl.className = 'success';
+                // Förfinar hörnens position
+                cv.cornerSubPix(gray, corners, new cv.Size(11, 11), new cv.Size(-1, -1), new cv.TermCriteria(cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.1));
+                cv.drawChessboardCorners(src, boardSize, corners, found);
+                cv.imshow(overlay, src);
+            } else {
+                statusEl.textContent = 'Letar efter schackbräde...';
+                statusEl.className = '';
+            }
+
+            src.delete();
+            gray.delete();
+            corners.delete();
+            
+            requestAnimationFrame(processVideo);
+        }
+        
+        // Tar en bild och sparar punkterna
+        captureButton.addEventListener('click', () => {
+            const src = cv.imread(overlay);
+            const gray = new cv.Mat();
+            cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+            
+            const corners = new cv.Mat();
+            const found = cv.findChessboardCorners(gray, boardSize, corners);
+
+            if (found) {
+                cv.cornerSubPix(gray, corners, new cv.Size(11, 11), new cv.Size(-1, -1), new cv.TermCriteria(cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.1));
+                imagePoints.push(corners);
+                objectPoints.push(objectP);
+                captureCountEl.textContent = imagePoints.length;
+                statusEl.textContent = `Bild ${imagePoints.length} tagen!`;
+                statusEl.className = 'success';
+            } else {
+                statusEl.textContent = 'Kunde inte hitta schackbrädet i denna bild.';
+                statusEl.className = 'error';
+            }
+
+            if (imagePoints.length >= 15) {
+                calibrateButton.disabled = false;
+            }
+            src.delete();
+            gray.delete();
+            // `corners` återanvänds, så den raderas inte här utan i slutet av kalibreringen.
+        });
+        
+        // Kör själva kalibreringen
+        calibrateButton.addEventListener('click', () => {
+            if (imagePoints.length < 10) {
+                alert('Du behöver minst 10 bilder.');
+                return;
+            }
+            statusEl.textContent = 'Kalibrerar... Detta kan ta en stund.';
+            
+            setTimeout(() => { // Ger UI tid att uppdateras
+                try {
+                    const cameraMatrix = cv.Mat.eye(3, 3, cv.CV_64F);
+                    const distCoeffs = cv.Mat.zeros(8, 1, cv.CV_64F);
+                    const rvecs = new cv.MatVector();
+                    const tvecs = new cv.MatVector();
+                    const imageSize = { width: overlay.width, height: overlay.height };
+
+                    const reprojErr = cv.calibrateCamera(objectPoints, imagePoints, imageSize, cameraMatrix, distCoeffs, rvecs, tvecs);
+                    
+                    showResults(reprojErr, cameraMatrix, distCoeffs, imageSize);
+
+                } catch (err) {
+                    statusEl.textContent = 'Ett fel uppstod vid kalibrering: ' + err;
+                    statusEl.className = 'error';
+                } finally {
+                    // Rensa minnet
+                    imagePoints.forEach(p => p.delete());
+                    imagePoints = [];
+                    objectPoints = [];
+                }
+            }, 100);
+        });
+
+        // Återställer processen
+        resetButton.addEventListener('click', () => {
+            imagePoints.forEach(p => p.delete());
+            imagePoints = [];
+            objectPoints = [];
+            captureCountEl.textContent = '0';
+            calibrateButton.disabled = true;
+            statusEl.textContent = 'Återställd. Ta nya bilder.';
+            statusEl.className = '';
+        });
+
+        // Visar resultaten och genererar filen
+        function showResults(err, mtx, dist, size) {
+            document.getElementById('calibration-ui').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+
+            document.getElementById('reprojectionError').textContent = err.toFixed(4);
+
+            const fx = mtx.data64F[0];
+            const fy = mtx.data64F[4];
+            const cx = mtx.data64F[2];
+            const cy = mtx.data64F[5];
+            
+            const k1 = dist.data64F[0];
+            const k2 = dist.data64F[1];
+            const p1 = dist.data64F[2];
+            const p2 = dist.data64F[3];
+            const k3 = dist.data64F[4];
+
+            const datContent = `# Kalibrering för ${size.width}x${size.height} video\n` +
+                               `${size.width} ${size.height}\n` +
+                               `${fx.toFixed(8)} 0.0 ${cx.toFixed(8)}\n` +
+                               `0.0 ${fy.toFixed(8)} ${cy.toFixed(8)}\n` +
+                               `0.0 0.0 1.0\n` +
+                               `${k1.toFixed(8)} ${k2.toFixed(8)} ${p1.toFixed(8)} ${p2.toFixed(8)} ${k3.toFixed(8)}`;
+
+            document.getElementById('datFileContent').textContent = datContent;
+
+            const blob = new Blob([datContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            document.getElementById('downloadLink').href = url;
+        }
+
+    </script>
+</body>
+  </html>
