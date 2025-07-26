@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="utf-8">
+    <title>Engrove AR Protractor & Camera Calibration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+    <!-- Ladda typsnitt från Google Fonts enligt UI-standarden -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Ladda nödvändiga bibliotek (OpenCV, THREE.js, AR.js) -->
+    <script async src="https://docs.opencv.org/4.x/opencv.js" onload="onCvReady()"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/three.js/build/ar-threex.js"></script>
+
+    <style>
+        /* --- Del 1: Global UI-Standard & Design Tokens (Mörkt Läge) --- */
+        :root {
+            /* Ytor (Surfaces) */
+            --surface-primary: #121212;
+            --surface-secondary: #1E1E1E;
+            --surface-tertiary: #2A2A2A;
+
+            /* Kanter (Borders) */
+            --border-primary: #3C3C3C;
+
+            /* Text */
+            --text-high-emphasis: rgba(255, 255, 255, 0.9);
+            --text-medium-emphasis: rgba(255, 255, 255, 0.7);
+            --text-low-emphasis: rgba(255, 255, 255, 0.5);
+
+            /* Interaktion */
+            --interactive-accent: #3391FF;
+            --interactive-accent-hover: #58A6FF;
+
+            /* Status */
+            --status-error: #F44336;
+            --status-success: #4CAF50; /* Komplement till standarden */
+            --status-info: #2196F3;   /* Komplement till standarden */
+
+            /* Typografi */
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--surface-primary);
+            color: var(--text-medium-emphasis);
+            margin: 0;
+            padding: 2em;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .card {
+            background: var(--surface-secondary);
+            border: 1px solid var(--border-primary);
+            padding: 1.5em 2em;
+            border-radius: 8px;
+            margin-bottom: 2em;
+        }
+
+        /* --- Del 2: Komponentstyling (Knappar, Fält, etc.) --- */
+        h1, h2, h3 {
+            color: var(--text-high-emphasis);
+            border-bottom: 1px solid var(--border-primary);
+            padding-bottom: 0.5em;
+            font-weight: 700;
+        }
+        h1 { font-size: 32px; line-height: 40px; }
+        h2 { font-size: 24px; line-height: 32px; margin-top: 1.5em; }
+        h3 { font-size: 20px; line-height: 28px; border-bottom: none; font-weight: 600; }
+        
+        p, li {
+            line-height: 24px;
+            font-size: 16px;
+        }
+
+        a {
+            color: var(--interactive-accent);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        a:hover {
+            color: var(--interactive-accent-hover);
+            text-decoration: underline;
+        }
+        
+        /* Knappar (Primär & Sekundär) */
+        .button {
+            font-family: var(--font-main);
+            font-size: 16px;
+            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            display: inline-block;
+            margin: 0.5em 0.5em 0.5em 0;
+        }
+
+        .button-primary {
+            background-color: var(--interactive-accent);
+            color: var(--text-high-emphasis);
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .button-primary:hover {
+            background-color: var(--interactive-accent-hover);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .button-primary:disabled {
+            background-color: var(--surface-tertiary);
+            color: var(--text-low-emphasis);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .button-secondary {
+            background-color: transparent;
+            color: var(--text-medium-emphasis);
+            border: 1px solid var(--border-primary);
+        }
+        .button-secondary:hover {
+            background-color: var(--surface-tertiary);
+            color: var(--text-high-emphasis);
+            border-color: var(--border-primary);
+        }
+
+        /* Inmatningsfält */
+        input[type="number"] {
+            font-family: var(--font-mono);
+            background-color: var(--surface-tertiary);
+            border: 1px solid var(--border-primary);
+            color: var(--text-high-emphasis);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 15px;
+            margin-left: 0.5em;
+        }
+        input[type="number"]:focus {
+            outline: none;
+            border: 1px solid var(--interactive-accent);
+            box-shadow: 0 0 0 2px rgba(51, 145, 255, 0.3);
+        }
+        
+        /* Video och AR-vy */
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 1.5em auto;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        video, canvas, #ar-container {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        #ar-container, #ar-feedback { display: none; }
+        #ar-container.active, #ar-feedback.active { display: block; }
+        
+        #overlay {
+            position: absolute;
+            top: 0; left: 0;
+        }
+
+        #status, #ar-feedback {
+            font-size: 18px;
+            font-weight: 500;
+            text-align: center;
+            min-height: 1.5em;
+            padding: 0.8em;
+            border-radius: 6px;
+            background-color: var(--surface-tertiary);
+            border: 1px solid var(--border-primary);
+            margin-top: 1em;
+        }
+        #status.success, #ar-feedback .ok { color: var(--status-success); }
+        #status.error, #ar-feedback .error { color: var(--status-error); }
+        #status.info, #ar-feedback .info { color: var(--status-info); }
+        #ar-feedback .feedback-value { font-family: var(--font-mono); }
+        
+        .hidden { display: none !important; }
+
+        pre {
+            background: var(--surface-primary);
+            padding: 1em;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-family: var(--font-mono);
+            border: 1px solid var(--border-primary);
+        }
+        
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- STEG 0: HUVUDRUBRIK -->
+        <header class="card">
+            <h1>Engrove AR Protractor & Justeringsverktyg</h1>
+            <p>Ett enhetligt verktyg för att först kalibrera din kamera, och sedan verifiera din tonarmsjustering i realtid. Följ stegen nedan för högsta precision.</p>
+        </header>
+
+        <!-- STEG 1: FÖRBEREDELSER (ONBOARDING) -->
+        <div id="step1-onboarding" class="card">
+            <h2>Steg 1: Förberedelser & Utskrifter</h2>
+            <p>För att systemet ska fungera korrekt behöver du skriva ut två mönster på papper. Det är kritiskt att utskrifterna görs i <strong>100% skala</strong>.</p>
+            
+            <h3>A. Kalibreringsmönster (Schackbräde)</h3>
+            <p>Detta mönster används för att korrigera linsförvrängning. Ladda ner ett <strong>9x6</strong> schackbräde, skriv ut det och mät storleken på en av rutorna i millimeter.</p>
+            <p><a href="https://github.com/opencv/opencv/blob/4.x/doc/pattern.png?raw=true" target="_blank" class="button button-secondary">Ladda ner Schackbräde</a></p>
+            <label for="squareSize">Ange en rutas storlek (mm):</label>
+            <input type="number" id="squareSize" value="25">
+            
+            <h3>B. AR-Markörer</h3>
+            <p>Dessa tre unika markörer används för att identifiera pivot, spindel och nål. Skriv ut dem och fäst dem enligt instruktionerna i Steg 3.</p>
+            <ul>
+                <li><a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank">Markör 1: <strong>HIRO</strong></a> (för Spindeln)</li>
+                <li><a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/kanji.png" target="_blank">Markör 2: <strong>KANJI</strong></a> (för Pivot-punkten)</li>
+                <li><a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/letterA.png" target="_blank">Markör 3: <strong>Bokstav A</strong></a> (för Nålen)</li>
+            </ul>
+            
+            <button id="initButton" class="button button-primary" disabled>Laddar systemet...</button>
+        </div>
+
+        <!-- STEG 2: KAMERAKALIBRERING -->
+        <div id="step2-calibration" class="card hidden">
+            <h2>Steg 2: Kamerakalibrering</h2>
+            <p>Rikta kameran mot det utskrivna <strong>schackbrädet</strong>. Ta minst <strong>15 bilder</strong> från olika vinklar, avstånd och positioner för att få en bra kalibrering. Hela brädet måste vara synligt i bild.</p>
+            <div class="video-container">
+                <video id="video" playsinline></video>
+                <canvas id="overlay"></canvas>
+            </div>
+            <div id="status" class="info">Startar kamera...</div>
+            <button id="captureButton" class="button button-primary">Ta Bild (<span id="captureCount">0</span>/15)</button>
+            <button id="calibrateButton" class="button button-primary" disabled>Kalibrera Nu</button>
+            <button id="resetButton" class="button button-secondary">Börja Om</button>
+        </div>
+
+        <!-- STEG 3: AR-MÄTNING -->
+        <div id="step3-protractor" class="card hidden">
+            <h2>Steg 3: AR Vinkelmätning</h2>
+            <p>Kalibrering slutförd! Ditt "Reprojection Error" är <strong id="reprojectionError" class="success"></strong> (under 0.5 är utmärkt). Systemet använder nu denna kalibrering.</p>
+            <h3>Placera markörerna</h3>
+             <ol>
+                <li>Placera <strong>HIRO</strong>-markören på tallrikens spindel.</li>
+                <li>Placera <strong>KANJI</strong>-markören exakt på tonarmens pivotpunkt.</li>
+                <li>Fäst <strong>Bokstav A</strong>-markören på en jigg så den hamnar precis vid nålspetsen.</li>
+            </ol>
+            <p>Klicka nedan för att starta AR-vyn. Se till att alla tre markörer är synliga för kameran.</p>
+            <button id="startArButton" class="button button-primary">Starta AR-mätning</button>
+            
+            <div id="ar-container">
+                <!-- AR.js renderar sin canvas här -->
+            </div>
+            <div id="ar-feedback">
+                <span id="feedback-text" class="info">Letar efter markörer...</span>
+            </div>
+
+            <h3>Avancerat: Ladda ner kalibreringsfil</h3>
+            <p>Du kan spara din unika kalibreringsdata som en fil för framtida bruk.</p>
+            <a id="downloadLink" download="camera_para.dat"><button class="button button-secondary">Ladda Ner camera_para.dat</button></a>
+            <pre id="datFileContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        // --- GLOBALA VARIABLER OCH TILLSTÅND ---
+        let cvReady = false;
+        let calibrationData = null; // Kommer lagra { cameraMatrix, distCoeffs, imageSize }
+        
+        // --- ELEMENT-REFERENSER ---
+        const initButton = document.getElementById('initButton');
+        const step1 = document.getElementById('step1-onboarding');
+        const step2 = document.getElementById('step2-calibration');
+        const step3 = document.getElementById('step3-protractor');
+
+        // Kalibreringselement
+        const statusEl = document.getElementById('status');
+        const video = document.getElementById('video');
+        const overlay = document.getElementById('overlay');
+        const overlayCtx = overlay.getContext('2d');
+        const captureButton = document.getElementById('captureButton');
+        const calibrateButton = document.getElementById('calibrateButton');
+        const resetButton = document.getElementById('resetButton');
+        const captureCountEl = document.getElementById('captureCount');
+
+        // Kalibreringsparametrar
+        const boardSize = { width: 9, height: 6 };
+        let squareSizeMM = 25;
+        let imagePoints = [];
+        let objectPoints = [];
+        let objectP;
+        let streaming = false;
+        let stream;
+
+        // AR-element
+        const startArButton = document.getElementById('startArButton');
+        const arContainer = document.getElementById('ar-container');
+        const arFeedback = document.getElementById('ar-feedback');
+        const feedbackText = document.getElementById('feedback-text');
+
+        // --- STEG 1: ONCVREADY & INITIALISERING ---
+        function onCvReady() {
+            cvReady = true;
+            initButton.disabled = false;
+            initButton.textContent = 'Gå till Kamerakalibrering';
+        }
+
+        initButton.addEventListener('click', () => {
+            if (!cvReady) return;
+            squareSizeMM = parseFloat(document.getElementById('squareSize').value) || 25;
+            
+            // Skapa 3D-koordinaterna för schackbrädet
+            objectP = new cv.Mat(boardSize.height * boardSize.width, 1, cv.CV_32FC3);
+            for (let j = 0; j < boardSize.height; j++) {
+                for (let i = 0; i < boardSize.width; i++) {
+                    objectP.data32F[j * boardSize.width * 3 + i * 3] = i * squareSizeMM;
+                    objectP.data32F[j * boardSize.width * 3 + i * 3 + 1] = j * squareSizeMM;
+                    objectP.data32F[j * boardSize.width * 3 + i * 3 + 2] = 0;
+                }
+            }
+            
+            step1.classList.add('hidden');
+            step2.classList.remove('hidden');
+            startCamera();
+        });
+
+        // --- STEG 2: KAMERAKALIBRERING FUNKTIONER ---
+        async function startCamera() {
+            if (streaming) return;
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'environment' }
+                });
+                video.srcObject = stream;
+                await video.play();
+                streaming = true;
+                video.addEventListener('canplay', processVideo, false);
+                statusEl.textContent = 'Riktar kameran...';
+                statusEl.className = 'info';
+            } catch (err) {
+                statusEl.textContent = 'Kunde inte starta kameran: ' + err.message;
+                statusEl.className = 'error';
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                streaming = false;
+                stream = null;
+            }
+        }
+
+        function processVideo() {
+            if (!streaming) return;
+            
+            overlay.width = video.videoWidth;
+            overlay.height = video.videoHeight;
+            overlayCtx.drawImage(video, 0, 0, overlay.width, overlay.height);
+            
+            let src = cv.imread(overlay);
+            let gray = new cv.Mat();
+            cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+            let corners = new cv.Mat();
+            
+            let found = cv.findChessboardCorners(gray, boardSize, corners, cv.CALIB_CB_ADAPTIVE_THRESH + cv.CALIB_CB_FAST_CHECK + cv.CALIB_CB_NORMALIZE_IMAGE);
+            
+            if (found) {
+                statusEl.textContent = 'Schackbräde hittat! Ta bild.';
+                statusEl.className = 'success';
+                cv.drawChessboardCorners(src, boardSize, corners, found);
+                cv.imshow(overlay, src);
+            } else {
+                statusEl.textContent = 'Letar efter schackbräde...';
+                statusEl.className = '';
+            }
+
+            src.delete();
+            gray.delete();
+            corners.delete();
+            
+            requestAnimationFrame(processVideo);
+        }
+        
+        captureButton.addEventListener('click', () => {
+            let src = cv.imread(overlay);
+            let gray = new cv.Mat();
+            cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+            let corners = new cv.Mat();
+
+            if (cv.findChessboardCorners(gray, boardSize, corners)) {
+                cv.cornerSubPix(gray, corners, new cv.Size(11, 11), new cv.Size(-1, -1), new cv.TermCriteria(cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.1));
+                imagePoints.push(corners);
+                objectPoints.push(objectP);
+                captureCountEl.textContent = imagePoints.length;
+                statusEl.textContent = `Bild ${imagePoints.length} tagen!`;
+                statusEl.className = 'success';
+            } else {
+                statusEl.textContent = 'Kunde inte hitta schackbrädet i denna bild.';
+                statusEl.className = 'error';
+                corners.delete();
+            }
+
+            if (imagePoints.length >= 15) {
+                calibrateButton.disabled = false;
+            }
+            src.delete();
+            gray.delete();
+        });
+        
+        calibrateButton.addEventListener('click', () => {
+            if (imagePoints.length < 10) {
+                alert('Du behöver minst 10 bilder.');
+                return;
+            }
+            statusEl.textContent = 'Kalibrerar... Detta kan ta en stund.';
+            statusEl.className = 'info';
+            
+            setTimeout(() => {
+                try {
+                    const cameraMatrix = cv.Mat.eye(3, 3, cv.CV_64F);
+                    const distCoeffs = cv.Mat.zeros(8, 1, cv.CV_64F);
+                    const rvecs = new cv.MatVector();
+                    const tvecs = new cv.MatVector();
+                    const imageSize = { width: overlay.width, height: overlay.height };
+
+                    const reprojErr = cv.calibrateCamera(objectPoints, imagePoints, imageSize, cameraMatrix, distCoeffs, rvecs, tvecs);
+                    
+                    calibrationData = { cameraMatrix, distCoeffs, imageSize };
+                    
+                    showCalibrationResults(reprojErr, cameraMatrix, distCoeffs, imageSize);
+                    
+                    // Frigör minne
+                    imagePoints.forEach(p => p.delete());
+                    imagePoints = [];
+                    objectPoints.forEach(p => { if(p !== objectP) p.delete(); });
+                    objectPoints = [];
+                    rvecs.delete();
+                    tvecs.delete();
+
+                } catch (err) {
+                    statusEl.textContent = 'Ett fel uppstod vid kalibrering: ' + err;
+                    statusEl.className = 'error';
+                }
+            }, 100);
+        });
+
+        resetButton.addEventListener('click', () => {
+            imagePoints.forEach(p => p.delete());
+            imagePoints = [];
+            objectPoints = [];
+            captureCountEl.textContent = '0';
+            calibrateButton.disabled = true;
+            statusEl.textContent = 'Återställd. Ta nya bilder.';
+            statusEl.className = '';
+        });
+
+        function showCalibrationResults(err, mtx, dist, size) {
+            stopCamera();
+            step2.classList.add('hidden');
+            step3.classList.remove('hidden');
+
+            document.getElementById('reprojectionError').textContent = err.toFixed(4);
+
+            const fx = mtx.data64F[0];
+            const fy = mtx.data64F[4];
+            const cx = mtx.data64F[2];
+            const cy = mtx.data64F[5];
+            const k1 = dist.data64F[0], k2 = dist.data64F[1], p1 = dist.data64F[2], p2 = dist.data64F[3], k3 = dist.data64F[4];
+
+            const datContent = `# Kalibrering för ${size.width}x${size.height} video\n` +
+                               `${size.width} ${size.height}\n` +
+                               `${fx.toFixed(8)} 0.0 ${cx.toFixed(8)}\n` +
+                               `0.0 ${fy.toFixed(8)} ${cy.toFixed(8)}\n` +
+                               `0.0 0.0 1.0\n` +
+                               `${k1.toFixed(8)} ${k2.toFixed(8)} ${p1.toFixed(8)} ${p2.toFixed(8)} ${k3.toFixed(8)}`;
+
+            document.getElementById('datFileContent').textContent = datContent;
+            const blob = new Blob([datContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            document.getElementById('downloadLink').href = url;
+        }
+
+
+        // --- STEG 3: AR-MÄTNING FUNKTIONER ---
+        startArButton.addEventListener('click', () => {
+            startArButton.classList.add('hidden');
+            arContainer.classList.add('active');
+            arFeedback.classList.add('active');
+            initializeAR();
+        });
+
+        function initializeAR() {
+            // Scene setup
+            const scene = new THREE.Scene();
+            const camera = new THREE.Camera();
+            scene.add(camera);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            arContainer.appendChild(renderer.domElement);
+
+            // AR.js source
+            const arToolkitSource = new THREEx.ArToolkitSource({ sourceType: 'webcam' });
+            arToolkitSource.init(() => setTimeout(() => onResize(), 500));
+            window.addEventListener('resize', onResize);
+            function onResize() {
+                arToolkitSource.onResizeElement();
+                arToolkitSource.copyElementSizeTo(renderer.domElement);
+                if (arToolkitContext.arController !== null) {
+                    arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas);
+                }
+            }
+
+            // AR.js context med vår anpassade kalibrering
+            const arToolkitContext = new THREEx.ArToolkitContext({
+                cameraParametersUrl: 'data:text/plain;base64,' + btoa(document.getElementById('datFileContent').textContent),
+                detectionMode: 'mono',
+            });
+            arToolkitContext.init(() => camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix()));
+            
+            // --- Markör-setup ---
+            const markerSize = 0.04; // 40 mm, antagande att användaren skriver ut i rimlig storlek
+
+            const markerRootSpindle = new THREE.Group(); scene.add(markerRootSpindle);
+            new THREEx.ArMarkerControls(arToolkitContext, markerRootSpindle, { type: 'pattern', patternUrl: 'https://raw.githack.com/AR-js-org/AR.js/3.4.5/data/data/patt.hiro', size: markerSize });
+
+            const markerRootPivot = new THREE.Group(); scene.add(markerRootPivot);
+            new THREEx.ArMarkerControls(arToolkitContext, markerRootPivot, { type: 'pattern', patternUrl: 'https://raw.githack.com/AR-js-org/AR.js/3.4.5/data/data/patt.kanji', size: markerSize });
+
+            const markerRootNeedle = new THREE.Group(); scene.add(markerRootNeedle);
+            new THREEx.ArMarkerControls(arToolkitContext, markerRootNeedle, { type: 'pattern', patternUrl: 'https://raw.githack.com/AR-js-org/AR.js/3.4.5/data/data/patt.a', size: markerSize });
+
+            // --- 3D-geometri för visualisering ---
+            const protractorGroup = new THREE.Group();
+            markerRootSpindle.add(protractorGroup);
+            
+            // --- Animationsloop ---
+            function animate() {
+                requestAnimationFrame(animate);
+                if (!arToolkitSource.ready) return;
+                arToolkitContext.update(arToolkitSource.domElement);
+
+                if (markerRootSpindle.visible && markerRootPivot.visible && markerRootNeedle.visible) {
+                    const spindlePos = new THREE.Vector3();
+                    const pivotPos = new THREE.Vector3();
+                    const needlePos = new THREE.Vector3();
+                    markerRootSpindle.getWorldPosition(spindlePos);
+                    markerRootPivot.getWorldPosition(pivotPos);
+                    markerRootNeedle.getWorldPosition(needlePos);
+
+                    const pivotToSpindleDistance = spindlePos.distanceTo(pivotPos);
+                    const pivotToNeedleDistance = pivotPos.distanceTo(needlePos);
+                    const overhang = pivotToNeedleDistance - pivotToSpindleDistance;
+
+                    const needleForward = new THREE.Vector3(0, 0, 1).applyQuaternion(markerRootNeedle.quaternion).normalize();
+                    const pivotToNeedleVec = new THREE.Vector3().subVectors(needlePos, pivotPos).normalize();
+                    const tangentVec = new THREE.Vector3().crossVectors(pivotToNeedleVec, new THREE.Vector3(0, 1, 0)).normalize(); // Antag plan yta
+                    
+                    let angleError = needleForward.angleTo(tangentVec) * (180 / Math.PI);
+                    // Justera så 0 är perfekt tangentiell
+                    angleError = Math.abs(angleError - 90);
+
+                    const overhangOk = Math.abs(overhang * 1000) < 0.5;
+                    const angleOk = Math.abs(angleError) < 0.5;
+
+                    feedbackText.innerHTML = `
+                        <span class="feedback-value ${overhangOk ? 'ok' : 'error'}">Överhäng: ${(overhang * 1000).toFixed(2)} mm</span> | 
+                        <span class="feedback-value ${angleOk ? 'ok' : 'error'}">Vinkelfel: ${angleError.toFixed(2)}°</span>
+                        ${(overhangOk && angleOk) ? '<span class="ok">(Optimalt!)</span>' : ''}
+                    `;
+                } else {
+                    feedbackText.innerHTML = `<span class="info">Letar efter alla 3 markörer... (Spindel: ${markerRootSpindle.visible}, Pivot: ${markerRootPivot.visible}, Nål: ${markerRootNeedle.visible})</span>`;
+                }
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+    </script>
+</body>
+</html>
