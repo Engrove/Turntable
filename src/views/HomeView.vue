@@ -1,4 +1,3 @@
-<!-- src/views/HomeView.vue -->
 <script setup>
 import { RouterLink } from 'vue-router';
 import { useHead } from '@unhead/vue';
@@ -26,7 +25,6 @@ useHead({
     </header>
 
     <section class="intro-section">
-      <!-- NY STRUKTUR FÖR INTRO-SEKTIONEN -->
       <div class="intro-container">
         <div class="avatar-wrapper">
           <img src="/images/engrove.webp" alt="Avatar of the site author" class="avatar-image" loading="lazy" width="200" height="200"/>
@@ -38,26 +36,32 @@ useHead({
           <p>
             Hi! I am a hi fi enthusiast who loves vinyl and technology. This toolkit transforms complex audio theory into a dynamic visual and intuitive environment and also tests how AI and other cutting edge technologies can help develop and verify ideas code and functionality.
             
-            I have a personal goal to deepen my knowledge of acoustics and audio theory and to create tools that let fellow enthusiasts explore trade offs in audio design in real time. Along the way I hope to show how modern technology can speed up learning and spark new innovations in audio engineering.          </p>
+            I have a personal goal to deepen my knowledge of acoustics and audio theory and to create tools that let fellow enthusiasts explore trade offs in audio design in real time. Along the way I hope to show how modern technology can speed up learning and spark new innovations in audio engineering.          
+          </p>
 
-<div class="update-notice">
-  <h4 class="update-title">Project Update: Version 2.0 is in Development</h4>
-  <p>
-    Please note that active development on this version has concluded. I am currently building <strong>v2.0</strong> from the ground up with a radically updated architecture and technology stack.
-  </p>
-</div>
+          <div class="update-notice">
+            <h4 class="update-title">Project Update: Version 2.0 is in Development</h4>
+            <p>
+              Thank you for visiting. Please note that active development on the current version has concluded as my focus shifts to <strong>v2.0</strong>—a complete and ambitious rebuild of the entire platform. Existing tools will of course remain, rebuilt from the ground up within the new system to be both more powerful and easier to use.
+            </p>
+            <p>
+              The core of v2.0 is a new, unified, and "mobile-first" design system built on the principles of <strong>Precision</strong> and <strong>Clarity</strong>, with a strong focus on usability. The next generation of tools will allow you to perform a complete, end-to-end optimization of your turntable:
+            </p>
+            <ul>
+              <li><strong>First, Perfect the Alignment:</strong> Use your mobile's camera for a visually guided and mathematically precise geometric setup, designed to eliminate guesswork and common alignment errors like parallax.</li>
+              <li><strong>Then, Measure the Sound:</strong> Immediately verify your adjustments by measuring the acoustic results—including Wow & Flutter, Rumble, and Frequency Response—with a powerful new analysis suite directly in your browser.</li>
+            </ul>
+            <p>
+              Stay tuned for the next evolution of Engrove, hopefully launching sometime in 2026.
+            </p>
+          </div>
 
-
-<p class="note">
-  This is a live project. Features are added and updated sporadically. If something isn't working, it might be under construction!
-</p>
           <p class="note">
             This is a live project. Features are added and updated sporadically. If something isn't working, it might be under construction!
           </p>
         </div>
       </div>
-      <!-- SLUT PÅ NY STRUKTUR -->
-    </section>
+      </section>
 
     <section class="tools-section">
       <h2>Available Tools</h2>
@@ -80,16 +84,7 @@ useHead({
           </div>
         </RouterLink>
         
-<!--   <RouterLink to="/alignment-calculator" class="tool-card">
-          <img src="/images/preview-alignment.webp" alt="Alignment Calculator Preview" class="tool-preview-image" loading="lazy" width="320" height="200"/>
-          <div class="card-content">
-            <h3>Alignment Calculator</h3>
-            <p>Generate printable protractors and visualize tracking error for various alignment geometries like Baerwald, Löfgren, and Stevenson.</p>
-            <span class="card-action">Explore Calculator →</span>
-          </div>
-        </RouterLink> -->
-
-        <RouterLink to="/data-explorer" class="tool-card">
+<RouterLink to="/data-explorer" class="tool-card">
           <img src="/images/preview-explorer.webp" alt="Data Explorer Preview" class="tool-preview-image" loading="lazy" width="320" height="200"/>
           <div class="card-content">
             <h3>Component Database Explorer</h3>
@@ -188,7 +183,6 @@ p.note { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--bor
   }
 }
 
-  /* KLISTRA IN DENNA CSS */
 .update-notice {
   background-color: var(--panel-bg-alt, #fffbe6); /* A soft yellow tone */
   border-left: 5px solid var(--accent-color, #f59e0b); 
@@ -204,13 +198,21 @@ p.note { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--bor
   font-weight: 700;
   font-size: 1.1rem;
 }
-.update-notice p {
+.update-notice p,
+.update-notice ul {
   margin-bottom: 0.5rem;
   line-height: 1.6;
   color: var(--text-color);
 }
+.update-notice ul {
+  padding-left: 2rem; /* Indent list */
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+.update-notice li {
+  margin-bottom: 0.5rem;
+}
 .update-notice p:last-child {
   margin-bottom: 0;
 }
-/* SLUT PÅ INKLISTRAD CSS */
 </style>
