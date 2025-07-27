@@ -39,6 +39,21 @@ useHead({
             Hi! I am a hi fi enthusiast who loves vinyl and technology. This toolkit transforms complex audio theory into a dynamic visual and intuitive environment and also tests how AI and other cutting edge technologies can help develop and verify ideas code and functionality.
             
             I have a personal goal to deepen my knowledge of acoustics and audio theory and to create tools that let fellow enthusiasts explore trade offs in audio design in real time. Along the way I hope to show how modern technology can speed up learning and spark new innovations in audio engineering.          </p>
+
+<div class="update-notice">
+  <h4 class="update-title">Project Update: Version 2.0 is in Development</h4>
+  <p>
+    Please note that active development on this version has concluded. I am currently building <strong>v2.0</strong> from the ground up with a radically updated architecture and technology stack.
+  </p>
+  <p>
+    This is essential to incorporate the advanced features and new possibilities that modern technology allows for. Thank you for your patience and stay tuned!
+  </p>
+</div>
+
+
+<p class="note">
+  This is a live project. Features are added and updated sporadically. If something isn't working, it might be under construction!
+</p>
           <p class="note">
             This is a live project. Features are added and updated sporadically. If something isn't working, it might be under construction!
           </p>
@@ -175,4 +190,30 @@ p.note { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--bor
     max-width: 150px; /* Gör bilden mindre på mobil */
   }
 }
+
+  /* KLISTRA IN DENNA CSS */
+.update-notice {
+  background-color: var(--panel-bg-alt, #fffbe6); /* A soft yellow tone */
+  border-left: 5px solid var(--accent-color, #f59e0b); 
+  padding: 1rem 1.5rem;
+  margin: 2rem 0;
+  border-radius: 4px;
+  text-align: left;
+}
+.update-notice .update-title {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  color: var(--header-color);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.update-notice p {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+  color: var(--text-color);
+}
+.update-notice p:last-child {
+  margin-bottom: 0;
+}
+/* SLUT PÅ INKLISTRAD CSS */
 </style>
