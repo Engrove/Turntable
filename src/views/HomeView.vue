@@ -45,9 +45,6 @@ useHead({
   <p>
     Please note that active development on this version has concluded. I am currently building <strong>v2.0</strong> from the ground up with a radically updated architecture and technology stack.
   </p>
-  <p>
-    This is essential to incorporate the advanced features and new possibilities that modern technology allows for. Thank you for your patience and stay tuned!
-  </p>
 </div>
 
 
